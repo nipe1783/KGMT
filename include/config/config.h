@@ -1,6 +1,6 @@
 #pragma once
 
-#define DIM 2
+#define DIM 3
 #define R1 4
 #define R2 4
 

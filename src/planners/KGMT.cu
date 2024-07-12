@@ -4,7 +4,7 @@
 KGMT::KGMT(float h_ws, int h_numDisc, int h_maxTreeSize, float h_goalThreshold, int h_maxIterations)
     : Planner(h_ws, h_numDisc, h_maxTreeSize, h_goalThreshold, h_maxIterations)
 {
-    h_graph_ = Graph(h_ws_, DIM, R1, R2);
+    h_graph_ = Graph(h_ws_);
     if(VERBOSE)
         {
             printf("/* Planner Type: KGMT */\n");
@@ -22,3 +22,5 @@ void KGMT::plan(const float* h_initial, const float* h_goal)
             itr++;
         }
 }
+
+__global__ void updateGrid() {}
