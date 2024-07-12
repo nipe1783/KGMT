@@ -7,7 +7,7 @@ class Graph
 public:
     // --- constructor ---
     Graph() = default;
-    Graph(float h_ws, const int dim, const int r1, const int r2);
+    Graph(float h_ws);
 
     // --- fields ---
     int h_numEdges_;
@@ -16,8 +16,16 @@ public:
 
 private:
     // --- methods ---
-    void constructFromVertices(const int dim, const int r);
-    void constructToVertices(const int dim, const int r);
-    void constructVertexArray(const int dim, const int r);
-    void constructEdgeArray(const int dim, const int r);
+    void constructFromVertices();
+    void constructToVertices();
+    void constructVertexArray();
+    void constructEdgeArray();
 };
+
+// --- Device Functions ---
+__host__ __device__ int getVertex(float x, float y, float r1Size);
+__host__ __device__ int getVertex(float x, float y, float z, float r1Size);
+__host__ __device__ int getSubVertex(float x, float y, int r1, float r1Size, float r2Size);
+__host__ __device__ int getSubVertex(float x, float y, float z, int r1, float r1Size, float r2Size);
+__host__ __device__ int getEdge(int fromVertex, int toVertex, int* hashTable, int numEdges);
+__host__ __device__ int hashEdge(int key, int size);
