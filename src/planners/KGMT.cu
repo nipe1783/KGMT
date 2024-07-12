@@ -1,17 +1,24 @@
 #include "planners/KGMT.cuh"
+#include "config/config.h"
 
-KGMT::KGMT(const float* h_ws, const int h_size_ws, int numDisc = 10, int maxTreeSize = 30000, bool verbose)
-    : Planner(h_ws, h_size_ws, numDisc, maxTreeSize, verbose)
+KGMT::KGMT(float h_ws, int h_numDisc, int h_maxTreeSize, float h_goalThreshold, int h_maxIterations)
+    : Planner(h_ws, h_numDisc, h_maxTreeSize, h_goalThreshold, h_maxIterations)
 {
-    if(verbose)
+    h_graph_ = Graph(h_ws_, DIM, R1, R2);
+    if(VERBOSE)
         {
-            printf("/***************************/\n");
             printf("/* Planner Type: KGMT */\n");
+            printf("/* Number of R1 Vertices: %d */\n", NUM_R1_VERTICES);
+            printf("/* Number of R2 Vertices: %d */\n", NUM_R2_VERTICES);
             printf("/***************************/\n");
         }
-};
+}
 
 void KGMT::plan(const float* h_initial, const float* h_goal)
 {
-    printf("KGMT::plan\n");
-};
+    int itr = 0;
+    while(itr < h_maxIterations_)
+        {
+            itr++;
+        }
+}
