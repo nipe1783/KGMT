@@ -4,6 +4,8 @@
 Planner::Planner(float ws, int numDisc, int maxTreeSize, float goalThreshold, int maxIterations)
     : h_ws_(ws), h_numDisc_(numDisc), h_maxTreeSize_(maxTreeSize), h_goalThreshold_(goalThreshold), h_maxIterations_(maxIterations)
 {
+    d_treeSamples_ = thrust::device_vector<float>(h_maxTreeSize_ * SAMPLE_DIM);
+    d_treeSamples_ptr_ = thrust::raw_pointer_cast(d_treeSamples_.data());
     if(VERBOSE)
         {
             printf("/***************************/\n");

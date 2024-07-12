@@ -50,6 +50,17 @@ Graph::Graph(const float ws)
     //                 printf("From Vertex %d: To Vertex %d\n", h_fromVertices_[i], h_toVertices_[i]);
     //             }
     //     }
+
+    d_activeVertices_ = thrust::device_vector<int>(NUM_R1_VERTICES);
+    d_validCounterArray_ = thrust::device_vector<int>(NUM_R1_VERTICES);
+    d_counterArray_ = thrust::device_vector<int>(NUM_R1_VERTICES);
+    d_vertexScoreArray_ = thrust::device_vector<float>(NUM_R1_VERTICES);
+    d_activeVerticesScanIdx_ = thrust::device_vector<int>(NUM_R1_VERTICES);
+
+    d_activeVertices_ptr_ = thrust::raw_pointer_cast(d_activeVertices_.data());
+    d_validCounterArray_ptr_ = thrust::raw_pointer_cast(d_validCounterArray_.data());
+    d_counterArray_ptr_ = thrust::raw_pointer_cast(d_counterArray_.data());
+    d_vertexScoreArray_ptr_ = thrust::raw_pointer_cast(d_vertexScoreArray_.data());
 }
 
 void Graph::constructVertexArray()
@@ -253,4 +264,70 @@ __host__ __device__ int getEdge(int fromVertex, int toVertex, int* hashTable, in
             hash = (hash + 1) % numEdges;
         }
     return hashTable[2 * hash + 1];
+}
+
+/***************************/
+/* VERTICES UPDATE KERNEL  */
+/***************************/
+// --- Updates Vertex Scores for device graph vectors. Determines new threshold score for future samples in expansion set. ---
+__global__ void updateVertices_kernel(float* vertexScoreArray, int* activeVertices, int* activeSubVertices, int* validCounterArray,
+                                      int* counterArray, int numActiveVertices, float* vertexScores, float* sampleScoreThreshold)
+{
+    int tid = threadIdx.x + blockIdx.x * blockDim.x;
+    if(tid >= NUM_R1_VERTICES)
+        {
+            return;
+        }
+
+    __shared__ float s_totalScore;
+    float score = 0.0;
+
+    if(activeVertices[tid] != 0)
+        {
+            int numValidSamples = validCounterArray[tid];
+            float coverage = 0;
+            // --- Thread loops through all sub vertices to determine vertex coverage. ---
+            for(int i = tid * R2_PER_R1; i < (tid + 1) * R2_PER_R1; ++i)
+                {
+                    coverage += activeSubVertices[i];
+                }
+            coverage /= R2_PER_R1;
+            // --- From OMPL Syclop ref: https://ompl.kavrakilab.org/classompl_1_1control_1_1Syclop.html---
+            score = pow(((EPSILON + numValidSamples) / (EPSILON + numValidSamples + (counterArray[tid] - numValidSamples))), 4) /
+                    ((1 + coverage) * (1 + pow(counterArray[tid], 2)));
+        }
+
+    // --- Sum scores from each thread to determine score threshold ---
+    typedef cub::BlockReduce<float, NUM_R1_VERTICES> BlockReduceFloatT;
+    __shared__ typename BlockReduceFloatT::TempStorage tempStorageFloat;
+    float blockSum = BlockReduceFloatT(tempStorageFloat).Sum(score);
+
+    if(threadIdx.x == 0)
+        {
+            s_totalScore = blockSum;
+            sampleScoreThreshold[0] = s_totalScore / numActiveVertices;
+        }
+    __syncthreads();
+
+    // --- Update vertex scores ---
+    if(activeVertices[tid] == 0)
+        {
+            vertexScores[tid] = 1.0f;
+        }
+    else
+        {
+            vertexScores[tid] = score / s_totalScore;
+        }
+}
+
+void Graph::updateVertices(float* d_sampleScoreThreshold_ptr)
+{
+    // --- Determine number of active vertices in graph ---
+    thrust::exclusive_scan(d_activeVertices_.begin(), d_activeVertices_.end(), d_activeVerticesScanIdx_.begin(), 0, thrust::plus<int>());
+    h_numActiveVertices_ = d_activeVerticesScanIdx_[NUM_R1_VERTICES - 1];
+
+    // --- Update vertex scores and sampleScoreThreshold ---
+    updateVertices_kernel<<<1, NUM_R1_VERTICES>>>(d_vertexScoreArray_ptr_, d_activeVertices_ptr_, d_activeSubVertices_ptr_,
+                                                  d_validCounterArray_ptr_, d_counterArray_ptr_, h_numActiveVertices_,
+                                                  d_vertexScoreArray_ptr_, d_sampleScoreThreshold_ptr);
 }

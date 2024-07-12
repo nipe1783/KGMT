@@ -5,16 +5,25 @@
 class KGMT : public Planner
 {
 public:
-    // --- constructor ---
+    /**************************** CONSTRUCTORS ****************************/
     KGMT() = default;
     KGMT(float ws, int numDisc = 10, int maxTreeSize = 30000, float goalThreshold = 0.5, int maxIterations = 100);
 
-    // --- methods ---
-    /***************************/
-    /* Kinodynamic Motion Planning FUNCTION */
-    /***************************/
-    void plan(const float* h_initial, const float* h_goal) override;
+    /****************************    METHODS    ****************************/
+    void plan(float* h_initial, float* h_goal) override;
+    void propagateFrontier();
 
-    // --- fields ---
-    Graph h_graph_;
+    /****************************    FIELDS    ****************************/
+    // --- host fields ---
+    Graph graph_;
+    int h_frontierSize_;
+    float* h_sampleScoreThreshold_ = new float(0.0);
+
+    // --- device fields ---
+    thrust::device_vector<bool> d_frontier_;
+    float* d_sampleScoreThreshold_ptr_;
+    bool* d_frontier_ptr_;
 };
+
+/**************************** DEVICE FUNCTIONS ****************************/
+__global__ void propagateFrontier_kernel(bool* frontier, float* treeSamples);
