@@ -68,6 +68,10 @@
         "cinttypes": "cpp",
         "variant": "cpp",
         "bitset": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "cfenv": "cpp",
+        "source_location": "cpp",
+        "typeindex": "cpp",
+        "stdfloat": "cpp"
     }
 }

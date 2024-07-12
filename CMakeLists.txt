@@ -27,6 +27,7 @@ set(SOURCE_FILES
     src/planners/Planner.cu
     src/collisionCheck/collisionCheck.cu
     src/graphs/Graph.cu
+    src/helper/helper.cu
 )
 
 # Add a library target for your non-CUDA code
