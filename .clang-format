@@ -44,3 +44,5 @@ SortIncludes: false
 SpaceBeforeParens: Never
 SpaceBeforeAssignmentOperators: true
 SpacesInContainerLiterals: false
+
+AlignConsecutiveAssignments: true

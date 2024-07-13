@@ -107,3 +107,8 @@ inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort =
             if(abort) exit(code);
         }
 }
+
+inline int iDivUp(int a, int b)
+{
+    return (a + b - 1) / b;
+}

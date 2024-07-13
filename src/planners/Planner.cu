@@ -1,19 +1,36 @@
 #include "planners/Planner.cuh"
 #include "config/config.h"
 
-Planner::Planner(float ws, int numDisc, int maxTreeSize, float goalThreshold, int maxIterations)
-    : h_ws_(ws), h_numDisc_(numDisc), h_maxTreeSize_(maxTreeSize), h_goalThreshold_(goalThreshold), h_maxIterations_(maxIterations)
+Planner::Planner()
 {
-    d_treeSamples_ = thrust::device_vector<float>(h_maxTreeSize_ * SAMPLE_DIM);
+    d_treeSamples_     = thrust::device_vector<float>(MAX_TREE_SIZE * SAMPLE_DIM);
     d_treeSamples_ptr_ = thrust::raw_pointer_cast(d_treeSamples_.data());
+
+    cudaMalloc(&d_randomSeeds_ptr_, MAX_TREE_SIZE * sizeof(curandState));
+
     if(VERBOSE)
         {
             printf("/***************************/\n");
             printf("/* Workspace Dimension: %d */\n", DIM);
-            printf("/* Workspace Size: %f */\n", h_ws_);
-            printf("/* Discretization steps in trajectory: %d */\n", h_numDisc_);
-            printf("/* Max Tree Size: %d */\n", h_maxTreeSize_);
-            printf("/* Goal Distance Threshold: %f */\n", h_goalThreshold_);
-            printf("/* Max Planning Iterations: %d */\n", h_maxIterations_);
+            printf("/* Workspace Size: %f */\n", WS_SIZE);
+            printf("/* Discretization steps in trajectory: %d */\n", NUM_DISC);
+            printf("/* Max Tree Size: %d */\n", MAX_TREE_SIZE);
+            printf("/* Goal Distance Threshold: %f */\n", GOAL_THRESH);
+            printf("/* Max Planning Iterations: %d */\n", MAX_ITER);
         }
+}
+
+__global__ void initializeRandomSeeds_kernel(curandState* randomSeeds, int numSeeds, int seed)
+{
+    int tid = threadIdx.x + blockIdx.x * blockDim.x;
+    if(tid < numSeeds)
+        {
+            curand_init(seed, tid, 0, &randomSeeds[tid]);
+        }
+}
+
+void Planner::initializeRandomSeeds(int seed)
+{
+    int blockSize = 512;  // TODO: Check if this is the optimal block size
+    initializeRandomSeeds_kernel<<<iDivUp(MAX_TREE_SIZE, blockSize), blockSize>>>(d_randomSeeds_ptr_, MAX_TREE_SIZE, seed);
 }
