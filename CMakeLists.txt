@@ -28,6 +28,7 @@ set(SOURCE_FILES
     src/collisionCheck/collisionCheck.cu
     src/graphs/Graph.cu
     src/helper/helper.cu
+    src/statePropagator/statePropagator.cu
 )
 
 # Add a library target for your non-CUDA code

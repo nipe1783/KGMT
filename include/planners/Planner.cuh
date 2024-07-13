@@ -7,24 +7,35 @@
 #include <thrust/device_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/constant_iterator.h>
+#include <curand_kernel.h>
 #include "helper/helper.cuh"
+#include "statePropagator/statePropagator.cuh"
 
 class Planner
 {
 public:
     /**************************** CONSTRUCTORS ****************************/
-    Planner() = default;
-    Planner(const float h_ws, int numDisc = 10, int maxTreeSize = 30000, float goalThreshold = 0.5, int maxIterations = 100);
+    Planner();
 
     /****************************    METHODS    ****************************/
-    virtual void plan(float* h_initial, float* h_goal) = 0;
+    virtual void plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount) = 0;
+    void initializeRandomSeeds(int seed);
 
     /****************************    FIELDS    ****************************/
     // --- host fields ---
-    float h_ws_, h_goalThreshold_;
-    int h_numDisc_, h_maxTreeSize_, h_maxIterations_, h_treeSize_ = 0;
+    uint h_treeSize_ = 0;
 
     // --- device fields ---
     thrust::device_vector<float> d_treeSamples_;
     float* d_treeSamples_ptr_;
+
+    curandState* d_randomSeeds_ptr_;
 };
+
+/**************************** DEVICE FUNCTIONS ****************************/
+
+/***************************/
+/* INIT RANDOM SEEDS KERNEL */
+/***************************/
+// --- used to generate random values when propagating frontier on GPU. ---
+__global__ void initializeRandomSeeds_kernel(curandState* randomSeeds, int numSeeds, int seed);
