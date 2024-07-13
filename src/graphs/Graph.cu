@@ -3,8 +3,6 @@
 
 Graph::Graph(const float ws)
 {
-    h_r1Size_ = ws / R1;
-    h_r2Size_ = ws / (R1 * R2);
     h_numEdges_ = (DIM == 2) ? pow(R1, 2) * 4 : pow(R1, 3) * 6;
     h_vertexArray_.resize((DIM == 2) ? pow(R1, 2) : pow(R1, 3));
     constructVertexArray();
@@ -51,16 +49,18 @@ Graph::Graph(const float ws)
     //             }
     //     }
 
-    d_activeVertices_ = thrust::device_vector<int>(NUM_R1_VERTICES);
-    d_validCounterArray_ = thrust::device_vector<int>(NUM_R1_VERTICES);
-    d_counterArray_ = thrust::device_vector<int>(NUM_R1_VERTICES);
-    d_vertexScoreArray_ = thrust::device_vector<float>(NUM_R1_VERTICES);
+    d_activeVertices_        = thrust::device_vector<int>(NUM_R1_VERTICES);
+    d_activeSubVertices_     = thrust::device_vector<int>(NUM_R2_VERTICES);
+    d_validCounterArray_     = thrust::device_vector<int>(NUM_R1_VERTICES);
+    d_counterArray_          = thrust::device_vector<int>(NUM_R1_VERTICES);
+    d_vertexScoreArray_      = thrust::device_vector<float>(NUM_R1_VERTICES);
     d_activeVerticesScanIdx_ = thrust::device_vector<int>(NUM_R1_VERTICES);
 
-    d_activeVertices_ptr_ = thrust::raw_pointer_cast(d_activeVertices_.data());
+    d_activeVertices_ptr_    = thrust::raw_pointer_cast(d_activeVertices_.data());
+    d_activeSubVertices_ptr_ = thrust::raw_pointer_cast(d_activeSubVertices_.data());
     d_validCounterArray_ptr_ = thrust::raw_pointer_cast(d_validCounterArray_.data());
-    d_counterArray_ptr_ = thrust::raw_pointer_cast(d_counterArray_.data());
-    d_vertexScoreArray_ptr_ = thrust::raw_pointer_cast(d_vertexScoreArray_.data());
+    d_counterArray_ptr_      = thrust::raw_pointer_cast(d_counterArray_.data());
+    d_vertexScoreArray_ptr_  = thrust::raw_pointer_cast(d_vertexScoreArray_.data());
 }
 
 void Graph::constructVertexArray()
@@ -72,7 +72,7 @@ void Graph::constructVertexArray()
                 {
                     for(int k = 0; k < (DIM == 3 ? R1 : 1); ++k)
                         {
-                            int currentNode = (DIM == 2) ? i * R1 + j : (i * R1 * R1) + (j * R1) + k;
+                            int currentNode             = (DIM == 2) ? i * R1 + j : (i * R1 * R1) + (j * R1) + k;
                             h_vertexArray_[currentNode] = edgeIdx;
 
                             // Calculate the number of edges for the current node
@@ -188,10 +188,10 @@ void Graph::constructToVertices()
         }
 }
 
-__host__ __device__ int getVertex(float x, float y, float r1Size)
+__host__ __device__ int getVertex(float x, float y)
 {
-    int cellX = static_cast<int>(x / r1Size);
-    int cellY = static_cast<int>(y / r1Size);
+    int cellX = static_cast<int>(x / R1_SIZE);
+    int cellY = static_cast<int>(y / R1_SIZE);
 
     if(cellX >= 0 && cellX < R1 && cellY >= 0 && cellY < R1)
         {
@@ -200,11 +200,11 @@ __host__ __device__ int getVertex(float x, float y, float r1Size)
     return -1;
 }
 
-__host__ __device__ int getVertex(float x, float y, float z, float r1Size)
+__host__ __device__ int getVertex(float x, float y, float z)
 {
-    int cellX = static_cast<int>(x / r1Size);
-    int cellY = static_cast<int>(y / r1Size);
-    int cellZ = static_cast<int>(z / r1Size);
+    int cellX = static_cast<int>(x / R1_SIZE);
+    int cellY = static_cast<int>(y / R1_SIZE);
+    int cellZ = static_cast<int>(z / R1_SIZE);
 
     if(cellX >= 0 && cellX < R1 && cellY >= 0 && cellY < R1 && (cellZ >= 0 && cellZ < R1))
         {
@@ -213,15 +213,12 @@ __host__ __device__ int getVertex(float x, float y, float z, float r1Size)
     return -1;
 }
 
-__host__ __device__ int getSubVertex(float x, float y, int r1, float r1Size, float r2Size)
+__host__ __device__ int getSubVertex(float x, float y, int r1)
 {
-    if(r1 == -1)
-        {
-            return -1;
-        }
+    if(r1 == -1) return -1;
 
-    int cellX_R2 = static_cast<int>((x - (r1 % R1) * r1Size) / r2Size);
-    int cellY_R2 = static_cast<int>((y - (r1 / R1) * r1Size) / r2Size);
+    int cellX_R2 = static_cast<int>((x - (r1 % R1) * R1_SIZE) / R2_SIZE);
+    int cellY_R2 = static_cast<int>((y - (r1 / R1) * R1_SIZE) / R2_SIZE);
     if(cellX_R2 >= 0 && cellX_R2 < R2 && cellY_R2 >= 0 && cellY_R2 < R2)
         {
             return r1 * (R2 * R2) + (cellY_R2 * R2 + cellX_R2);
@@ -229,16 +226,13 @@ __host__ __device__ int getSubVertex(float x, float y, int r1, float r1Size, flo
     return -1;
 }
 
-__host__ __device__ int getSubVertex(float x, float y, float z, int r1, float r1Size, float r2Size)
+__host__ __device__ int getSubVertex(float x, float y, float z, int r1)
 {
-    if(r1 == -1)
-        {
-            return -1;
-        }
+    if(r1 == -1) return -1;
 
-    int cellX_R2 = static_cast<int>((x - (r1 / (R1 * R1)) * r1Size) / r2Size);
-    int cellY_R2 = static_cast<int>((y - ((r1 / R1) % R1) * r1Size) / r2Size);
-    int cellZ_R2 = static_cast<int>((z - (r1 % R1) * r1Size) / r2Size);
+    int cellX_R2 = static_cast<int>((x - (r1 / (R1 * R1)) * R1_SIZE) / R2_SIZE);
+    int cellY_R2 = static_cast<int>((y - ((r1 / R1) % R1) * R1_SIZE) / R2_SIZE);
+    int cellZ_R2 = static_cast<int>((z - (r1 % R1) * R1_SIZE) / R2_SIZE);
     if(cellX_R2 >= 0 && cellX_R2 < R2 && cellY_R2 >= 0 && cellY_R2 < R2 && cellZ_R2 >= 0 && cellZ_R2 < R2)
         {
             return r1 * (R2 * R2 * R2) + ((cellY_R2 * R2 + cellX_R2) * R2 + cellZ_R2);
@@ -253,7 +247,7 @@ __host__ __device__ int hashEdge(int key, int size)
 
 __host__ __device__ int getEdge(int fromVertex, int toVertex, int* hashTable, int numEdges)
 {
-    int key = fromVertex * 100000 + toVertex;
+    int key  = fromVertex * 100000 + toVertex;
     int hash = hashEdge(key, numEdges);
     while(hashTable[2 * hash] != key)
         {
@@ -274,10 +268,7 @@ __global__ void updateVertices_kernel(float* vertexScoreArray, int* activeVertic
                                       int* counterArray, int numActiveVertices, float* vertexScores, float* sampleScoreThreshold)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
-    if(tid >= NUM_R1_VERTICES)
-        {
-            return;
-        }
+    if(tid >= NUM_R1_VERTICES) return;
 
     __shared__ float s_totalScore;
     float score = 0.0;
@@ -285,7 +276,7 @@ __global__ void updateVertices_kernel(float* vertexScoreArray, int* activeVertic
     if(activeVertices[tid] != 0)
         {
             int numValidSamples = validCounterArray[tid];
-            float coverage = 0;
+            float coverage      = 0;
             // --- Thread loops through all sub vertices to determine vertex coverage. ---
             for(int i = tid * R2_PER_R1; i < (tid + 1) * R2_PER_R1; ++i)
                 {
@@ -304,7 +295,7 @@ __global__ void updateVertices_kernel(float* vertexScoreArray, int* activeVertic
 
     if(threadIdx.x == 0)
         {
-            s_totalScore = blockSum;
+            s_totalScore            = blockSum;
             sampleScoreThreshold[0] = s_totalScore / numActiveVertices;
         }
     __syncthreads();

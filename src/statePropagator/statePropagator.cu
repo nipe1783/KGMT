@@ -65,7 +65,8 @@ __device__ bool propagateAndCheckUnicycle(float* x0, float* x1, curandState* see
             if(!motionValid) break;
         }
 
-    return true;
+    x1[0] = x, x1[1] = y, x1[2] = theta, x1[3] = v, x1[4] = a, x1[5] = steering, x1[6] = duration;
+    return motionValid;
 }
 
 /***************************/

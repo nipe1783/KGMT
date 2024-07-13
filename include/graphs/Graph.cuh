@@ -18,7 +18,6 @@ public:
 
     // --- host fields ---
     int h_numEdges_, h_numActiveVertices_;
-    float h_r1Size_, h_r2Size_;
     std::vector<int> h_fromVertices_, h_toVertices_, h_vertexArray_, h_edgeArray_, h_weightArray_;
 
     // --- device fields ---
@@ -40,12 +39,12 @@ private:
 
 /**************************** DEVICE FUNCTIONS ****************************/
 // --- Given an x, y, z point. Returns the vertex on the graph the point belongs to ---
-__host__ __device__ int getVertex(float x, float y, float r1Size);
-__host__ __device__ int getVertex(float x, float y, float z, float r1Size);
+__host__ __device__ int getVertex(float x, float y);
+__host__ __device__ int getVertex(float x, float y, float z);
 
 // --- Given an x, y, z point. Returns the sub vertex that the point belongs to. ---
-__host__ __device__ int getSubVertex(float x, float y, int r1, float r1Size, float r2Size);
-__host__ __device__ int getSubVertex(float x, float y, float z, int r1, float r1Size, float r2Size);
+__host__ __device__ int getSubVertex(float x, float y, int r1);
+__host__ __device__ int getSubVertex(float x, float y, float z, int r1);
 
 // --- Given two graph vertices, Returns which edge of the graph it corresponds to. ---
 __host__ __device__ int getEdge(int fromVertex, int toVertex, int* hashTable, int numEdges);
