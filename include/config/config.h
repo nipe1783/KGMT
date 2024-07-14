@@ -9,7 +9,7 @@
 #define MODEL 0
 #define MAX_TREE_SIZE 30000
 #define GOAL_THRESH 0.1f
-#define MAX_ITER 1
+#define MAX_ITER 10
 
 // --- UNICYCLE MODEL: MODEL 0 ---
 #define UNI_MIN_ACC -1.0f
