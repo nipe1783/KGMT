@@ -18,6 +18,7 @@
 #define UNI_MAX_STEERING M_PI / 2
 #define UNI_MIN_DT 0.1f
 #define UNI_MAX_DT 2.0f
+#define UNI_LENGTH 1.0f
 
 // --- DUBINS MODEL: MODEL 1 ---
 // TODO: Implement Dubins model
