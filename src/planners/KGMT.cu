@@ -24,7 +24,7 @@ KGMT::KGMT()
     d_frontierScanIdx_ptr_             = thrust::raw_pointer_cast(d_frontierScanIdx_.data());
     d_goalSample_ptr_                  = thrust::raw_pointer_cast(d_goalSample_.data());
 
-    h_activeBlockSize_ = 32;
+    h_activeBlockSize_ = 128;
 
     if(VERBOSE)
         {
@@ -51,8 +51,10 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
         {
             h_itr_++;
             graph_.updateVertices(d_sampleScoreThreshold_ptr_);
+            printf("Iteration %d, Tree size %d, New Frontier Size %d\n", h_itr_, h_treeSize_, h_frontierNextSize_);
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
             updateFrontier();
+            writeDeviceVectorsToCSV();
             if(h_costToGoal_ != 0)
                 {
                     printf("Goal Reached: %f\n", h_costToGoal_);
@@ -78,11 +80,12 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
     findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_frontier_ptr_, d_frontierScanIdx_ptr_, d_activeFrontierIdxs_ptr_);
 
     int gridSize = iDivUp(h_frontierSize_ * h_activeBlockSize_, h_activeBlockSize_);
-    if(h_activeBlockSize_ * gridSize > MAX_TREE_SIZE - h_treeSize_)
+    if(h_activeBlockSize_ * gridSize > (MAX_TREE_SIZE - h_treeSize_))
         {
-            int remaining  = MAX_TREE_SIZE - h_treeSize_;
-            int iterations = int(float(remaining) / float(h_frontierSize_));
+            printf("V2 Propagation\n");
+            int iterations = std::min(int(float(MAX_TREE_SIZE - h_treeSize_) / float(h_frontierSize_)), int(h_activeBlockSize_));
             gridSize       = int(floor(MAX_TREE_SIZE / h_activeBlockSize_));
+            // --- Propagate Frontier. One thread per sample. Iterates n times. ---
             propagateFrontier_kernel2<<<gridSize, h_activeBlockSize_>>>(
               d_activeFrontierIdxs_ptr_, d_frontier_ptr_, d_treeSamples_ptr_, iterations, d_unexploredSamples_ptr_,
               d_unexploredSamplesParentIdxs_ptr_, d_randomSeeds_ptr_, d_obstacles_ptr, h_obstaclesCount, graph_.d_counterArray_ptr_,
@@ -91,6 +94,7 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
         }
     else
         {
+            printf("V1 Propagation\n");
             // --- Propagate Frontier. Block Size threads per sample. ---
             propagateFrontier_kernel1<<<gridSize, h_activeBlockSize_>>>(
               d_frontier_ptr_, d_activeFrontierIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierSize_, d_randomSeeds_ptr_,
@@ -140,7 +144,8 @@ __global__ void propagateFrontier_kernel1(bool* frontier, uint* activeFrontierId
     if(valid)
         {
             atomicAdd(&validVertexCounter[x1Vertex], 1);
-            if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || activeSubVertices[x1SubVertex] == 0) frontierNext[tid] = true;
+            // if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || activeSubVertices[x1SubVertex] == 0) frontierNext[tid] = true;
+            if(activeSubVertices[x1SubVertex] == 0) frontierNext[tid] = true;
             if(activeVertices[x1Vertex] == 0) atomicExch(&activeVertices[x1Vertex], 1);
             if(activeSubVertices[x1SubVertex] == 0) atomicExch(&activeSubVertices[x1SubVertex], 1);
         }
@@ -180,8 +185,9 @@ __global__ void propagateFrontier_kernel2(uint* activeFrontierIdxs, bool* fronti
             if(valid)
                 {
                     atomicAdd(&validVertexCounter[x1Vertex], 1);
-                    if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || activeSubVertices[x1SubVertex] == 0)
-                        frontierNext[x1Idx] = true;
+                    // if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || activeSubVertices[x1SubVertex] == 0)
+                    //     frontierNext[x1Idx] = true;
+                    if(activeSubVertices[x1SubVertex] == 0) frontierNext[x1Idx] = true;
                     if(activeVertices[x1Vertex] == 0) atomicExch(&activeVertices[x1Vertex], 1);
                     if(activeSubVertices[x1SubVertex] == 0) atomicExch(&activeSubVertices[x1SubVertex], 1);
                 }
