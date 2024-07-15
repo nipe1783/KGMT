@@ -36,7 +36,7 @@ __device__ bool propagateAndCheckUnicycle(float* x0, float* x1, curandState* see
             // --- State Propagation ---
             x += v * cosTheta * dt;
             y += v * sinTheta * dt;
-            theta += v * tanSteering * dt;
+            theta += (v / UNI_LENGTH) * tanSteering * dt;
             v += a * dt;
             float x1State[DIM] = {x, y};
 
@@ -52,16 +52,17 @@ __device__ bool propagateAndCheckUnicycle(float* x0, float* x1, curandState* see
                 {
                     if(x0State[d] > x1State[d])
                         {
-                            bbMin[d] = x0State[d];
-                            bbMax[d] = x1State[d];
-                        }
-                    else
-                        {
                             bbMin[d] = x1State[d];
                             bbMax[d] = x0State[d];
                         }
+                    else
+                        {
+                            bbMin[d] = x0State[d];
+                            bbMax[d] = x1State[d];
+                        }
                 }
-            motionValid = isMotionValid(x0State, x1State, bbMin, bbMax, obstacles, obstaclesCount);
+
+            motionValid = motionValid && isMotionValid(x0State, x1State, bbMin, bbMax, obstacles, obstaclesCount);
             if(!motionValid) break;
         }
 
