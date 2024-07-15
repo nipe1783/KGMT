@@ -2,7 +2,7 @@
 #include "planners/KGMT.cuh"
 int main(void)
 {
-    float h_initial[SAMPLE_DIM] = {.5, .5, 0.0, 0.0, 0.0, 0.0, 0.0}, h_goal[SAMPLE_DIM] = {10, 10, 0.0, 0.0, 0.0, 0.0, 0.0};
+    float h_initial[SAMPLE_DIM] = {.5, .5, 0.0, 0.0, 0.0, 0.0, 0.0}, h_goal[SAMPLE_DIM] = {2, 18, 0.0, 0.0, 0.0, 0.0, 0.0};
     KGMT kgmt;
 
     // TODO: clean this up

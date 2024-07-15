@@ -16,6 +16,8 @@ Planner::Planner()
     cudaMalloc(&d_randomSeeds_ptr_, MAX_TREE_SIZE * sizeof(curandState));
     thrust::fill(d_treeSamplesParentIdxs_.begin(), d_treeSamplesParentIdxs_.end(), -1);
 
+    cudaMalloc(&d_costToGoal_ptr_, sizeof(float));
+
     if(VERBOSE)
         {
             printf("/***************************/\n");
