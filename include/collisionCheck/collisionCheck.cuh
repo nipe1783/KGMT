@@ -1,5 +1,6 @@
 #pragma once
 #include <stdio.h>
+#include "config/config.h"
 
 /***************************/
 /* BroadPhase CC FUNCTION */
