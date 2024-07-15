@@ -16,38 +16,6 @@ Graph::Graph(const float ws)
             printf("/* Number of Edges: %d */\n", h_numEdges_);
             printf("/***************************/\n");
         }
-    // TODO: Delete Comments
-    // if(VERBOSE)
-    //     {
-    //         printf("/***************************/\n");
-    //         printf("/* Vertex Array */\n");
-    //         for(int i = 0; i < h_vertexArray_.size(); ++i)
-    //             {
-    //                 printf("Vertex %d: %d\n", i, h_vertexArray_[i]);
-    //             }
-    //         printf("/***************************/\n");
-    //     }
-
-    // if(VERBOSE)
-    //     {
-    //         printf("/***************************/\n");
-    //         printf("/* Edge Array */\n");
-    //         for(int i = 0; i < h_edgeArray_.size(); ++i)
-    //             {
-    //                 printf("Edge %d: %d\n", i, h_edgeArray_[i]);
-    //             }
-    //         printf("/***************************/\n");
-    //     }
-
-    // if(VERBOSE)
-    //     {
-    //         printf("/***************************/\n");
-    //         printf("/* From->To Vertices */\n");
-    //         for(int i = 0; i < h_fromVertices_.size(); ++i)
-    //             {
-    //                 printf("From Vertex %d: To Vertex %d\n", h_fromVertices_[i], h_toVertices_[i]);
-    //             }
-    //     }
 
     d_activeVertices_        = thrust::device_vector<int>(NUM_R1_VERTICES);
     d_activeSubVertices_     = thrust::device_vector<int>(NUM_R2_VERTICES);
@@ -205,7 +173,6 @@ __host__ __device__ int getVertex(float x, float y, float z)
     int cellX = static_cast<int>(x / R1_SIZE);
     int cellY = static_cast<int>(y / R1_SIZE);
     int cellZ = static_cast<int>(z / R1_SIZE);
-
     if(cellX >= 0 && cellX < R1 && cellY >= 0 && cellY < R1 && (cellZ >= 0 && cellZ < R1))
         {
             return (cellY * R1 + cellX) * R1 + cellZ;
@@ -216,7 +183,6 @@ __host__ __device__ int getVertex(float x, float y, float z)
 __host__ __device__ int getSubVertex(float x, float y, int r1)
 {
     if(r1 == -1) return -1;
-
     int cellX_R2 = static_cast<int>((x - (r1 % R1) * R1_SIZE) / R2_SIZE);
     int cellY_R2 = static_cast<int>((y - (r1 / R1) * R1_SIZE) / R2_SIZE);
     if(cellX_R2 >= 0 && cellX_R2 < R2 && cellY_R2 >= 0 && cellY_R2 < R2)
@@ -230,12 +196,21 @@ __host__ __device__ int getSubVertex(float x, float y, float z, int r1)
 {
     if(r1 == -1) return -1;
 
-    int cellX_R2 = static_cast<int>((x - (r1 / (R1 * R1)) * R1_SIZE) / R2_SIZE);
-    int cellY_R2 = static_cast<int>((y - ((r1 / R1) % R1) * R1_SIZE) / R2_SIZE);
-    int cellZ_R2 = static_cast<int>((z - (r1 % R1) * R1_SIZE) / R2_SIZE);
+    // Calculate base cell coordinates in the R1 grid
+    int cellY_base = r1 / (R1 * R1);
+    int cellX_base = (r1 / R1) % R1;
+    int cellZ_base = r1 % R1;
+
+    // Calculate sub-cell coordinates within the R1 cell
+    int cellX_R2 = static_cast<int>((x - cellX_base * R1_SIZE) / R2_SIZE);
+    int cellY_R2 = static_cast<int>((y - cellY_base * R1_SIZE) / R2_SIZE);
+    int cellZ_R2 = static_cast<int>((z - cellZ_base * R1_SIZE) / R2_SIZE);
+
+    // Check if the sub-cell coordinates are within valid bounds
     if(cellX_R2 >= 0 && cellX_R2 < R2 && cellY_R2 >= 0 && cellY_R2 < R2 && cellZ_R2 >= 0 && cellZ_R2 < R2)
         {
-            return r1 * (R2 * R2 * R2) + ((cellY_R2 * R2 + cellX_R2) * R2 + cellZ_R2);
+            // Return the flattened index of the sub-cell
+            return r1 * (R2 * R2 * R2) + (cellZ_R2 * R2 * R2) + (cellY_R2 * R2) + cellX_R2;
         }
     return -1;
 }
