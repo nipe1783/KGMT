@@ -9,6 +9,7 @@ find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(Python3 COMPONENTS Development NumPy REQUIRED)
+find_package(ompl REQUIRED)
 
 include_directories(
     include 
@@ -19,6 +20,7 @@ include_directories(
     ${Python3_INCLUDE_DIRS}
     ${Python3_NumPy_INCLUDE_DIRS}
     ${YAML_CPP_INCLUDE_DIR}
+    ${OMPL_INCLUDE_DIRS}
 )
 
 # Add the source files for your project
@@ -29,6 +31,8 @@ set(SOURCE_FILES
     src/graphs/Graph.cu
     src/helper/helper.cu
     src/statePropagator/statePropagator.cu
+    src/cpu/collisionCheck/CollisionCheck.cpp
+    src/cpu/planners/EST_6DI.cpp
 )
 
 # Add a library target for your non-CUDA code
@@ -46,6 +50,19 @@ target_link_libraries(main
     yaml-cpp
     Python3::Python
     Python3::NumPy
+)
+
+add_executable(est_cpu examples/est_cpu.cpp)
+
+# Link the library and other dependencies with the CUDA executable
+target_link_libraries(est_cpu
+    KGMT_lib
+    ${Boost_LIBRARIES}
+    ${EIGEN3_LIBRARIES}
+    yaml-cpp
+    Python3::Python
+    Python3::NumPy
+    ${OMPL_LIBRARIES}
 )
 
 # Ensure CUDA separable compilation

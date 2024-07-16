@@ -51,10 +51,10 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
         {
             h_itr_++;
             graph_.updateVertices(d_sampleScoreThreshold_ptr_);
-            printf("Iteration %d, Tree size %d, New Frontier Size %d\n", h_itr_, h_treeSize_, h_frontierNextSize_);
+            // printf("Iteration %d, Tree size %d, New Frontier Size %d\n", h_itr_, h_treeSize_, h_frontierNextSize_);
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
             updateFrontier();
-            writeDeviceVectorsToCSV();
+            // writeDeviceVectorsToCSV();
             if(h_costToGoal_ != 0)
                 {
                     printf("Goal Reached: %f\n", h_costToGoal_);
@@ -82,7 +82,6 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
     int gridSize = iDivUp(h_frontierSize_ * h_activeBlockSize_, h_activeBlockSize_);
     if(h_activeBlockSize_ * gridSize > (MAX_TREE_SIZE - h_treeSize_))
         {
-            printf("V2 Propagation\n");
             int iterations = std::min(int(float(MAX_TREE_SIZE - h_treeSize_) / float(h_frontierSize_)), int(h_activeBlockSize_));
             gridSize       = int(floor(MAX_TREE_SIZE / h_activeBlockSize_));
             // --- Propagate Frontier. One thread per sample. Iterates n times. ---
@@ -94,7 +93,6 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
         }
     else
         {
-            printf("V1 Propagation\n");
             // --- Propagate Frontier. Block Size threads per sample. ---
             propagateFrontier_kernel1<<<gridSize, h_activeBlockSize_>>>(
               d_frontier_ptr_, d_activeFrontierIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierSize_, d_randomSeeds_ptr_,
