@@ -1,13 +1,13 @@
 #pragma once
 
-#define DIM 2
-#define R1 16
-#define R2 8
-#define SAMPLE_DIM 7
+#define DIM 3
+#define R1 8
+#define R2 4
+#define SAMPLE_DIM 10
 #define NUM_DISC 10
 #define WS_SIZE 20.0f
-#define MODEL 0
-#define MAX_TREE_SIZE 30000
+#define MODEL 1
+#define MAX_TREE_SIZE 50000
 #define GOAL_THRESH 0.5f
 #define MAX_ITER 100
 
@@ -20,8 +20,21 @@
 #define UNI_MAX_DT 2.0f
 #define UNI_LENGTH 1.0f
 
-// --- DUBINS MODEL: MODEL 1 ---
-// TODO: Implement Dubins model
+// --- DOUBLE INTEGRATOR: MODEL 1 ---
+#define DI_MIN_VEL_X -10.0f
+#define DI_MAX_VEL_X 10.0f
+#define DI_MIN_VEL_Y -10.0f
+#define DI_MAX_VEL_Y 10.0f
+#define DI_MIN_VEL_Z -10.0f
+#define DI_MAX_VEL_Z 10.0f
+#define DI_MIN_ACC_X -4.0f
+#define DI_MAX_ACC_X 4.0f
+#define DI_MIN_ACC_Y -4.0f
+#define DI_MAX_ACC_Y 4.0f
+#define DI_MIN_ACC_Z -4.0f
+#define DI_MAX_ACC_Z 4.0f
+#define DI_MIN_DT 0.1f
+#define DI_MAX_DT 2.0f
 
 #define NUM_R1_VERTICES ((DIM == 3) ? (R1 * R1 * R1) : (R1 * R1))
 #define NUM_R2_VERTICES ((DIM == 3) ? (R1 * R1 * R1 * R2 * R2 * R2) : (R1 * R1 * R2 * R2))

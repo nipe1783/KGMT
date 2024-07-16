@@ -71,15 +71,66 @@ __device__ bool propagateAndCheckUnicycle(float* x0, float* x1, curandState* see
 }
 
 /***************************/
-/* DUBINS PROPAGATION FUNCTION */
+/* DOUBLE INTEGRATOR PROPAGATION FUNCTION */
 /***************************/
-__device__ bool propagateAndCheckDubins(float* x0, float* x1, curandState* seed, float* obstacles, int obstaclesCount)
+__device__ bool propagateAndCheckDoubleInt(float* x0, float* x1, curandState* seed, float* obstacles, int obstaclesCount)
 {
-    printf("/***************************/\n");
-    printf("/* DUBINS: TODO */\n");
-    printf("/***************************/\n");
-    // TODO: Implement Dubins
-    return true;
+    float ax       = DI_MIN_ACC_X + curand_uniform(seed) * (DI_MAX_ACC_X - DI_MIN_ACC_X);
+    float ay       = DI_MIN_ACC_Y + curand_uniform(seed) * (DI_MAX_ACC_Y - DI_MIN_ACC_Y);
+    float az       = DI_MIN_ACC_Z + curand_uniform(seed) * (DI_MAX_ACC_Z - DI_MIN_ACC_Z);
+    float duration = DI_MIN_DT + curand_uniform(seed) * (DI_MAX_DT - DI_MIN_DT);
+    float dt       = duration / NUM_DISC;
+
+    float x  = x0[0];
+    float y  = x0[1];
+    float z  = x0[2];
+    float vx = x0[3];
+    float vy = x0[4];
+    float vz = x0[5];
+
+    bool motionValid = true;
+    float bbMin[DIM], bbMax[DIM];
+    for(int i = 0; i < NUM_DISC; i++)
+        {
+            float x0State[DIM] = {x, y, z};
+
+            // --- State Propagation ---
+            x += vx * dt;
+            y += vy * dt;
+            z += vz * dt;
+            vx += ax * dt;
+            vy += ay * dt;
+            vz += az * dt;
+            float x1State[DIM] = {x, y, z};
+
+            // --- Workspace Limit Check ---
+            if(x < 0 || x > WS_SIZE || y < 0 || y > WS_SIZE || z < 0 || z > WS_SIZE)
+                {
+                    motionValid = false;
+                    break;
+                }
+
+            // --- Obstacle Collision Check ---
+            for(int d = 0; d < DIM; d++)
+                {
+                    if(x0State[d] > x1State[d])
+                        {
+                            bbMin[d] = x1State[d];
+                            bbMax[d] = x0State[d];
+                        }
+                    else
+                        {
+                            bbMin[d] = x0State[d];
+                            bbMax[d] = x1State[d];
+                        }
+                }
+
+            motionValid = motionValid && isMotionValid(x0State, x1State, bbMin, bbMax, obstacles, obstaclesCount);
+            if(!motionValid) break;
+        }
+
+    x1[0] = x, x1[1] = y, x1[2] = z, x1[3] = vx, x1[4] = vy, x1[5] = vz, x1[6] = ax, x1[7] = ay, x1[8] = az, x1[9] = duration;
+    return motionValid;
 }
 
 /***************************/
@@ -92,7 +143,7 @@ __device__ PropagateAndCheckFunc getPropagateAndCheckFunc()
             case 0:
                 return propagateAndCheckUnicycle;
             case 1:
-                return propagateAndCheckDubins;
+                return propagateAndCheckDoubleInt;
             default:
                 return nullptr;
         }
