@@ -10,7 +10,7 @@ __device__ void printSample(float* x, int sampleDim)
 }
 
 // Function to read obstacles from a CSV file
-__host__ std::vector<float> readObstaclesFromCSV(const std::string& filename, int& numObstacles, int workspaceDim)
+std::vector<float> readObstaclesFromCSV(const std::string& filename, int& numObstacles, int workspaceDim)
 {
     std::vector<float> obstacles;
     std::ifstream file(filename);

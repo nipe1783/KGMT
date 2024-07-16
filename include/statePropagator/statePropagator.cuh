@@ -6,7 +6,7 @@
 
 __device__ bool propagateAndCheck(float* x0, float* x1, curandState* seed, float* obstacles, int obstaclesCount);
 __device__ bool propagateAndCheckUnicycle(float* x0, float* x1, curandState* seed, float* obstacles, int obstaclesCount);
-__device__ bool propagateAndCheckDubins(float* x0, float* x1, curandState* seed, float* obstacles, int obstaclesCount);
+__device__ bool propagateAndCheckDoubleInt(float* x0, float* x1, curandState* seed, float* obstacles, int obstaclesCount);
 
 typedef bool (*PropagateAndCheckFunc)(float*, float*, curandState*, float*, int);
 
