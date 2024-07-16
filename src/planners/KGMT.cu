@@ -51,10 +51,9 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
         {
             h_itr_++;
             graph_.updateVertices(d_sampleScoreThreshold_ptr_);
-            // printf("Iteration %d, Tree size %d, New Frontier Size %d\n", h_itr_, h_treeSize_, h_frontierNextSize_);
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
             updateFrontier();
-            // writeDeviceVectorsToCSV();
+            writeDeviceVectorsToCSV();
             if(h_costToGoal_ != 0)
                 {
                     printf("Goal Reached: %f\n", h_costToGoal_);
@@ -142,8 +141,7 @@ __global__ void propagateFrontier_kernel1(bool* frontier, uint* activeFrontierId
     if(valid)
         {
             atomicAdd(&validVertexCounter[x1Vertex], 1);
-            // if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || activeSubVertices[x1SubVertex] == 0) frontierNext[tid] = true;
-            if(activeSubVertices[x1SubVertex] == 0) frontierNext[tid] = true;
+            if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || activeSubVertices[x1SubVertex] == 0) frontierNext[tid] = true;
             if(activeVertices[x1Vertex] == 0) atomicExch(&activeVertices[x1Vertex], 1);
             if(activeSubVertices[x1SubVertex] == 0) atomicExch(&activeSubVertices[x1SubVertex], 1);
         }
@@ -183,9 +181,8 @@ __global__ void propagateFrontier_kernel2(uint* activeFrontierIdxs, bool* fronti
             if(valid)
                 {
                     atomicAdd(&validVertexCounter[x1Vertex], 1);
-                    // if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || activeSubVertices[x1SubVertex] == 0)
-                    //     frontierNext[x1Idx] = true;
-                    if(activeSubVertices[x1SubVertex] == 0) frontierNext[x1Idx] = true;
+                    if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || activeSubVertices[x1SubVertex] == 0)
+                        frontierNext[x1Idx] = true;
                     if(activeVertices[x1Vertex] == 0) atomicExch(&activeVertices[x1Vertex], 1);
                     if(activeSubVertices[x1SubVertex] == 0) atomicExch(&activeSubVertices[x1SubVertex], 1);
                 }

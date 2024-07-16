@@ -7,3 +7,7 @@
 
 build/*
 .vscode/*
+
+# figures
+viz/figs/*
+!viz/figs/.gitkeep
