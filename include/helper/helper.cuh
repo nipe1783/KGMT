@@ -31,7 +31,7 @@ template <typename T>
 void printDeviceVector(const T* d_ptr, int size);
 
 __device__ void printSample(float* x, int sampleDim);
-__host__ std::vector<float> readObstaclesFromCSV(const std::string& filename, int& numObstacles, int workspaceDim);
+std::vector<float> readObstaclesFromCSV(const std::string& filename, int& numObstacles, int workspaceDim);
 
 template <typename T>
 void writeVectorToCSV(const thrust::host_vector<T>& vec, const std::string& filename, int rows, int cols);

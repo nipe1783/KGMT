@@ -7,7 +7,7 @@
 #define NUM_DISC 10
 #define WS_SIZE 20.0f
 #define MODEL 1
-#define MAX_TREE_SIZE 100000
+#define MAX_TREE_SIZE 50000
 #define GOAL_THRESH 0.5f
 #define MAX_ITER 100
 
@@ -21,6 +21,12 @@
 #define UNI_LENGTH 1.0f
 
 // --- DOUBLE INTEGRATOR: MODEL 1 ---
+#define DI_MIN_VEL_X -10.0f
+#define DI_MAX_VEL_X 10.0f
+#define DI_MIN_VEL_Y -10.0f
+#define DI_MAX_VEL_Y 10.0f
+#define DI_MIN_VEL_Z -10.0f
+#define DI_MAX_VEL_Z 10.0f
 #define DI_MIN_ACC_X -4.0f
 #define DI_MAX_ACC_X 4.0f
 #define DI_MIN_ACC_Y -4.0f
