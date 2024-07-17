@@ -7,6 +7,7 @@ numFiles = 1;
 width = 20.0;
 height = 20.0;
 depth = 20.0;
+radius = 0.05;
 N = 8;
 n = 4;
 R1_width = width / N;
@@ -19,12 +20,11 @@ numDisc = 10;
 sampleSize = 10;
 stateSize = 6;
 controlSize = 3;
-xGoal = [.8, .9, .9];
+xGoal = [.7, .95, .9];
 alphaValue = 0.1;
-radius = 0.05;
 
 % Obstacle file path
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/trees/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/pillars/obstacles.csv';
 obstacles = readmatrix(obstacleFilePath);
 
 for i = 1:numFiles
@@ -81,37 +81,37 @@ for i = 1:numFiles
     lighting gouraud;
 
     % Plot paths
-    % for j = 2:size(parentRelations, 1)
-    %     if parentRelations(j) == -1
-    %         break;
-    %     end
-    %     % x0 = samples((parentRelations(j) + 1), 1:stateSize);
-    %     % segmentX = [x0(1)];
-    %     % segmentY = [x0(2)];
-    %     % segmentZ = [x0(3)];
-    %     % u = samples(j, stateSize+1:sampleSize-1);
-    %     % duration = samples(j, sampleSize);
-    %     % dt = duration / numDisc;
-    %     % x = x0(1);
-    %     % y = x0(2);
-    %     % z = x0(3);
-    %     % vx = x0(4);
-    %     % vy = x0(5);
-    %     % vz = x0(6);
-    %     % for k = 1:(numDisc)
-    %     %     x = x + vx*dt;
-    %     %     y = y + vy*dt;
-    %     %     z = z + vz*dt;
-    %     %     vx = vx + u(1)*dt;
-    %     %     vy = vy + u(2)*dt;
-    %     %     vz = vz + u(3)*dt;
-    %     %     segmentX = [segmentX, x];
-    %     %     segmentY = [segmentY, y];
-    %     %     segmentZ = [segmentZ, z];
-    %     % end
-    %     % plot3(segmentX, segmentY, segmentZ, '-.', 'Color', 'k', 'LineWidth', 0.01);
-    %     plot3(samples(j, 1), samples(j, 2), samples(j, 3), 'bo', 'MarkerFaceColor', 'b', 'MarkerSize', 2);
-    % end
+    for j = 2:size(parentRelations, 1)
+        if parentRelations(j) == -1
+            break;
+        end
+        x0 = samples((parentRelations(j) + 1), 1:stateSize);
+        segmentX = [x0(1)];
+        segmentY = [x0(2)];
+        segmentZ = [x0(3)];
+        u = samples(j, stateSize+1:sampleSize-1);
+        duration = samples(j, sampleSize);
+        dt = duration / numDisc;
+        x = x0(1);
+        y = x0(2);
+        z = x0(3);
+        vx = x0(4);
+        vy = x0(5);
+        vz = x0(6);
+        for k = 1:(numDisc)
+            x = x + vx*dt;
+            y = y + vy*dt;
+            z = z + vz*dt;
+            vx = vx + u(1)*dt;
+            vy = vy + u(2)*dt;
+            vz = vz + u(3)*dt;
+            segmentX = [segmentX, x];
+            segmentY = [segmentY, y];
+            segmentZ = [segmentZ, z];
+        end
+        plot3(segmentX, segmentY, segmentZ, '-.', 'Color', 'k', 'LineWidth', 0.01);
+        plot3(samples(j, 1), samples(j, 2), samples(j, 3), 'bo', 'MarkerFaceColor', 'b', 'MarkerSize', 2);
+    end
 
     view(3);
     drawnow;

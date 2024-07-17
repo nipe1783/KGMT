@@ -3,7 +3,7 @@ clc
 clear all
 
 % Parameters
-numFiles = 7;
+numFiles = 6;
 width = 20.0;
 height = 20.0;
 depth = 20.0;
@@ -20,7 +20,7 @@ numDisc = 10;
 sampleSize = 10;
 stateSize = 6;
 controlSize = 3;
-xGoal = [.8, .9, .9];
+xGoal = [.7, .95, .9];
 alphaValue = 0.1;
 
 % Obstacle file path
@@ -72,7 +72,7 @@ for i = 1:numFiles
             4, 1, 5, 8;
             1, 2, 3, 4;
             5, 6, 7, 8];
-        patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', 0.4);
+        patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', 0.6);
     end
 
     % Add light source
@@ -114,8 +114,14 @@ for i = 1:numFiles
         plot3(samples(j, 1), samples(j, 2), samples(j, 3), 'bo', 'MarkerFaceColor', 'b', 'MarkerSize', 2);
     end
 
+    % Save original view
     view(3);
     drawnow;
-
     saveas(gcf, sprintf('figs/KGMT_Iteration_%d.jpg', i));
+
+    % Save top-down view
+    view(2);
+    drawnow;
+    saveas(gcf, sprintf('figs/top_KGMT_Iteration_%d.jpg', i));
 end
+
