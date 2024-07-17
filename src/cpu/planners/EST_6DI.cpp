@@ -120,8 +120,8 @@ ob::StateSpacePtr EST_6DI::createStateSpace() {
 
     // Set the bounds for the velocity space
     ob::RealVectorBounds velBounds(3);
-    velBounds.setLow(DI_MIN_VEL_X);
-    velBounds.setHigh(DI_MAX_VEL_X);
+    velBounds.setLow(DI_MIN_VEL);
+    velBounds.setHigh(DI_MAX_VEL);
     velocitySpace->setBounds(velBounds);
 
     return space;
@@ -133,8 +133,8 @@ oc::ControlSpacePtr EST_6DI::createControlSpace(ob::StateSpacePtr &space) {
    
    // set the bounds for the control space
     ob::RealVectorBounds cbounds(3);
-    cbounds.setLow(DI_MIN_ACC_X);
-    cbounds.setHigh(DI_MAX_ACC_X);
+    cbounds.setLow(DI_MIN_ACC);
+    cbounds.setHigh(DI_MAX_ACC);
     cspace->setBounds(cbounds);
     return cspace;
 }

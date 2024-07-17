@@ -75,9 +75,9 @@ __device__ bool propagateAndCheckUnicycle(float* x0, float* x1, curandState* see
 /***************************/
 __device__ bool propagateAndCheckDoubleInt(float* x0, float* x1, curandState* seed, float* obstacles, int obstaclesCount)
 {
-    float ax       = DI_MIN_ACC_X + curand_uniform(seed) * (DI_MAX_ACC_X - DI_MIN_ACC_X);
-    float ay       = DI_MIN_ACC_Y + curand_uniform(seed) * (DI_MAX_ACC_Y - DI_MIN_ACC_Y);
-    float az       = DI_MIN_ACC_Z + curand_uniform(seed) * (DI_MAX_ACC_Z - DI_MIN_ACC_Z);
+    float ax       = DI_MIN_ACC + curand_uniform(seed) * (DI_MAX_ACC - DI_MIN_ACC);
+    float ay       = DI_MIN_ACC + curand_uniform(seed) * (DI_MAX_ACC - DI_MIN_ACC);
+    float az       = DI_MIN_ACC + curand_uniform(seed) * (DI_MAX_ACC - DI_MIN_ACC);
     float duration = DI_MIN_DT + curand_uniform(seed) * (DI_MAX_DT - DI_MIN_DT);
     float dt       = duration / NUM_DISC;
 
