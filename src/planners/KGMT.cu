@@ -24,7 +24,7 @@ KGMT::KGMT()
     d_frontierScanIdx_ptr_             = thrust::raw_pointer_cast(d_frontierScanIdx_.data());
     d_goalSample_ptr_                  = thrust::raw_pointer_cast(d_goalSample_.data());
 
-    h_activeBlockSize_ = 128;
+    h_activeBlockSize_ = 32;
 
     if(VERBOSE)
         {
