@@ -41,7 +41,7 @@ __global__ void initializeRandomSeeds_kernel(curandState* randomSeeds, int numSe
 
 void Planner::initializeRandomSeeds(int seed)
 {
-    int blockSize = 512;  // TODO: Check if this is the optimal block size
+    int blockSize = 32;
     initializeRandomSeeds_kernel<<<iDivUp(MAX_TREE_SIZE, blockSize), blockSize>>>(d_randomSeeds_ptr_, MAX_TREE_SIZE, seed);
 }
 

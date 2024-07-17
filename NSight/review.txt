@@ -1,0 +1,1 @@
+sudo /opt/nvidia/nsight-compute/2024.2.1/target/linux-desktop-glibc_2_11_3-x64/ncu --config-file off --export /home/nicolas/dev/research/KGMT/NSight/review.txt --force-overwrite /home/nicolas/dev/research/KGMT/build/main
