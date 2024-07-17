@@ -3,11 +3,11 @@ clc
 clear all
 
 % Parameters
-numFiles = 12;
+numFiles = 7;
 width = 20.0;
 height = 20.0;
 depth = 20.0;
-radius = 0.5;
+radius = 0.05;
 N = 8;
 n = 4;
 R1_width = width / N;
@@ -20,11 +20,11 @@ numDisc = 10;
 sampleSize = 10;
 stateSize = 6;
 controlSize = 3;
-xGoal = [2, 19, 2];
+xGoal = [.8, .9, .9];
 alphaValue = 0.1;
 
 % Obstacle file path
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/trees/obstacles.csv';
 obstacles = readmatrix(obstacleFilePath);
 
 for i = 1:numFiles
@@ -48,7 +48,7 @@ for i = 1:numFiles
     surf(radius * X + xGoal(1), radius * Y + xGoal(2), radius * Z + xGoal(3), ...
          'FaceColor', 'g', 'FaceAlpha', 0.5, 'EdgeColor', 'none');
 
-    % Plot obstacles
+   % Plot obstacles
     for j = 1:size(obstacles, 1)
         x_min = obstacles(j, 1);
         y_min = obstacles(j, 2);
@@ -72,7 +72,7 @@ for i = 1:numFiles
             4, 1, 5, 8;
             1, 2, 3, 4;
             5, 6, 7, 8];
-        patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', 1.0);
+        patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', 0.4);
     end
 
     % Add light source
