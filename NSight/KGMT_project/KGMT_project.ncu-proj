@@ -1,6 +1,15 @@
 {
     "extension": "ncu-proj",
     "files": [
+        {
+            "path": "../../../../../Documents/NVIDIA Nsight Compute/report1.ncu-rep"
+        },
+        {
+            "path": "../../../../../Documents/NVIDIA Nsight Compute/report2.ncu-rep"
+        },
+        {
+            "path": "../../../../../Documents/NVIDIA Nsight Compute/report3.ncu-rep"
+        }
     ],
     "launcher": {
         "activity/interactiveprofile/cachecontrol": "Flush All",
@@ -31,14 +40,14 @@
         "activity/profile/graphprofiling": "Node",
         "activity/profile/importsource": false,
         "activity/profile/kernelid": "",
-        "activity/profile/kernelname": "",
+        "activity/profile/kernelname": "propagateFrontier_kernel2",
         "activity/profile/kernelnamebase": "Function",
         "activity/profile/kill": false,
-        "activity/profile/launchcapturecount": 0,
+        "activity/profile/launchcapturecount": 1,
         "activity/profile/launchskipbeforematchcount": 0,
         "activity/profile/launchskipcount": 0,
         "activity/profile/nvtxincludeexcludeoptions": "",
-        "activity/profile/outputfile": "",
+        "activity/profile/outputfile": "report%i",
         "activity/profile/pmsamplingbuffersize": 0,
         "activity/profile/pmsamplinginterval": 0,
         "activity/profile/pmsamplingmaxpasses": 0,

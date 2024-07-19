@@ -24,7 +24,7 @@ xGoal = [.0, .0, .0];
 alphaValue = 0.1;
 
 % Obstacle file path
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/pillars/obstacles.csv';
 obstacles = readmatrix(obstacleFilePath);
 
 for i = 1:numFiles
