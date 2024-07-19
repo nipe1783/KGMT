@@ -240,7 +240,8 @@ __host__ __device__ int getEdge(int fromVertex, int toVertex, int* hashTable, in
 /***************************/
 // --- Updates Vertex Scores for device graph vectors. Determines new threshold score for future samples in expansion set. ---
 __global__ void updateVertices_kernel(float* vertexScoreArray, int* activeVertices, int* activeSubVertices, int* validCounterArray,
-                                      int* counterArray, int numActiveVertices, float* vertexScores, float* sampleScoreThreshold)
+                                      int* counterArray, int numActiveVertices, float* vertexScores, float* sampleScoreThreshold,
+                                      int* updateGraphKeysCounter, int* updateGraphValidKeysCounter)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
     if(tid >= NUM_R1_VERTICES) return;
@@ -248,8 +249,13 @@ __global__ void updateVertices_kernel(float* vertexScoreArray, int* activeVertic
     __shared__ float s_totalScore;
     float score = 0.0;
 
-    if(activeVertices[tid] != 0)
+    counterArray[tid]                = counterArray[tid] + updateGraphKeysCounter[tid];
+    validCounterArray[tid]           = validCounterArray[tid] + updateGraphValidKeysCounter[tid];
+    updateGraphKeysCounter[tid]      = 0;
+    updateGraphValidKeysCounter[tid] = 0;
+    if(validCounterArray[tid] > 0)
         {
+            // int numValidSamples = validCounterArray[tid];
             int numValidSamples = validCounterArray[tid];
             float coverage      = 0;
             // --- Thread loops through all sub vertices to determine vertex coverage. ---
@@ -276,7 +282,7 @@ __global__ void updateVertices_kernel(float* vertexScoreArray, int* activeVertic
     __syncthreads();
 
     // --- Update vertex scores ---
-    if(activeVertices[tid] == 0)
+    if(validCounterArray[tid] == 0)
         {
             vertexScores[tid] = 1.0f;
         }
@@ -286,7 +292,7 @@ __global__ void updateVertices_kernel(float* vertexScoreArray, int* activeVertic
         }
 }
 
-void Graph::updateVertices(float* d_sampleScoreThreshold_ptr)
+void Graph::updateVertices(float* d_sampleScoreThreshold_ptr, int* d_updateGraphKeysCounter_ptr, int* d_updateGraphValidKeysCounter_ptr)
 {
     // --- Determine number of active vertices in graph ---
     thrust::exclusive_scan(d_activeVertices_.begin(), d_activeVertices_.end(), d_activeVerticesScanIdx_.begin(), 0, thrust::plus<int>());
@@ -295,5 +301,6 @@ void Graph::updateVertices(float* d_sampleScoreThreshold_ptr)
     // --- Update vertex scores and sampleScoreThreshold ---
     updateVertices_kernel<<<1, NUM_R1_VERTICES>>>(d_vertexScoreArray_ptr_, d_activeVertices_ptr_, d_activeSubVertices_ptr_,
                                                   d_validCounterArray_ptr_, d_counterArray_ptr_, h_numActiveVertices_,
-                                                  d_vertexScoreArray_ptr_, d_sampleScoreThreshold_ptr);
+                                                  d_vertexScoreArray_ptr_, d_sampleScoreThreshold_ptr, d_updateGraphKeysCounter_ptr,
+                                                  d_updateGraphValidKeysCounter_ptr);
 }

@@ -12,6 +12,8 @@ public:
     void plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount) override;
     void propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount);
     void updateFrontier();
+    void updateGraphTotalCount();
+    void updateGraphValidCount();
     void writeDeviceVectorsToCSV();
 
     /****************************    FIELDS    ****************************/
@@ -29,6 +31,27 @@ public:
     bool *d_frontier_ptr_, *d_frontierNext_ptr_;
     uint *d_activeFrontierIdxs_ptr_, *d_frontierScanIdx_ptr_;
     int* d_unexploredSamplesParentIdxs_ptr_;
+
+    // --- Graph Stuff Clean this ---
+    thrust::device_vector<int> d_unexploredSamplesVertices_;
+    int* d_unexploredSamplesVertices_ptr_;
+
+    thrust::device_vector<int> d_updateGraphCounter_, d_updateGraphKeys_, d_updateGraphKeysCounter_, d_updateGraphTempKeys_,
+      d_updateGraphTempKeysCounter_;
+
+    int *d_updateGraphCounter_ptr_, *d_updateGraphKeys_ptr_, *d_updateGraphKeysCounter_ptr_, *d_updateGraphTempKeys_ptr_,
+      *d_updateGraphTempKeysCounter_ptr_;
+
+    thrust::device_vector<int> d_unexploredSamplesValidVertices_;
+    int* d_unexploredSamplesValidVertices_ptr_;
+
+    thrust::device_vector<int> d_updateGraphValidCounter_, d_updateGraphValidKeys_, d_updateGraphValidKeysCounter_,
+      d_updateGraphValidTempKeys_, d_updateGraphValidTempKeysCounter_;
+
+    int *d_updateGraphValidCounter_ptr_, *d_updateGraphValidKeys_ptr_, *d_updateGraphValidKeysCounter_ptr_,
+      *d_updateGraphValidTempKeys_ptr_, *d_updateGraphValidTempKeysCounter_ptr_;
+
+    // --- End Graph Stuff ---
 };
 
 /**************************** DEVICE FUNCTIONS ****************************/
@@ -38,15 +61,17 @@ public:
 /***************************/
 // --- Propagates current frontier. Builds new frontier. ---
 // --- One Block Per Frontier Sample ---
-__global__ void propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples,
-                                          uint frontierSize, curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles,
-                                          int obstaclesCount, int* activeVertices, int* vertexCounter, int* activeSubVertices,
-                                          int* validVertexCounter, float* vertexScores, bool* frontierNext);
+__global__ void
+propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
+                          curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
+                          int* activeVertices, int* vertexCounter, int* activeSubVertices, int* validVertexCounter, float* vertexScores,
+                          bool* frontierNext, int* unexploredSamplesVertices, int* unexploredSamplesValidVertices);
 
-__global__ void propagateFrontier_kernel2(uint* activeFrontierIdxs, bool* frontier, float* treeSamples, int iterations,
-                                          float* unexploredSamples, int* unexploredSamplesParentIdxs, curandState* randomSeeds,
-                                          float* obstacles, int obstaclesCount, int* vertexCounter, int* validVertexCounter,
-                                          int* activeVertices, int* activeSubVertices, float* vertexScores, bool* frontierNext);
+__global__ void
+propagateFrontier_kernel2(uint* activeFrontierIdxs, bool* frontier, float* treeSamples, int iterations, float* unexploredSamples,
+                          int* unexploredSamplesParentIdxs, curandState* randomSeeds, float* obstacles, int obstaclesCount,
+                          int* vertexCounter, int* validVertexCounter, int* activeVertices, int* activeSubVertices, float* vertexScores,
+                          bool* frontierNext, int* unexploredSamplesVertices, int* unexploredSamplesValidVertices);
 
 __global__ void updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNextIdxs, uint frontierNextSize, float* xGoal,
                                       int treeSize, float* unexploredSamples, float* treeSamples, int* unexploredSamplesParentIdxs,
