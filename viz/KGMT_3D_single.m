@@ -20,11 +20,11 @@ numDisc = 10;
 sampleSize = 10;
 stateSize = 6;
 controlSize = 3;
-xGoal = [.7, .95, .9];
+xGoal = [.0, .0, .0];
 alphaValue = 0.1;
 
 % Obstacle file path
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/pillars/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/obstacles.csv';
 obstacles = readmatrix(obstacleFilePath);
 
 for i = 1:numFiles
@@ -85,34 +85,35 @@ for i = 1:numFiles
         if parentRelations(j) == -1
             break;
         end
-        x0 = samples((parentRelations(j) + 1), 1:stateSize);
-        segmentX = [x0(1)];
-        segmentY = [x0(2)];
-        segmentZ = [x0(3)];
-        u = samples(j, stateSize+1:sampleSize-1);
-        duration = samples(j, sampleSize);
-        dt = duration / numDisc;
-        x = x0(1);
-        y = x0(2);
-        z = x0(3);
-        vx = x0(4);
-        vy = x0(5);
-        vz = x0(6);
-        for k = 1:(numDisc)
-            x = x + vx*dt;
-            y = y + vy*dt;
-            z = z + vz*dt;
-            vx = vx + u(1)*dt;
-            vy = vy + u(2)*dt;
-            vz = vz + u(3)*dt;
-            segmentX = [segmentX, x];
-            segmentY = [segmentY, y];
-            segmentZ = [segmentZ, z];
-        end
-        plot3(segmentX, segmentY, segmentZ, '-.', 'Color', 'k', 'LineWidth', 0.01);
+        % x0 = samples((parentRelations(j) + 1), 1:stateSize);
+        % segmentX = [x0(1)];
+        % segmentY = [x0(2)];
+        % segmentZ = [x0(3)];
+        % u = samples(j, stateSize+1:sampleSize-1);
+        % duration = samples(j, sampleSize);
+        % dt = duration / numDisc;
+        % x = x0(1);
+        % y = x0(2);
+        % z = x0(3);
+        % vx = x0(4);
+        % vy = x0(5);
+        % vz = x0(6);
+        % for k = 1:(numDisc)
+        %     x = x + vx*dt;
+        %     y = y + vy*dt;
+        %     z = z + vz*dt;
+        %     vx = vx + u(1)*dt;
+        %     vy = vy + u(2)*dt;
+        %     vz = vz + u(3)*dt;
+        %     segmentX = [segmentX, x];
+        %     segmentY = [segmentY, y];
+        %     segmentZ = [segmentZ, z];
+        % end
+        % plot3(segmentX, segmentY, segmentZ, '-.', 'Color', 'k', 'LineWidth', 0.01);
         plot3(samples(j, 1), samples(j, 2), samples(j, 3), 'bo', 'MarkerFaceColor', 'b', 'MarkerSize', 2);
     end
 
-    view(3);
+    view(2);
     drawnow;
+    saveas(gcf, sprintf('figs/top_KGMT_Iteration_%d.jpg', i));
 end
