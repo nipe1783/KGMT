@@ -54,7 +54,7 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
             graph_.updateVertices(d_sampleScoreThreshold_ptr_);
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
             updateFrontier();
-            // writeDeviceVectorsToCSV();
+            writeDeviceVectorsToCSV();
             if(h_costToGoal_ != 0)
                 {
                     printf("Goal Reached: %f\n", h_costToGoal_);
