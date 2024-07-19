@@ -50,6 +50,7 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
     while(h_itr_ < MAX_ITER)
         {
             h_itr_++;
+            printf("frontier size: %d\n", h_frontierSize_);
             graph_.updateVertices(d_sampleScoreThreshold_ptr_);
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
             updateFrontier();
