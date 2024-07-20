@@ -14,20 +14,20 @@ public:
     void updateFrontier();
     void updateGraphTotalCount();
     void updateGraphValidCount();
+    void updateGraphSubVerticesOccupancy();
     void writeDeviceVectorsToCSV();
 
     /****************************    FIELDS    ****************************/
     // --- host fields ---
     Graph graph_;
     uint h_frontierSize_, h_frontierNextSize_, h_activeBlockSize_;
-    float* h_sampleScoreThreshold_ = new float(0.0);
 
     // --- device fields ---
     thrust::device_vector<bool> d_frontier_, d_frontierNext_;
     thrust::device_vector<uint> d_activeFrontierIdxs_, d_frontierScanIdx_;
     thrust::device_vector<int> d_unexploredSamplesParentIdxs_;
     thrust::device_vector<float> d_unexploredSamples_, d_goalSample_;
-    float *d_sampleScoreThreshold_ptr_, *d_unexploredSamples_ptr_, *d_goalSample_ptr_;
+    float *d_unexploredSamples_ptr_, *d_goalSample_ptr_;
     bool *d_frontier_ptr_, *d_frontierNext_ptr_;
     uint *d_activeFrontierIdxs_ptr_, *d_frontierScanIdx_ptr_;
     int* d_unexploredSamplesParentIdxs_ptr_;
@@ -51,6 +51,10 @@ public:
     int *d_updateGraphValidCounter_ptr_, *d_updateGraphValidKeys_ptr_, *d_updateGraphValidKeysCounter_ptr_,
       *d_updateGraphValidTempKeys_ptr_, *d_updateGraphValidTempKeysCounter_ptr_;
 
+    thrust::device_vector<int> d_unexploredSamplesSubVertices_;
+
+    int* d_unexploredSamplesSubVertices_ptr_;
+
     // --- End Graph Stuff ---
 };
 
@@ -64,14 +68,14 @@ public:
 __global__ void
 propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
                           curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
-                          int* activeVertices, int* vertexCounter, int* activeSubVertices, int* validVertexCounter, float* vertexScores,
-                          bool* frontierNext, int* unexploredSamplesVertices, int* unexploredSamplesValidVertices);
+                          bool* activeSubVertices, float* vertexScores, bool* frontierNext, int* unexploredSamplesVertices,
+                          int* unexploredSamplesValidVertices, int* unexploredSamplesSubVertices);
 
 __global__ void
-propagateFrontier_kernel2(uint* activeFrontierIdxs, bool* frontier, float* treeSamples, int iterations, float* unexploredSamples,
-                          int* unexploredSamplesParentIdxs, curandState* randomSeeds, float* obstacles, int obstaclesCount,
-                          int* vertexCounter, int* validVertexCounter, int* activeVertices, int* activeSubVertices, float* vertexScores,
-                          bool* frontierNext, int* unexploredSamplesVertices, int* unexploredSamplesValidVertices);
+propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
+                          curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
+                          bool* activeSubVertices, float* vertexScores, bool* frontierNext, int* unexploredSamplesVertices,
+                          int* unexploredSamplesValidVertices, int* unexploredSamplesSubVertices, int iterations);
 
 __global__ void updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNextIdxs, uint frontierNextSize, float* xGoal,
                                       int treeSize, float* unexploredSamples, float* treeSamples, int* unexploredSamplesParentIdxs,

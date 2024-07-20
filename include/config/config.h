@@ -81,7 +81,7 @@
 #define NUM_DISC 10
 #define WS_SIZE 1.0f
 #define MODEL 1
-#define MAX_TREE_SIZE 20000
+#define MAX_TREE_SIZE 30000
 #define GOAL_THRESH 0.05f
 #define MAX_ITER 100
 

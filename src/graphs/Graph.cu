@@ -17,18 +17,18 @@ Graph::Graph(const float ws)
             printf("/***************************/\n");
         }
 
-    d_activeVertices_        = thrust::device_vector<int>(NUM_R1_VERTICES);
     d_activeSubVertices_     = thrust::device_vector<int>(NUM_R2_VERTICES);
     d_validCounterArray_     = thrust::device_vector<int>(NUM_R1_VERTICES);
     d_counterArray_          = thrust::device_vector<int>(NUM_R1_VERTICES);
     d_vertexScoreArray_      = thrust::device_vector<float>(NUM_R1_VERTICES);
     d_activeVerticesScanIdx_ = thrust::device_vector<int>(NUM_R1_VERTICES);
+    d_activeSubVertices_     = thrust::device_vector<bool>(NUM_R2_VERTICES);
 
-    d_activeVertices_ptr_    = thrust::raw_pointer_cast(d_activeVertices_.data());
     d_activeSubVertices_ptr_ = thrust::raw_pointer_cast(d_activeSubVertices_.data());
     d_validCounterArray_ptr_ = thrust::raw_pointer_cast(d_validCounterArray_.data());
     d_counterArray_ptr_      = thrust::raw_pointer_cast(d_counterArray_.data());
     d_vertexScoreArray_ptr_  = thrust::raw_pointer_cast(d_vertexScoreArray_.data());
+    d_activeSubVertices_ptr_ = thrust::raw_pointer_cast(d_activeSubVertices_.data());
 }
 
 void Graph::constructVertexArray()
@@ -239,8 +239,7 @@ __host__ __device__ int getEdge(int fromVertex, int toVertex, int* hashTable, in
 /* VERTICES UPDATE KERNEL  */
 /***************************/
 // --- Updates Vertex Scores for device graph vectors. Determines new threshold score for future samples in expansion set. ---
-__global__ void updateVertices_kernel(float* vertexScoreArray, int* activeVertices, int* activeSubVertices, int* validCounterArray,
-                                      int* counterArray, int numActiveVertices, float* vertexScores, float* sampleScoreThreshold,
+__global__ void updateVertices_kernel(bool* activeSubVertices, int* validCounterArray, int* counterArray, float* vertexScores,
                                       int* updateGraphKeysCounter, int* updateGraphValidKeysCounter)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
@@ -253,17 +252,20 @@ __global__ void updateVertices_kernel(float* vertexScoreArray, int* activeVertic
     validCounterArray[tid]           = validCounterArray[tid] + updateGraphValidKeysCounter[tid];
     updateGraphKeysCounter[tid]      = 0;
     updateGraphValidKeysCounter[tid] = 0;
+
     if(validCounterArray[tid] > 0)
         {
-            // int numValidSamples = validCounterArray[tid];
             int numValidSamples = validCounterArray[tid];
             float coverage      = 0;
+
             // --- Thread loops through all sub vertices to determine vertex coverage. ---
             for(int i = tid * R2_PER_R1; i < (tid + 1) * R2_PER_R1; ++i)
                 {
                     coverage += activeSubVertices[i];
                 }
+
             coverage /= R2_PER_R1;
+
             // --- From OMPL Syclop ref: https://ompl.kavrakilab.org/classompl_1_1control_1_1Syclop.html---
             score = pow(((EPSILON + numValidSamples) / (EPSILON + numValidSamples + (counterArray[tid] - numValidSamples))), 4) /
                     ((1 + coverage) * (1 + pow(counterArray[tid], 2)));
@@ -276,8 +278,7 @@ __global__ void updateVertices_kernel(float* vertexScoreArray, int* activeVertic
 
     if(threadIdx.x == 0)
         {
-            s_totalScore            = blockSum;
-            sampleScoreThreshold[0] = s_totalScore / numActiveVertices;
+            s_totalScore = blockSum;
         }
     __syncthreads();
 
@@ -292,15 +293,9 @@ __global__ void updateVertices_kernel(float* vertexScoreArray, int* activeVertic
         }
 }
 
-void Graph::updateVertices(float* d_sampleScoreThreshold_ptr, int* d_updateGraphKeysCounter_ptr, int* d_updateGraphValidKeysCounter_ptr)
+void Graph::updateVertices(int* d_updateGraphKeysCounter_ptr, int* d_updateGraphValidKeysCounter_ptr)
 {
-    // --- Determine number of active vertices in graph ---
-    thrust::exclusive_scan(d_activeVertices_.begin(), d_activeVertices_.end(), d_activeVerticesScanIdx_.begin(), 0, thrust::plus<int>());
-    h_numActiveVertices_ = d_activeVerticesScanIdx_[NUM_R1_VERTICES - 1];
-
     // --- Update vertex scores and sampleScoreThreshold ---
-    updateVertices_kernel<<<1, NUM_R1_VERTICES>>>(d_vertexScoreArray_ptr_, d_activeVertices_ptr_, d_activeSubVertices_ptr_,
-                                                  d_validCounterArray_ptr_, d_counterArray_ptr_, h_numActiveVertices_,
-                                                  d_vertexScoreArray_ptr_, d_sampleScoreThreshold_ptr, d_updateGraphKeysCounter_ptr,
-                                                  d_updateGraphValidKeysCounter_ptr);
+    updateVertices_kernel<<<1, NUM_R1_VERTICES>>>(d_activeSubVertices_ptr_, d_validCounterArray_ptr_, d_counterArray_ptr_,
+                                                  d_vertexScoreArray_ptr_, d_updateGraphKeysCounter_ptr, d_updateGraphValidKeysCounter_ptr);
 }
