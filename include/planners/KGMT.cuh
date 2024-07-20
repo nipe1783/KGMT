@@ -52,8 +52,10 @@ public:
       *d_updateGraphValidTempKeys_ptr_, *d_updateGraphValidTempKeysCounter_ptr_;
 
     thrust::device_vector<int> d_unexploredSamplesSubVertices_;
+    thrust::device_vector<bool> d_updateGraphSubKeysCounter_;
 
     int* d_unexploredSamplesSubVertices_ptr_;
+    bool* d_updateGraphSubKeysCounter_ptr_;
 
     // --- End Graph Stuff ---
 };
