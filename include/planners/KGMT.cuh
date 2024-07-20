@@ -32,32 +32,18 @@ public:
     uint *d_activeFrontierIdxs_ptr_, *d_frontierScanIdx_ptr_;
     int* d_unexploredSamplesParentIdxs_ptr_;
 
-    // --- Graph Stuff Clean this ---
-    thrust::device_vector<int> d_unexploredSamplesVertices_;
-    int* d_unexploredSamplesVertices_ptr_;
+    // --- Graph Count Helpers ---
+    thrust::device_vector<int> d_unexploredSamplesVertices_, d_updateGraphCounter_, d_updateGraphKeys_, d_updateGraphKeysCounter_,
+      d_updateGraphTempKeys_, d_updateGraphTempKeysCounter_, d_unexploredSamplesValidVertices_, d_updateGraphValidCounter_,
+      d_updateGraphValidKeys_, d_updateGraphValidKeysCounter_, d_updateGraphValidTempKeys_, d_updateGraphValidTempKeysCounter_,
+      d_unexploredSamplesSubVertices_;
+    int *d_unexploredSamplesVertices_ptr_, *d_updateGraphCounter_ptr_, *d_updateGraphKeys_ptr_, *d_updateGraphKeysCounter_ptr_,
+      *d_updateGraphTempKeys_ptr_, *d_updateGraphTempKeysCounter_ptr_, *d_unexploredSamplesValidVertices_ptr_,
+      *d_updateGraphValidCounter_ptr_, *d_updateGraphValidKeys_ptr_, *d_updateGraphValidKeysCounter_ptr_, *d_updateGraphValidTempKeys_ptr_,
+      *d_updateGraphValidTempKeysCounter_ptr_, *d_unexploredSamplesSubVertices_ptr_;
 
-    thrust::device_vector<int> d_updateGraphCounter_, d_updateGraphKeys_, d_updateGraphKeysCounter_, d_updateGraphTempKeys_,
-      d_updateGraphTempKeysCounter_;
-
-    int *d_updateGraphCounter_ptr_, *d_updateGraphKeys_ptr_, *d_updateGraphKeysCounter_ptr_, *d_updateGraphTempKeys_ptr_,
-      *d_updateGraphTempKeysCounter_ptr_;
-
-    thrust::device_vector<int> d_unexploredSamplesValidVertices_;
-    int* d_unexploredSamplesValidVertices_ptr_;
-
-    thrust::device_vector<int> d_updateGraphValidCounter_, d_updateGraphValidKeys_, d_updateGraphValidKeysCounter_,
-      d_updateGraphValidTempKeys_, d_updateGraphValidTempKeysCounter_;
-
-    int *d_updateGraphValidCounter_ptr_, *d_updateGraphValidKeys_ptr_, *d_updateGraphValidKeysCounter_ptr_,
-      *d_updateGraphValidTempKeys_ptr_, *d_updateGraphValidTempKeysCounter_ptr_;
-
-    thrust::device_vector<int> d_unexploredSamplesSubVertices_;
     thrust::device_vector<bool> d_updateGraphSubKeysCounter_;
-
-    int* d_unexploredSamplesSubVertices_ptr_;
     bool* d_updateGraphSubKeysCounter_ptr_;
-
-    // --- End Graph Stuff ---
 };
 
 /**************************** DEVICE FUNCTIONS ****************************/

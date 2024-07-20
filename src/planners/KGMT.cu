@@ -23,7 +23,7 @@ KGMT::KGMT()
 
     h_activeBlockSize_ = 32;
 
-    // --- GRAPH TESTING ---
+    // --- GRAPH HELPERS ---
     d_unexploredSamplesVertices_  = thrust::device_vector<int>(MAX_TREE_SIZE);
     d_updateGraphCounter_         = thrust::device_vector<int>(MAX_TREE_SIZE);
     d_updateGraphKeys_            = thrust::device_vector<int>(NUM_R1_VERTICES + 1);
@@ -70,6 +70,8 @@ KGMT::KGMT()
 
     thrust::fill(d_unexploredSamplesSubVertices_.begin(), d_unexploredSamplesSubVertices_.end(), NUM_R2_VERTICES + 1);
     thrust::fill(d_updateGraphSubKeysCounter_.begin(), d_updateGraphSubKeysCounter_.end(), false);
+
+    // --- END GRAPH HELPERS ---
 
     if(VERBOSE)
         {
@@ -300,11 +302,9 @@ void KGMT::updateGraphTotalCount()
 
     int numUniqueVertices = new_end.first - d_updateGraphTempKeys_.begin();
 
-    // No resizing here, just use the numUniqueVertices to limit operations
     thrust::scatter(thrust::device, d_updateGraphTempKeysCounter_.begin(), d_updateGraphTempKeysCounter_.begin() + numUniqueVertices,
                     d_updateGraphTempKeys_.begin(), d_updateGraphKeysCounter_.begin());
 
-    // Reset only the part of the buffers used in this operation
     thrust::fill(d_unexploredSamplesVertices_.begin(), d_unexploredSamplesVertices_.end(), NUM_R1_VERTICES + 1);
     thrust::fill(d_updateGraphCounter_.begin(), d_updateGraphCounter_.end(), 1);
 }
@@ -320,12 +320,10 @@ void KGMT::updateGraphValidCount()
 
     int numUniqueVertices = new_end.first - d_updateGraphValidTempKeys_.begin();
 
-    // No resizing here, just use the numUniqueVertices to limit operations
     thrust::scatter(thrust::device, d_updateGraphValidTempKeysCounter_.begin(),
                     d_updateGraphValidTempKeysCounter_.begin() + numUniqueVertices, d_updateGraphValidTempKeys_.begin(),
                     d_updateGraphValidKeysCounter_.begin());
 
-    // Reset only the part of the buffers used in this operation
     thrust::fill(d_unexploredSamplesValidVertices_.begin(), d_unexploredSamplesValidVertices_.end(), NUM_R1_VERTICES + 1);
     thrust::fill(d_updateGraphValidCounter_.begin(), d_updateGraphValidCounter_.end(), 1);
 }
