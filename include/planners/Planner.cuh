@@ -6,6 +6,8 @@
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/count.h>
+#include <thrust/unique.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <curand_kernel.h>
 #include "helper/helper.cuh"
