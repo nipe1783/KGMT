@@ -53,8 +53,10 @@ KGMT::KGMT()
     d_updateGraphValidTempKeysCounter_ptr_ = thrust::raw_pointer_cast(d_updateGraphValidTempKeysCounter_.data());
 
     d_unexploredSamplesSubVertices_ = thrust::device_vector<int>(MAX_TREE_SIZE);
+    d_updateGraphSubKeysCounter_    = thrust::device_vector<bool>(NUM_R2_VERTICES + 1);
 
     d_unexploredSamplesSubVertices_ptr_ = thrust::raw_pointer_cast(d_unexploredSamplesSubVertices_.data());
+    d_updateGraphSubKeysCounter_ptr_    = thrust::raw_pointer_cast(d_updateGraphSubKeysCounter_.data());
 
     thrust::fill(d_unexploredSamplesVertices_.begin(), d_unexploredSamplesVertices_.end(), NUM_R1_VERTICES + 1);
     thrust::fill(d_updateGraphCounter_.begin(), d_updateGraphCounter_.end(), 1);
@@ -67,6 +69,7 @@ KGMT::KGMT()
     thrust::fill(d_updateGraphValidKeysCounter_.begin(), d_updateGraphValidKeysCounter_.end(), 0);
 
     thrust::fill(d_unexploredSamplesSubVertices_.begin(), d_unexploredSamplesSubVertices_.end(), NUM_R2_VERTICES + 1);
+    thrust::fill(d_updateGraphSubKeysCounter_.begin(), d_updateGraphSubKeysCounter_.end(), false);
 
     if(VERBOSE)
         {
@@ -296,14 +299,12 @@ void KGMT::updateGraphTotalCount()
                             d_updateGraphTempKeys_.begin(), d_updateGraphTempKeysCounter_.begin());
 
     int numUniqueVertices = new_end.first - d_updateGraphTempKeys_.begin();
-    // TODO: Remove resize.
-    d_updateGraphTempKeys_.resize(numUniqueVertices);
-    d_updateGraphTempKeysCounter_.resize(numUniqueVertices);
-    thrust::scatter(thrust::device, d_updateGraphTempKeysCounter_.begin(), d_updateGraphTempKeysCounter_.end(),
+
+    // No resizing here, just use the numUniqueVertices to limit operations
+    thrust::scatter(thrust::device, d_updateGraphTempKeysCounter_.begin(), d_updateGraphTempKeysCounter_.begin() + numUniqueVertices,
                     d_updateGraphTempKeys_.begin(), d_updateGraphKeysCounter_.begin());
 
-    d_updateGraphTempKeys_.resize(MAX_TREE_SIZE);
-    d_updateGraphTempKeysCounter_.resize(MAX_TREE_SIZE);
+    // Reset only the part of the buffers used in this operation
     thrust::fill(d_unexploredSamplesVertices_.begin(), d_unexploredSamplesVertices_.end(), NUM_R1_VERTICES + 1);
     thrust::fill(d_updateGraphCounter_.begin(), d_updateGraphCounter_.end(), 1);
 }
@@ -318,15 +319,13 @@ void KGMT::updateGraphValidCount()
                                          d_updateGraphValidTempKeysCounter_.begin());
 
     int numUniqueVertices = new_end.first - d_updateGraphValidTempKeys_.begin();
-    // TODO: Remove resize.
-    d_updateGraphValidTempKeys_.resize(numUniqueVertices);
-    d_updateGraphValidTempKeysCounter_.resize(numUniqueVertices);
-    thrust::scatter(thrust::device, d_updateGraphValidTempKeysCounter_.begin(), d_updateGraphValidTempKeysCounter_.end(),
-                    d_updateGraphValidTempKeys_.begin(), d_updateGraphValidKeysCounter_.begin());
 
-    d_updateGraphValidTempKeys_.resize(MAX_TREE_SIZE);
-    d_updateGraphValidTempKeysCounter_.resize(MAX_TREE_SIZE);
+    // No resizing here, just use the numUniqueVertices to limit operations
+    thrust::scatter(thrust::device, d_updateGraphValidTempKeysCounter_.begin(),
+                    d_updateGraphValidTempKeysCounter_.begin() + numUniqueVertices, d_updateGraphValidTempKeys_.begin(),
+                    d_updateGraphValidKeysCounter_.begin());
 
+    // Reset only the part of the buffers used in this operation
     thrust::fill(d_unexploredSamplesValidVertices_.begin(), d_unexploredSamplesValidVertices_.end(), NUM_R1_VERTICES + 1);
     thrust::fill(d_updateGraphValidCounter_.begin(), d_updateGraphValidCounter_.end(), 1);
 }
@@ -353,21 +352,12 @@ void KGMT::updateGraphSubVerticesOccupancy()
     auto new_end             = thrust::unique(d_unexploredSamplesSubVertices_.begin(), d_unexploredSamplesSubVertices_.end());
     int numUniqueSubVertices = new_end - d_unexploredSamplesSubVertices_.begin();
 
-    // TODO: Remove resize.
-    d_unexploredSamplesSubVertices_.resize(numUniqueSubVertices);
+    thrust::for_each(d_unexploredSamplesSubVertices_.begin(), d_unexploredSamplesSubVertices_.begin() + numUniqueSubVertices,
+                     MarkPresence(d_updateGraphSubKeysCounter_ptr_));
 
-    // Initialize the output boolean vector to false
-    thrust::device_vector<bool> d_updateGraphSubKeysCounter(NUM_R2_VERTICES + 1, false);
-    bool* d_updateGraphSubKeysCounter_ptr = thrust::raw_pointer_cast(d_updateGraphSubKeysCounter.data());
-
-    // Use thrust::for_each with the functor to set the appropriate indices to true
-    thrust::for_each(d_unexploredSamplesSubVertices_.begin(), d_unexploredSamplesSubVertices_.end(),
-                     MarkPresence(d_updateGraphSubKeysCounter_ptr));
-
-    thrust::transform(graph_.d_activeSubVertices_.begin(), graph_.d_activeSubVertices_.end(), d_updateGraphSubKeysCounter.begin(),
+    thrust::transform(graph_.d_activeSubVertices_.begin(), graph_.d_activeSubVertices_.end(), d_updateGraphSubKeysCounter_.begin(),
                       graph_.d_activeSubVertices_.begin(), thrust::logical_or<bool>());
 
-    d_unexploredSamplesSubVertices_.resize(MAX_TREE_SIZE);
     thrust::fill(d_unexploredSamplesSubVertices_.begin(), d_unexploredSamplesSubVertices_.end(), NUM_R2_VERTICES + 1);
 }
 
