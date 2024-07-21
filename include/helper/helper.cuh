@@ -54,12 +54,17 @@ void printDeviceVector(const T* d_ptr, int size)
 }
 
 template <typename T>
-void writeVectorToCSV(const thrust::host_vector<T>& vec, const std::string& filename, int rows, int cols)
+void writeVectorToCSV(const thrust::host_vector<T>& vec, const std::string& filename, int rows, int cols, bool append = false)
 {
     std::ofstream file;
-    file.open(filename);
-
-    // Set precision for floating-point numbers
+    if(append)
+        {
+            file.open(filename, std::ios_base::app);  // Open in append mode
+        }
+    else
+        {
+            file.open(filename);
+        }
     file << std::fixed << std::setprecision(10);
 
     for(int i = 0; i < rows; i++)
@@ -79,12 +84,28 @@ void writeVectorToCSV(const thrust::host_vector<T>& vec, const std::string& file
 }
 
 template <typename T>
-void copyAndWriteVectorToCSV(const thrust::device_vector<T>& d_vec, const std::string& filename, int rows, int cols)
+void copyAndWriteVectorToCSV(const thrust::device_vector<T>& d_vec, const std::string& filename, int rows, int cols, bool append = false)
 {
     thrust::host_vector<T> h_vec(d_vec.size());
     cudaMemcpy(thrust::raw_pointer_cast(h_vec.data()), thrust::raw_pointer_cast(d_vec.data()), d_vec.size() * sizeof(T),
                cudaMemcpyDeviceToHost);
-    writeVectorToCSV(h_vec, filename, rows, cols);
+    writeVectorToCSV(h_vec, filename, rows, cols, append);
+}
+
+template <typename T>
+inline void writeValueToCSV(const T& value, const std::string& filename)
+{
+    std::ofstream file;
+    file.open(filename, std::ios_base::app);  // Open in append mode
+
+    // Set precision for floating-point numbers
+    if constexpr(std::is_floating_point_v<std::decay_t<decltype(value)>>)
+        {
+            file << std::fixed << std::setprecision(10);
+        }
+
+    file << value << std::endl;
+    file.close();
 }
 
 __device__ __forceinline__ float atomicMinFloat(float* addr, float value)

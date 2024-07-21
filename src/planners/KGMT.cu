@@ -58,18 +58,8 @@ KGMT::KGMT()
     d_unexploredSamplesSubVertices_ptr_ = thrust::raw_pointer_cast(d_unexploredSamplesSubVertices_.data());
     d_updateGraphSubKeysCounter_ptr_    = thrust::raw_pointer_cast(d_updateGraphSubKeysCounter_.data());
 
-    thrust::fill(d_unexploredSamplesVertices_.begin(), d_unexploredSamplesVertices_.end(), NUM_R1_VERTICES + 1);
-    thrust::fill(d_updateGraphCounter_.begin(), d_updateGraphCounter_.end(), 1);
     thrust::sequence(d_updateGraphKeys_.begin(), d_updateGraphKeys_.end(), 0);
-    thrust::fill(d_updateGraphKeysCounter_.begin(), d_updateGraphKeysCounter_.end(), 0);
-
-    thrust::fill(d_unexploredSamplesValidVertices_.begin(), d_unexploredSamplesValidVertices_.end(), NUM_R1_VERTICES + 1);
-    thrust::fill(d_updateGraphValidCounter_.begin(), d_updateGraphValidCounter_.end(), 1);
     thrust::sequence(d_updateGraphValidKeys_.begin(), d_updateGraphValidKeys_.end(), 0);
-    thrust::fill(d_updateGraphValidKeysCounter_.begin(), d_updateGraphValidKeysCounter_.end(), 0);
-
-    thrust::fill(d_unexploredSamplesSubVertices_.begin(), d_unexploredSamplesSubVertices_.end(), NUM_R2_VERTICES + 1);
-    thrust::fill(d_updateGraphSubKeysCounter_.begin(), d_updateGraphSubKeysCounter_.end(), false);
 
     // --- END GRAPH HELPERS ---
 
@@ -86,13 +76,39 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
 {
     double t_kgmtStart = std::clock();
 
+    // --- INITIALIZE KGMT ---
+    thrust::fill(d_frontier_.begin(), d_frontier_.end(), false);
+    thrust::fill(d_frontierNext_.begin(), d_frontierNext_.end(), false);
+    thrust::fill(d_activeFrontierIdxs_.begin(), d_activeFrontierIdxs_.end(), 0);
+    thrust::fill(d_unexploredSamples_.begin(), d_unexploredSamples_.end(), 0.0f);
+    thrust::fill(d_unexploredSamplesParentIdxs_.begin(), d_unexploredSamplesParentIdxs_.end(), -1);
+    thrust::fill(d_frontierScanIdx_.begin(), d_frontierScanIdx_.end(), 0);
+    thrust::fill(d_goalSample_.begin(), d_goalSample_.end(), 0.0f);
+    thrust::fill(d_unexploredSamplesVertices_.begin(), d_unexploredSamplesVertices_.end(), NUM_R1_VERTICES + 1);
+    thrust::fill(d_updateGraphCounter_.begin(), d_updateGraphCounter_.end(), 1);
+    thrust::fill(d_updateGraphKeysCounter_.begin(), d_updateGraphKeysCounter_.end(), 0);
+    thrust::fill(d_unexploredSamplesValidVertices_.begin(), d_unexploredSamplesValidVertices_.end(), NUM_R1_VERTICES + 1);
+    thrust::fill(d_updateGraphValidCounter_.begin(), d_updateGraphValidCounter_.end(), 1);
+    thrust::fill(d_updateGraphValidKeysCounter_.begin(), d_updateGraphValidKeysCounter_.end(), 0);
+    thrust::fill(d_unexploredSamplesSubVertices_.begin(), d_unexploredSamplesSubVertices_.end(), NUM_R2_VERTICES + 1);
+    thrust::fill(d_updateGraphSubKeysCounter_.begin(), d_updateGraphSubKeysCounter_.end(), false);
+    thrust::fill(graph_.d_activeSubVertices_.begin(), graph_.d_activeSubVertices_.end(), false);
+    thrust::fill(graph_.d_vertexScoreArray_.begin(), graph_.d_vertexScoreArray_.end(), 0.0f);
+    thrust::fill(graph_.d_counterArray_.begin(), graph_.d_counterArray_.end(), 0);
+    thrust::fill(graph_.d_validCounterArray_.begin(), graph_.d_validCounterArray_.end(), 0);
+    thrust::fill(d_treeSamples_.begin(), d_treeSamples_.end(), 0.0f);
+    thrust::fill(d_treeSamplesParentIdxs_.begin(), d_treeSamplesParentIdxs_.end(), -1);
+    thrust::fill(d_treeSampleCosts_.begin(), d_treeSampleCosts_.end(), 0.0f);
+    thrust::fill(d_frontier_.begin(), d_frontier_.begin() + 1, true);
+    h_treeSize_   = 1;
+    h_itr_        = 0;
+    h_costToGoal_ = 0;
     cudaMemcpy(d_treeSamples_ptr_, h_initial, SAMPLE_DIM * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_goalSample_ptr_, h_goal, SAMPLE_DIM * sizeof(float), cudaMemcpyHostToDevice);
-    initializeRandomSeeds(time(NULL));
-    thrust::fill(d_frontier_.begin(), d_frontier_.begin() + 1, true);
-
-    h_treeSize_ = 1;
-    h_itr_      = 0;
+    cudaMemcpy(d_costToGoal_ptr_, &h_costToGoal_, sizeof(float), cudaMemcpyHostToDevice);
+    initializeRandomSeeds(static_cast<unsigned int>(
+      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()));
+    // --- END INITIALIZATION ---
 
     while(h_itr_ < MAX_ITER)
         {
@@ -103,7 +119,6 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
             updateGraphValidCount();
             updateGraphSubVerticesOccupancy();
             updateFrontier();
-            // writeDeviceVectorsToCSV();
             if(h_costToGoal_ != 0)
                 {
                     printf("Goal Reached: %f\n", h_costToGoal_);
@@ -112,12 +127,62 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
         }
 
     std::cout << "time inside KGMT is " << (std::clock() - t_kgmtStart) / (double)CLOCKS_PER_SEC << std::endl;
-    printf("Iteration %d, Tree size %d\n", h_itr_, h_treeSize_);
+}
 
-    // move vectors to csv to be plotted.
-    copyAndWriteVectorToCSV(d_treeSamples_, "samples.csv", MAX_TREE_SIZE, SAMPLE_DIM);
-    copyAndWriteVectorToCSV(d_unexploredSamples_, "unexploredSamples.csv", MAX_TREE_SIZE, SAMPLE_DIM);
-    copyAndWriteVectorToCSV(d_treeSamplesParentIdxs_, "parentRelations.csv", MAX_TREE_SIZE, 1);
+void KGMT::planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr)
+{
+    double t_kgmtStart = std::clock();
+
+    // --- KGMT INITIALIZATION ---
+    thrust::fill(d_frontier_.begin(), d_frontier_.end(), false);
+    thrust::fill(d_frontierNext_.begin(), d_frontierNext_.end(), false);
+    thrust::fill(d_activeFrontierIdxs_.begin(), d_activeFrontierIdxs_.end(), 0);
+    thrust::fill(d_unexploredSamples_.begin(), d_unexploredSamples_.end(), 0.0f);
+    thrust::fill(d_unexploredSamplesParentIdxs_.begin(), d_unexploredSamplesParentIdxs_.end(), -1);
+    thrust::fill(d_frontierScanIdx_.begin(), d_frontierScanIdx_.end(), 0);
+    thrust::fill(d_goalSample_.begin(), d_goalSample_.end(), 0.0f);
+    thrust::fill(d_unexploredSamplesVertices_.begin(), d_unexploredSamplesVertices_.end(), NUM_R1_VERTICES + 1);
+    thrust::fill(d_updateGraphCounter_.begin(), d_updateGraphCounter_.end(), 1);
+    thrust::fill(d_updateGraphKeysCounter_.begin(), d_updateGraphKeysCounter_.end(), 0);
+    thrust::fill(d_unexploredSamplesValidVertices_.begin(), d_unexploredSamplesValidVertices_.end(), NUM_R1_VERTICES + 1);
+    thrust::fill(d_updateGraphValidCounter_.begin(), d_updateGraphValidCounter_.end(), 1);
+    thrust::fill(d_updateGraphValidKeysCounter_.begin(), d_updateGraphValidKeysCounter_.end(), 0);
+    thrust::fill(d_unexploredSamplesSubVertices_.begin(), d_unexploredSamplesSubVertices_.end(), NUM_R2_VERTICES + 1);
+    thrust::fill(d_updateGraphSubKeysCounter_.begin(), d_updateGraphSubKeysCounter_.end(), false);
+    thrust::fill(graph_.d_activeSubVertices_.begin(), graph_.d_activeSubVertices_.end(), false);
+    thrust::fill(graph_.d_vertexScoreArray_.begin(), graph_.d_vertexScoreArray_.end(), 0.0f);
+    thrust::fill(graph_.d_counterArray_.begin(), graph_.d_counterArray_.end(), 0);
+    thrust::fill(graph_.d_validCounterArray_.begin(), graph_.d_validCounterArray_.end(), 0);
+    thrust::fill(d_treeSamples_.begin(), d_treeSamples_.end(), 0.0f);
+    thrust::fill(d_treeSamplesParentIdxs_.begin(), d_treeSamplesParentIdxs_.end(), -1);
+    thrust::fill(d_treeSampleCosts_.begin(), d_treeSampleCosts_.end(), 0.0f);
+    thrust::fill(d_frontier_.begin(), d_frontier_.begin() + 1, true);
+    h_treeSize_   = 1;
+    h_itr_        = 0;
+    h_costToGoal_ = 0;
+    cudaMemcpy(d_treeSamples_ptr_, h_initial, SAMPLE_DIM * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_goalSample_ptr_, h_goal, SAMPLE_DIM * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_costToGoal_ptr_, &h_costToGoal_, sizeof(float), cudaMemcpyHostToDevice);
+    initializeRandomSeeds(static_cast<unsigned int>(
+      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()));
+    // --- END INITIALIZATION ---
+
+    while(h_itr_ < MAX_ITER)
+        {
+            h_itr_++;
+            graph_.updateVertices(d_updateGraphKeysCounter_ptr_, d_updateGraphValidKeysCounter_ptr_);
+            propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
+            updateGraphTotalCount();
+            updateGraphValidCount();
+            updateGraphSubVerticesOccupancy();
+            updateFrontier();
+            writeDeviceVectorsToCSV(benchItr);
+            if(h_costToGoal_ != 0)
+                {
+                    printf("Goal Reached\n");
+                    break;
+                }
+        }
 }
 
 void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
@@ -359,30 +424,38 @@ void KGMT::updateGraphSubVerticesOccupancy()
     thrust::fill(d_unexploredSamplesSubVertices_.begin(), d_unexploredSamplesSubVertices_.end(), NUM_R2_VERTICES + 1);
 }
 
-void KGMT::writeDeviceVectorsToCSV()
+void KGMT::writeDeviceVectorsToCSV(int itr)
 {
     std::ostringstream filename;
     std::filesystem::create_directories("Data");
-    std::filesystem::create_directories("Data/Samples");
-    std::filesystem::create_directories("Data/UnexploredSamples");
-    std::filesystem::create_directories("Data/Parents");
-    std::filesystem::create_directories("Data/R1Scores");
-    std::filesystem::create_directories("Data/R1");
-    std::filesystem::create_directories("Data/G");
-    std::filesystem::create_directories("Data/GNew");
+    std::filesystem::create_directories("Data/Samples/Samples" + std::to_string(itr));
+    std::filesystem::create_directories("Data/TotalCountPerVertex/TotalCountPerVertex" + std::to_string(itr));
+    std::filesystem::create_directories("Data/ValidCountPerVertex/ValidCountPerVertex" + std::to_string(itr));
+    std::filesystem::create_directories("Data/VertexScores/VertexScores" + std::to_string(itr));
+    std::filesystem::create_directories("Data/FrontierSize/FrontierSize" + std::to_string(itr));
+    std::filesystem::create_directories("Data/TreeSize/TreeSize" + std::to_string(itr));
+
     filename.str("");
-    filename << "Data/Samples/samples" << h_itr_ << ".csv";
-    copyAndWriteVectorToCSV(d_treeSamples_, filename.str(), MAX_TREE_SIZE, SAMPLE_DIM);
+    filename << "Data/Samples/Samples" << itr << "/samples " << h_itr_ << ".csv";
+    copyAndWriteVectorToCSV(d_treeSamples_, filename.str(), MAX_TREE_SIZE, SAMPLE_DIM, h_itr_ > 1);
+
     filename.str("");
-    filename << "Data/Parents/parents" << h_itr_ << ".csv";
-    copyAndWriteVectorToCSV(d_treeSamplesParentIdxs_, filename.str(), MAX_TREE_SIZE, 1);
+    filename << "Data/TotalCountPerVertex/TotalCountPerVertex" << itr << "/totalCountPerVertex.csv";
+    copyAndWriteVectorToCSV(graph_.d_counterArray_, filename.str(), 1, NUM_R1_VERTICES, h_itr_ > 1);
+
     filename.str("");
-    filename << "Data/R1Scores/R1Scores" << h_itr_ << ".csv";
-    copyAndWriteVectorToCSV(graph_.d_vertexScoreArray_, filename.str(), NUM_R1_VERTICES, 1);
+    filename << "Data/ValidCountPerVertex/ValidCountPerVertex" << itr << "/validCountPerVertex.csv";
+    copyAndWriteVectorToCSV(graph_.d_validCounterArray_, filename.str(), 1, NUM_R1_VERTICES, h_itr_ > 1);
+
     filename.str("");
-    filename << "Data/R1/R1" << h_itr_ << ".csv";
-    copyAndWriteVectorToCSV(graph_.d_counterArray_, filename.str(), NUM_R1_VERTICES, 1);
+    filename << "Data/VertexScores/VertexScores" << itr << "/vertexScores.csv";
+    copyAndWriteVectorToCSV(graph_.d_vertexScoreArray_, filename.str(), 1, NUM_R1_VERTICES, h_itr_ > 1);
+
     filename.str("");
-    filename << "Data/UnexploredSamples/unexploredSamples" << h_itr_ << ".csv";
-    copyAndWriteVectorToCSV(d_unexploredSamples_, filename.str(), MAX_TREE_SIZE, SAMPLE_DIM);
+    filename << "Data/FrontierSize/FrontierSize" << itr << "/frontierSize.csv";
+    writeValueToCSV(h_frontierSize_, filename.str());
+
+    filename.str("");
+    filename << "Data/TreeSize/TreeSize" << itr << "/treeSize.csv";
+    writeValueToCSV(h_treeSize_, filename.str());
 }
