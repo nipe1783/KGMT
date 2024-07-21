@@ -17,14 +17,12 @@ Graph::Graph(const float ws)
             printf("/***************************/\n");
         }
 
-    d_activeSubVertices_     = thrust::device_vector<int>(NUM_R2_VERTICES);
     d_validCounterArray_     = thrust::device_vector<int>(NUM_R1_VERTICES);
     d_counterArray_          = thrust::device_vector<int>(NUM_R1_VERTICES);
     d_vertexScoreArray_      = thrust::device_vector<float>(NUM_R1_VERTICES);
     d_activeVerticesScanIdx_ = thrust::device_vector<int>(NUM_R1_VERTICES);
     d_activeSubVertices_     = thrust::device_vector<bool>(NUM_R2_VERTICES);
 
-    d_activeSubVertices_ptr_ = thrust::raw_pointer_cast(d_activeSubVertices_.data());
     d_validCounterArray_ptr_ = thrust::raw_pointer_cast(d_validCounterArray_.data());
     d_counterArray_ptr_      = thrust::raw_pointer_cast(d_counterArray_.data());
     d_vertexScoreArray_ptr_  = thrust::raw_pointer_cast(d_vertexScoreArray_.data());

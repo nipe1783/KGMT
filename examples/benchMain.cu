@@ -13,7 +13,12 @@ int main(void)
     std::vector<float> obstacles = readObstaclesFromCSV("../include/config/obstacles/pillars/obstacles.csv", numObstacles, DIM);
     cudaMalloc(&d_obstacles, numObstacles * 2 * DIM * sizeof(float));
     cudaMemcpy(d_obstacles, obstacles.data(), numObstacles * 2 * DIM * sizeof(float), cudaMemcpyHostToDevice);
-    kgmt.plan(h_initial, h_goal, d_obstacles, numObstacles);
+
+    for(int i = 0; i < 100; i++)
+        {
+            kgmt.planBench(h_initial, h_goal, d_obstacles, numObstacles, i);
+        }
+
     cudaFree(d_obstacles);
     return 0;
 }

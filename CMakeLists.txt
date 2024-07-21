@@ -52,6 +52,20 @@ target_link_libraries(main
     Python3::NumPy
 )
 
+# Add your CUDA executable
+add_executable(benchMain examples/benchMain.cu)
+
+# Link the library and other dependencies with the CUDA executable
+target_link_libraries(benchMain
+    KGMT_lib
+    ${CUDA_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${EIGEN3_LIBRARIES}
+    yaml-cpp
+    Python3::Python
+    Python3::NumPy
+)
+
 add_executable(est_cpu examples/est_cpu.cpp)
 
 # Link the library and other dependencies with the CUDA executable
@@ -68,12 +82,14 @@ target_link_libraries(est_cpu
 # Ensure CUDA separable compilation
 set_target_properties(KGMT_lib PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 set_target_properties(main PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set_target_properties(benchMain PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 # Suppress specific CUDA warnings and enable detailed information
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -diag-suppress=20012,20013,20014,20015 --expt-relaxed-constexpr --ptxas-options=-v")
 
 # Set CUDA architectures
 set_property(TARGET main PROPERTY CUDA_ARCHITECTURES 52)
+set_property(TARGET benchMain PROPERTY CUDA_ARCHITECTURES 52)
 set_property(TARGET KGMT_lib PROPERTY CUDA_ARCHITECTURES 52)
 
 # Suppress all warnings from Eigen
