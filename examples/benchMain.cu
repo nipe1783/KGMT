@@ -14,9 +14,9 @@ int main(void)
     cudaMalloc(&d_obstacles, numObstacles * 2 * DIM * sizeof(float));
     cudaMemcpy(d_obstacles, obstacles.data(), numObstacles * 2 * DIM * sizeof(float), cudaMemcpyHostToDevice);
 
-    for(int i = 0; i < 100; i++)
+    for(int i = 0; i < 1000; i++)
         {
-            kgmt.planBench(h_initial, h_goal, d_obstacles, numObstacles, i);
+            kgmt.plan(h_initial, h_goal, d_obstacles, numObstacles);
         }
 
     cudaFree(d_obstacles);

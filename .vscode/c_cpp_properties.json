@@ -10,7 +10,8 @@
                 "/home/nicolas/miniconda3/envs/cudf_dev/include/cudf",
                 "/home/nicolas/miniconda3/envs/cudf_dev/include/rmm",
                 "/home/nicolas/miniconda3/envs/cudf_dev/include/cugraph",
-                "/usr/include/eigen3"
+                "/usr/include/eigen3",
+                "${workspaceFolder}/include"
             ],
             "intelliSenseMode": "linux-gcc-x64",
             "compilerPath": "/home/nicolas/miniconda3/envs/cudf_dev/bin/clang",
