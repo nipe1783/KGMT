@@ -29,7 +29,7 @@ public:
     int *d_validCounterArray_ptr_, *d_counterArray_ptr_, *d_activeVerticesScanIdx_ptr_, *d_activeSubVertices_ptr_;
 
     /****************************    METHODS    ****************************/
-    void updateVertices(int* d_updateGraphKeysCounter_ptr);
+    void updateVertices();
 
 private:
     /**************************** METHODS ****************************/
@@ -58,5 +58,4 @@ __host__ __device__ int hashEdge(int key, int size);
 /* VERTICES UPDATE KERNEL */
 /***************************/
 // --- Updates Vertex Scores for device graph vectors. Determines new threshold score for future samples in expansion set. ---
-__global__ void
-updateVertices_kernel(int* activeSubVertices, int* validCounterArray, int* counterArray, float* vertexScores, int* updateGraphKeysCounter);
+__global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterArray, int* counterArray, float* vertexScores);

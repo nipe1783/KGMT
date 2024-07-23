@@ -237,17 +237,13 @@ __host__ __device__ int getEdge(int fromVertex, int toVertex, int* hashTable, in
 /* VERTICES UPDATE KERNEL  */
 /***************************/
 // --- Updates Vertex Scores for device graph vectors. Determines new threshold score for future samples in expansion set. ---
-__global__ void
-updateVertices_kernel(int* activeSubVertices, int* validCounterArray, int* counterArray, float* vertexScores, int* updateGraphKeysCounter)
+__global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterArray, int* counterArray, float* vertexScores)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
     if(tid >= NUM_R1_VERTICES) return;
 
     __shared__ float s_totalScore;
     float score = 0.0;
-
-    counterArray[tid]           = counterArray[tid] + updateGraphKeysCounter[tid];
-    updateGraphKeysCounter[tid] = 0;
 
     if(validCounterArray[tid] > 0)
         {
@@ -289,9 +285,9 @@ updateVertices_kernel(int* activeSubVertices, int* validCounterArray, int* count
         }
 }
 
-void Graph::updateVertices(int* d_updateGraphKeysCounter_ptr)
+void Graph::updateVertices()
 {
     // --- Update vertex scores and sampleScoreThreshold ---
     updateVertices_kernel<<<1, NUM_R1_VERTICES>>>(d_activeSubVertices_ptr_, d_validCounterArray_ptr_, d_counterArray_ptr_,
-                                                  d_vertexScoreArray_ptr_, d_updateGraphKeysCounter_ptr);
+                                                  d_vertexScoreArray_ptr_);
 }

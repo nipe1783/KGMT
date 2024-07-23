@@ -3,7 +3,7 @@ clc
 clear all
 
 % Parameters
-numFiles = 6;
+numFiles = 8;
 width = 20.0;
 height = 20.0;
 depth = 20.0;
@@ -20,16 +20,16 @@ numDisc = 10;
 sampleSize = 10;
 stateSize = 6;
 controlSize = 3;
-xGoal = [0, 0, 0];
+xGoal = [.7, .95, .9];
 alphaValue = 0.1;
 
 % Obstacle file path
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/pillars/obstacles.csv';
 obstacles = readmatrix(obstacleFilePath);
 
 for i = 1:numFiles
-    sampleFilePath = "/home/nicolas/dev/research/KGMT/build/Data/Samples/samples" + i + ".csv";
-    parentFilePath = "/home/nicolas/dev/research/KGMT/build/Data/Parents/parents" + i + ".csv";
+    sampleFilePath = "/home/nicolas/dev/research/KGMT/build/Data/Samples/Samples0/samples" + i + ".csv";
+    parentFilePath = "/home/nicolas/dev/research/KGMT/build/Data/Parents/Parents0/parents" + i + ".csv";
 
     samples = readmatrix(sampleFilePath);
     parentRelations = readmatrix(parentFilePath);
