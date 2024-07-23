@@ -198,25 +198,17 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
             int unexploredSize = iterations * h_frontierSize_;
             gridSize           = int(floor(MAX_TREE_SIZE / h_activeBlockSize_));
 
-            // --- Propagate Frontier. One thread per sample. Iterates n times. ---
-            propagateFrontier_kernel2_V2<<<gridSize, h_activeBlockSize_>>>(
+            // --- Propagate Frontier. iterations new samples per frontier sample---
+            propagateFrontier_kernel2<<<gridSize, h_activeBlockSize_>>>(
               d_frontier_ptr_, d_activeFrontierIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierSize_, d_randomSeeds_ptr_,
               d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount, graph_.d_activeSubVertices_ptr_,
               graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, d_unexploredSamplesVertices_ptr_, d_unexploredSamplesValidVertices_ptr_,
               d_unexploredSamplesSubVertices_ptr_, iterations, unexploredSize);
-
-            thrust::fill(d_frontier_.begin(), d_frontier_.end(), false);
-
-            // std::ostringstream filename;
-            // std::filesystem::create_directories("Data");
-            // std::filesystem::create_directories("Data/Frontier");
-            // filename << "Data/Frontier/Frontier_" << h_itr_ << ".csv";
-            // copyAndWriteVectorToCSV(d_frontier_, filename.str(), 1, MAX_TREE_SIZE, false);
+            thrust::fill(d_frontier_.begin(), d_frontier_.end(), false);  // TODO: is there a way to do this inside of the prop kernel?
         }
     else
         {
-            // printf("Propagate Frontier Kernel 1, treeSize: %d, frontierSize: %d\n", h_treeSize_, h_frontierSize_);
-            // --- Propagate Frontier. Block Size threads per sample. ---
+            // --- Propagate Frontier. Block Size new samples per frontier sample. ---
             propagateFrontier_kernel1<<<gridSize, h_activeBlockSize_>>>(
               d_frontier_ptr_, d_activeFrontierIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierSize_, d_randomSeeds_ptr_,
               d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount, graph_.d_activeSubVertices_ptr_,
@@ -226,7 +218,7 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
 }
 
 /***************************/
-/* PROPAGATE FRONTIER KERNEL  */
+/* PROPAGATE FRONTIER KERNEL  1*/
 /***************************/
 // --- Propagates current frontier. Builds new frontier. ---
 // --- One Block Per Frontier Sample ---
@@ -276,48 +268,12 @@ propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeS
 /***************************/
 /* FRONTIER PROPAGATION KERNEL 2 */
 /***************************/
-// --- 1 thread per sample. iterates n times. ---
+// --- Iterations new samples per frontier sample---
 __global__ void
 propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
                           curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
                           bool* activeSubVertices, float* vertexScores, bool* frontierNext, int* unexploredSamplesVertices,
-                          int* unexploredSamplesValidVertices, int* unexploredSamplesSubVertices, int iterations)
-{
-    int tid   = blockIdx.x * blockDim.x + threadIdx.x;
-    int x0Idx = activeFrontierIdxs[tid];
-
-    if(!frontier[x0Idx]) return;
-    frontier[x0Idx] = false;
-
-    float* x0 = &treeSamples[x0Idx * SAMPLE_DIM];
-    for(int i = 0; i < iterations; i++)
-        {
-            // --- Propagate Sample and add it to unexplored sample set. ---
-            int x1Idx                          = tid * iterations + i;  // --- Index of new sample in unexplored samples ---
-            curandState randSeed               = randomSeeds[x1Idx];
-            float* x1                          = &unexploredSamples[x1Idx * SAMPLE_DIM];  // --- New sample ---
-            unexploredSamplesParentIdxs[x1Idx] = x0Idx;                                   // --- Parent of new sample ---
-            bool valid                         = propagateAndCheck(x0, x1, &randSeed, obstacles, obstaclesCount);
-            int x1Vertex                       = (DIM == 2) ? getVertex(x1[0], x1[1]) : getVertex(x1[0], x1[1], x1[2]);
-            int x1SubVertex = (DIM == 2) ? getSubVertex(x1[0], x1[1], x1Vertex) : getSubVertex(x1[0], x1[1], x1[2], x1Vertex);
-
-            // --- Update Graph sample count and populate next Frontier ---
-            unexploredSamplesVertices[x1Idx] = x1Vertex;
-            if(valid)
-                {
-                    unexploredSamplesValidVertices[x1Idx] = x1Vertex;
-                    unexploredSamplesSubVertices[x1Idx]   = x1SubVertex;
-                    if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || !activeSubVertices[x1SubVertex]) frontierNext[x1Idx] = true;
-                }
-            randomSeeds[x1Idx] = randSeed;
-        }
-}
-
-__global__ void
-propagateFrontier_kernel2_V2(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
-                             curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
-                             bool* activeSubVertices, float* vertexScores, bool* frontierNext, int* unexploredSamplesVertices,
-                             int* unexploredSamplesValidVertices, int* unexploredSamplesSubVertices, int iterations, int unexploredSize)
+                          int* unexploredSamplesValidVertices, int* unexploredSamplesSubVertices, int iterations, int unexploredSize)
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid >= unexploredSize) return;
