@@ -58,13 +58,13 @@ public:
 __global__ void
 propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
                           curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
-                          bool* activeSubVertices, float* vertexScores, bool* frontierNext, int* unexploredSamplesVertices,
+                          int* activeSubVertices, float* vertexScores, bool* frontierNext, int* unexploredSamplesVertices,
                           int* unexploredSamplesValidVertices, int* unexploredSamplesSubVertices);
 
 __global__ void
 propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
                           curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
-                          bool* activeSubVertices, float* vertexScores, bool* frontierNext, int* unexploredSamplesVertices,
+                          int* activeSubVertices, float* vertexScores, bool* frontierNext, int* unexploredSamplesVertices,
                           int* unexploredSamplesValidVertices, int* unexploredSamplesSubVertices, int iterations, int unexploredSize);
 
 __global__ void updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNextIdxs, uint frontierNextSize, float* xGoal,

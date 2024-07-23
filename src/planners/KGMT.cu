@@ -117,14 +117,14 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
             updateGraphTotalCount();
             updateGraphValidCount();
-            updateGraphSubVerticesOccupancy();
+            // updateGraphSubVerticesOccupancy();
             updateFrontier();
             if(h_costToGoal_ != 0) break;
         }
 
     double executionTime = (std::clock() - t_kgmtStart) / (double)CLOCKS_PER_SEC;
     writeExecutionTimeToCSV(executionTime);
-    std::cout << "KGMT execution time: " << executionTime << std::endl;
+    std::cout << "KGMT execution time: " << executionTime << " seconds. Iterations: " << h_itr_ << std::endl;
 }
 
 void KGMT::planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr)
@@ -172,7 +172,7 @@ void KGMT::planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, ui
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
             updateGraphTotalCount();
             updateGraphValidCount();
-            updateGraphSubVerticesOccupancy();
+            // updateGraphSubVerticesOccupancy();
             updateFrontier();
             writeDeviceVectorsToCSV(benchItr);
             if(h_costToGoal_ != 0)
@@ -225,7 +225,7 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
 __global__ void
 propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
                           curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
-                          bool* activeSubVertices, float* vertexScores, bool* frontierNext, int* unexploredSamplesVertices,
+                          int* activeSubVertices, float* vertexScores, bool* frontierNext, int* unexploredSamplesVertices,
                           int* unexploredSamplesValidVertices, int* unexploredSamplesSubVertices)
 {
     if(blockIdx.x >= frontierSize) return;
@@ -258,8 +258,8 @@ propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeS
     if(valid)
         {
             unexploredSamplesValidVertices[tid] = x1Vertex;
-            unexploredSamplesSubVertices[tid]   = x1SubVertex;
             if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || !activeSubVertices[x1SubVertex]) frontierNext[tid] = true;
+            if(activeSubVertices[x1SubVertex] == 0) atomicExch(&activeSubVertices[x1SubVertex], 1);
         }
 
     randomSeeds[tid] = randSeed;
@@ -272,7 +272,7 @@ propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeS
 __global__ void
 propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
                           curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
-                          bool* activeSubVertices, float* vertexScores, bool* frontierNext, int* unexploredSamplesVertices,
+                          int* activeSubVertices, float* vertexScores, bool* frontierNext, int* unexploredSamplesVertices,
                           int* unexploredSamplesValidVertices, int* unexploredSamplesSubVertices, int iterations, int unexploredSize)
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -297,8 +297,8 @@ propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float* treeS
     if(valid)
         {
             unexploredSamplesValidVertices[tid] = x1Vertex;
-            unexploredSamplesSubVertices[tid]   = x1SubVertex;
-            if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || !activeSubVertices[x1SubVertex]) frontierNext[tid] = true;
+            if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || activeSubVertices[x1SubVertex] == 0) frontierNext[tid] = true;
+            if(activeSubVertices[x1SubVertex] == 0) atomicExch(&activeSubVertices[x1SubVertex], 1);
         }
 
     randomSeeds[tid] = randSeed;

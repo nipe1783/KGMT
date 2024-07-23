@@ -21,7 +21,7 @@ Graph::Graph(const float ws)
     d_counterArray_          = thrust::device_vector<int>(NUM_R1_VERTICES);
     d_vertexScoreArray_      = thrust::device_vector<float>(NUM_R1_VERTICES);
     d_activeVerticesScanIdx_ = thrust::device_vector<int>(NUM_R1_VERTICES);
-    d_activeSubVertices_     = thrust::device_vector<bool>(NUM_R2_VERTICES);
+    d_activeSubVertices_     = thrust::device_vector<int>(NUM_R2_VERTICES);
 
     d_validCounterArray_ptr_ = thrust::raw_pointer_cast(d_validCounterArray_.data());
     d_counterArray_ptr_      = thrust::raw_pointer_cast(d_counterArray_.data());
@@ -237,7 +237,7 @@ __host__ __device__ int getEdge(int fromVertex, int toVertex, int* hashTable, in
 /* VERTICES UPDATE KERNEL  */
 /***************************/
 // --- Updates Vertex Scores for device graph vectors. Determines new threshold score for future samples in expansion set. ---
-__global__ void updateVertices_kernel(bool* activeSubVertices, int* validCounterArray, int* counterArray, float* vertexScores,
+__global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterArray, int* counterArray, float* vertexScores,
                                       int* updateGraphKeysCounter, int* updateGraphValidKeysCounter)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
