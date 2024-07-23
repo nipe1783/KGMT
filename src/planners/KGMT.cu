@@ -194,17 +194,28 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
     int gridSize = iDivUp(h_frontierSize_ * h_activeBlockSize_, h_activeBlockSize_);
     if(h_activeBlockSize_ * gridSize > (MAX_TREE_SIZE - h_treeSize_))
         {
-            int iterations = std::min(int(float(MAX_TREE_SIZE - h_treeSize_) / float(h_frontierSize_)), int(h_activeBlockSize_));
-            gridSize       = int(floor(MAX_TREE_SIZE / h_activeBlockSize_));
+            int iterations     = std::min(int(float(MAX_TREE_SIZE - h_treeSize_) / float(h_frontierSize_)), int(h_activeBlockSize_));
+            int unexploredSize = iterations * h_frontierSize_;
+            gridSize           = int(floor(MAX_TREE_SIZE / h_activeBlockSize_));
+
             // --- Propagate Frontier. One thread per sample. Iterates n times. ---
-            propagateFrontier_kernel2<<<gridSize, h_activeBlockSize_>>>(
+            propagateFrontier_kernel2_V2<<<gridSize, h_activeBlockSize_>>>(
               d_frontier_ptr_, d_activeFrontierIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierSize_, d_randomSeeds_ptr_,
               d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount, graph_.d_activeSubVertices_ptr_,
               graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, d_unexploredSamplesVertices_ptr_, d_unexploredSamplesValidVertices_ptr_,
-              d_unexploredSamplesSubVertices_ptr_, iterations);
+              d_unexploredSamplesSubVertices_ptr_, iterations, unexploredSize);
+
+            thrust::fill(d_frontier_.begin(), d_frontier_.end(), false);
+
+            // std::ostringstream filename;
+            // std::filesystem::create_directories("Data");
+            // std::filesystem::create_directories("Data/Frontier");
+            // filename << "Data/Frontier/Frontier_" << h_itr_ << ".csv";
+            // copyAndWriteVectorToCSV(d_frontier_, filename.str(), 1, MAX_TREE_SIZE, false);
         }
     else
         {
+            // printf("Propagate Frontier Kernel 1, treeSize: %d, frontierSize: %d\n", h_treeSize_, h_frontierSize_);
             // --- Propagate Frontier. Block Size threads per sample. ---
             propagateFrontier_kernel1<<<gridSize, h_activeBlockSize_>>>(
               d_frontier_ptr_, d_activeFrontierIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierSize_, d_randomSeeds_ptr_,
@@ -300,6 +311,41 @@ propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float* treeS
                 }
             randomSeeds[x1Idx] = randSeed;
         }
+}
+
+__global__ void
+propagateFrontier_kernel2_V2(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
+                             curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
+                             bool* activeSubVertices, float* vertexScores, bool* frontierNext, int* unexploredSamplesVertices,
+                             int* unexploredSamplesValidVertices, int* unexploredSamplesSubVertices, int iterations, int unexploredSize)
+{
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if(tid >= unexploredSize) return;
+
+    int activeFrontierIdx = tid / iterations;
+    int x0Idx             = activeFrontierIdxs[activeFrontierIdx];
+
+    // --- Load Frontier Sample into memory. ---
+    float* x0 = &treeSamples[x0Idx * SAMPLE_DIM];
+
+    // --- Propagate Sample and add it to unexplored sample set. ---
+    float* x1                        = &unexploredSamples[tid * SAMPLE_DIM];
+    unexploredSamplesParentIdxs[tid] = x0Idx;
+    curandState randSeed             = randomSeeds[tid];
+    bool valid                       = propagateAndCheck(x0, x1, &randSeed, obstacles, obstaclesCount);
+    int x1Vertex                     = (DIM == 2) ? getVertex(x1[0], x1[1]) : getVertex(x1[0], x1[1], x1[2]);
+    int x1SubVertex                  = (DIM == 2) ? getSubVertex(x1[0], x1[1], x1Vertex) : getSubVertex(x1[0], x1[1], x1[2], x1Vertex);
+
+    // --- Update Graph sample count and populate next Frontier ---
+    unexploredSamplesVertices[tid] = x1Vertex;
+    if(valid)
+        {
+            unexploredSamplesValidVertices[tid] = x1Vertex;
+            unexploredSamplesSubVertices[tid]   = x1SubVertex;
+            if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || !activeSubVertices[x1SubVertex]) frontierNext[tid] = true;
+        }
+
+    randomSeeds[tid] = randSeed;
 }
 
 /***************************/
