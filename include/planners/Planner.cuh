@@ -14,6 +14,7 @@
 #include "statePropagator/statePropagator.cuh"
 #include <filesystem>
 #include <tuple>
+#include <math.h>
 
 class Planner
 {
