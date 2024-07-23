@@ -38,28 +38,7 @@ KGMT::KGMT()
     d_updateGraphTempKeys_ptr_        = thrust::raw_pointer_cast(d_updateGraphTempKeys_.data());
     d_updateGraphTempKeysCounter_ptr_ = thrust::raw_pointer_cast(d_updateGraphTempKeysCounter_.data());
 
-    d_unexploredSamplesValidVertices_  = thrust::device_vector<int>(MAX_TREE_SIZE);
-    d_updateGraphValidCounter_         = thrust::device_vector<int>(MAX_TREE_SIZE);
-    d_updateGraphValidKeys_            = thrust::device_vector<int>(NUM_R1_VERTICES + 1);
-    d_updateGraphValidKeysCounter_     = thrust::device_vector<int>(NUM_R1_VERTICES + 1);
-    d_updateGraphValidTempKeys_        = thrust::device_vector<int>(MAX_TREE_SIZE);
-    d_updateGraphValidTempKeysCounter_ = thrust::device_vector<int>(MAX_TREE_SIZE);
-
-    d_unexploredSamplesValidVertices_ptr_  = thrust::raw_pointer_cast(d_unexploredSamplesValidVertices_.data());
-    d_updateGraphValidCounter_ptr_         = thrust::raw_pointer_cast(d_updateGraphValidCounter_.data());
-    d_updateGraphValidKeys_ptr_            = thrust::raw_pointer_cast(d_updateGraphValidKeys_.data());
-    d_updateGraphValidKeysCounter_ptr_     = thrust::raw_pointer_cast(d_updateGraphValidKeysCounter_.data());
-    d_updateGraphValidTempKeys_ptr_        = thrust::raw_pointer_cast(d_updateGraphValidTempKeys_.data());
-    d_updateGraphValidTempKeysCounter_ptr_ = thrust::raw_pointer_cast(d_updateGraphValidTempKeysCounter_.data());
-
-    d_unexploredSamplesSubVertices_ = thrust::device_vector<int>(MAX_TREE_SIZE);
-    d_updateGraphSubKeysCounter_    = thrust::device_vector<bool>(NUM_R2_VERTICES + 1);
-
-    d_unexploredSamplesSubVertices_ptr_ = thrust::raw_pointer_cast(d_unexploredSamplesSubVertices_.data());
-    d_updateGraphSubKeysCounter_ptr_    = thrust::raw_pointer_cast(d_updateGraphSubKeysCounter_.data());
-
     thrust::sequence(d_updateGraphKeys_.begin(), d_updateGraphKeys_.end(), 0);
-    thrust::sequence(d_updateGraphValidKeys_.begin(), d_updateGraphValidKeys_.end(), 0);
 
     // --- END GRAPH HELPERS ---
 
@@ -87,11 +66,6 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
     thrust::fill(d_unexploredSamplesVertices_.begin(), d_unexploredSamplesVertices_.end(), NUM_R1_VERTICES + 1);
     thrust::fill(d_updateGraphCounter_.begin(), d_updateGraphCounter_.end(), 1);
     thrust::fill(d_updateGraphKeysCounter_.begin(), d_updateGraphKeysCounter_.end(), 0);
-    thrust::fill(d_unexploredSamplesValidVertices_.begin(), d_unexploredSamplesValidVertices_.end(), NUM_R1_VERTICES + 1);
-    thrust::fill(d_updateGraphValidCounter_.begin(), d_updateGraphValidCounter_.end(), 1);
-    thrust::fill(d_updateGraphValidKeysCounter_.begin(), d_updateGraphValidKeysCounter_.end(), 0);
-    thrust::fill(d_unexploredSamplesSubVertices_.begin(), d_unexploredSamplesSubVertices_.end(), NUM_R2_VERTICES + 1);
-    thrust::fill(d_updateGraphSubKeysCounter_.begin(), d_updateGraphSubKeysCounter_.end(), false);
     thrust::fill(graph_.d_activeSubVertices_.begin(), graph_.d_activeSubVertices_.end(), false);
     thrust::fill(graph_.d_vertexScoreArray_.begin(), graph_.d_vertexScoreArray_.end(), 0.0f);
     thrust::fill(graph_.d_counterArray_.begin(), graph_.d_counterArray_.end(), 0);
@@ -113,11 +87,9 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
     while(h_itr_ < MAX_ITER)
         {
             h_itr_++;
-            graph_.updateVertices(d_updateGraphKeysCounter_ptr_, d_updateGraphValidKeysCounter_ptr_);
+            graph_.updateVertices(d_updateGraphKeysCounter_ptr_);
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
             updateGraphTotalCount();
-            updateGraphValidCount();
-            // updateGraphSubVerticesOccupancy();
             updateFrontier();
             if(h_costToGoal_ != 0) break;
         }
@@ -142,11 +114,6 @@ void KGMT::planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, ui
     thrust::fill(d_unexploredSamplesVertices_.begin(), d_unexploredSamplesVertices_.end(), NUM_R1_VERTICES + 1);
     thrust::fill(d_updateGraphCounter_.begin(), d_updateGraphCounter_.end(), 1);
     thrust::fill(d_updateGraphKeysCounter_.begin(), d_updateGraphKeysCounter_.end(), 0);
-    thrust::fill(d_unexploredSamplesValidVertices_.begin(), d_unexploredSamplesValidVertices_.end(), NUM_R1_VERTICES + 1);
-    thrust::fill(d_updateGraphValidCounter_.begin(), d_updateGraphValidCounter_.end(), 1);
-    thrust::fill(d_updateGraphValidKeysCounter_.begin(), d_updateGraphValidKeysCounter_.end(), 0);
-    thrust::fill(d_unexploredSamplesSubVertices_.begin(), d_unexploredSamplesSubVertices_.end(), NUM_R2_VERTICES + 1);
-    thrust::fill(d_updateGraphSubKeysCounter_.begin(), d_updateGraphSubKeysCounter_.end(), false);
     thrust::fill(graph_.d_activeSubVertices_.begin(), graph_.d_activeSubVertices_.end(), false);
     thrust::fill(graph_.d_vertexScoreArray_.begin(), graph_.d_vertexScoreArray_.end(), 0.0f);
     thrust::fill(graph_.d_counterArray_.begin(), graph_.d_counterArray_.end(), 0);
@@ -168,11 +135,9 @@ void KGMT::planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, ui
     while(h_itr_ < MAX_ITER)
         {
             h_itr_++;
-            graph_.updateVertices(d_updateGraphKeysCounter_ptr_, d_updateGraphValidKeysCounter_ptr_);
+            graph_.updateVertices(d_updateGraphKeysCounter_ptr_);
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
             updateGraphTotalCount();
-            updateGraphValidCount();
-            // updateGraphSubVerticesOccupancy();
             updateFrontier();
             writeDeviceVectorsToCSV(benchItr);
             if(h_costToGoal_ != 0)
@@ -202,8 +167,8 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
             propagateFrontier_kernel2<<<gridSize, h_activeBlockSize_>>>(
               d_frontier_ptr_, d_activeFrontierIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierSize_, d_randomSeeds_ptr_,
               d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount, graph_.d_activeSubVertices_ptr_,
-              graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, d_unexploredSamplesVertices_ptr_, d_unexploredSamplesValidVertices_ptr_,
-              d_unexploredSamplesSubVertices_ptr_, iterations, unexploredSize);
+              graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, d_unexploredSamplesVertices_ptr_, graph_.d_validCounterArray_ptr_,
+              iterations, unexploredSize);
             thrust::fill(d_frontier_.begin(), d_frontier_.end(), false);  // TODO: is there a way to do this inside of the prop kernel?
         }
     else
@@ -212,8 +177,7 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
             propagateFrontier_kernel1<<<gridSize, h_activeBlockSize_>>>(
               d_frontier_ptr_, d_activeFrontierIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierSize_, d_randomSeeds_ptr_,
               d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount, graph_.d_activeSubVertices_ptr_,
-              graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, d_unexploredSamplesVertices_ptr_, d_unexploredSamplesValidVertices_ptr_,
-              d_unexploredSamplesSubVertices_ptr_);
+              graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, d_unexploredSamplesVertices_ptr_, graph_.d_validCounterArray_ptr_);
         }
 }
 
@@ -222,11 +186,10 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
 /***************************/
 // --- Propagates current frontier. Builds new frontier. ---
 // --- One Block Per Frontier Sample ---
-__global__ void
-propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
-                          curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
-                          int* activeSubVertices, float* vertexScores, bool* frontierNext, int* unexploredSamplesVertices,
-                          int* unexploredSamplesValidVertices, int* unexploredSamplesSubVertices)
+__global__ void propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples,
+                                          uint frontierSize, curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles,
+                                          int obstaclesCount, int* activeSubVertices, float* vertexScores, bool* frontierNext,
+                                          int* unexploredSamplesVertices, int* validVertexCounter)
 {
     if(blockIdx.x >= frontierSize) return;
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -257,7 +220,7 @@ propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeS
     unexploredSamplesVertices[tid] = x1Vertex;
     if(valid)
         {
-            unexploredSamplesValidVertices[tid] = x1Vertex;
+            atomicAdd(&validVertexCounter[x1Vertex], 1);
             if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || !activeSubVertices[x1SubVertex]) frontierNext[tid] = true;
             if(activeSubVertices[x1SubVertex] == 0) atomicExch(&activeSubVertices[x1SubVertex], 1);
         }
@@ -269,11 +232,10 @@ propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeS
 /* FRONTIER PROPAGATION KERNEL 2 */
 /***************************/
 // --- Iterations new samples per frontier sample---
-__global__ void
-propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
-                          curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
-                          int* activeSubVertices, float* vertexScores, bool* frontierNext, int* unexploredSamplesVertices,
-                          int* unexploredSamplesValidVertices, int* unexploredSamplesSubVertices, int iterations, int unexploredSize)
+__global__ void propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples,
+                                          uint frontierSize, curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles,
+                                          int obstaclesCount, int* activeSubVertices, float* vertexScores, bool* frontierNext,
+                                          int* unexploredSamplesVertices, int* validVertexCounter, int iterations, int unexploredSize)
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid >= unexploredSize) return;
@@ -296,7 +258,7 @@ propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float* treeS
     unexploredSamplesVertices[tid] = x1Vertex;
     if(valid)
         {
-            unexploredSamplesValidVertices[tid] = x1Vertex;
+            atomicAdd(&validVertexCounter[x1Vertex], 1);
             if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || activeSubVertices[x1SubVertex] == 0) frontierNext[tid] = true;
             if(activeSubVertices[x1SubVertex] == 0) atomicExch(&activeSubVertices[x1SubVertex], 1);
         }
@@ -372,56 +334,6 @@ void KGMT::updateGraphTotalCount()
 
     thrust::fill(d_unexploredSamplesVertices_.begin(), d_unexploredSamplesVertices_.end(), NUM_R1_VERTICES + 1);
     thrust::fill(d_updateGraphCounter_.begin(), d_updateGraphCounter_.end(), 1);
-}
-
-void KGMT::updateGraphValidCount()
-{
-    // --- Sort Vertices of new samples. ---
-    thrust::sort(d_unexploredSamplesValidVertices_.begin(), d_unexploredSamplesValidVertices_.end());
-
-    auto new_end = thrust::reduce_by_key(d_unexploredSamplesValidVertices_.begin(), d_unexploredSamplesValidVertices_.end(),
-                                         d_updateGraphValidCounter_.begin(), d_updateGraphValidTempKeys_.begin(),
-                                         d_updateGraphValidTempKeysCounter_.begin());
-
-    int numUniqueVertices = new_end.first - d_updateGraphValidTempKeys_.begin();
-
-    thrust::scatter(thrust::device, d_updateGraphValidTempKeysCounter_.begin(),
-                    d_updateGraphValidTempKeysCounter_.begin() + numUniqueVertices, d_updateGraphValidTempKeys_.begin(),
-                    d_updateGraphValidKeysCounter_.begin());
-
-    thrust::fill(d_unexploredSamplesValidVertices_.begin(), d_unexploredSamplesValidVertices_.end(), NUM_R1_VERTICES + 1);
-    thrust::fill(d_updateGraphValidCounter_.begin(), d_updateGraphValidCounter_.end(), 1);
-}
-
-struct MarkPresence
-{
-    bool* d_updateGraphSubKeysCounter;
-
-    MarkPresence(bool* ptr) : d_updateGraphSubKeysCounter(ptr) {}
-
-    __device__ void operator()(const int& index) const
-    {
-        if(index >= 0)
-            {
-                d_updateGraphSubKeysCounter[index] = true;
-            }
-    }
-};
-
-void KGMT::updateGraphSubVerticesOccupancy()
-{
-    thrust::sort(d_unexploredSamplesSubVertices_.begin(), d_unexploredSamplesSubVertices_.end());
-
-    auto new_end             = thrust::unique(d_unexploredSamplesSubVertices_.begin(), d_unexploredSamplesSubVertices_.end());
-    int numUniqueSubVertices = new_end - d_unexploredSamplesSubVertices_.begin();
-
-    thrust::for_each(d_unexploredSamplesSubVertices_.begin(), d_unexploredSamplesSubVertices_.begin() + numUniqueSubVertices,
-                     MarkPresence(d_updateGraphSubKeysCounter_ptr_));
-
-    thrust::transform(graph_.d_activeSubVertices_.begin(), graph_.d_activeSubVertices_.end(), d_updateGraphSubKeysCounter_.begin(),
-                      graph_.d_activeSubVertices_.begin(), thrust::logical_or<bool>());
-
-    thrust::fill(d_unexploredSamplesSubVertices_.begin(), d_unexploredSamplesSubVertices_.end(), NUM_R2_VERTICES + 1);
 }
 
 void KGMT::writeDeviceVectorsToCSV(int itr)

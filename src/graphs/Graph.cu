@@ -237,8 +237,8 @@ __host__ __device__ int getEdge(int fromVertex, int toVertex, int* hashTable, in
 /* VERTICES UPDATE KERNEL  */
 /***************************/
 // --- Updates Vertex Scores for device graph vectors. Determines new threshold score for future samples in expansion set. ---
-__global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterArray, int* counterArray, float* vertexScores,
-                                      int* updateGraphKeysCounter, int* updateGraphValidKeysCounter)
+__global__ void
+updateVertices_kernel(int* activeSubVertices, int* validCounterArray, int* counterArray, float* vertexScores, int* updateGraphKeysCounter)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
     if(tid >= NUM_R1_VERTICES) return;
@@ -246,10 +246,8 @@ __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterA
     __shared__ float s_totalScore;
     float score = 0.0;
 
-    counterArray[tid]                = counterArray[tid] + updateGraphKeysCounter[tid];
-    validCounterArray[tid]           = validCounterArray[tid] + updateGraphValidKeysCounter[tid];
-    updateGraphKeysCounter[tid]      = 0;
-    updateGraphValidKeysCounter[tid] = 0;
+    counterArray[tid]           = counterArray[tid] + updateGraphKeysCounter[tid];
+    updateGraphKeysCounter[tid] = 0;
 
     if(validCounterArray[tid] > 0)
         {
@@ -291,9 +289,9 @@ __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterA
         }
 }
 
-void Graph::updateVertices(int* d_updateGraphKeysCounter_ptr, int* d_updateGraphValidKeysCounter_ptr)
+void Graph::updateVertices(int* d_updateGraphKeysCounter_ptr)
 {
     // --- Update vertex scores and sampleScoreThreshold ---
     updateVertices_kernel<<<1, NUM_R1_VERTICES>>>(d_activeSubVertices_ptr_, d_validCounterArray_ptr_, d_counterArray_ptr_,
-                                                  d_vertexScoreArray_ptr_, d_updateGraphKeysCounter_ptr, d_updateGraphValidKeysCounter_ptr);
+                                                  d_vertexScoreArray_ptr_, d_updateGraphKeysCounter_ptr);
 }
