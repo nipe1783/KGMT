@@ -119,14 +119,12 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
             updateGraphValidCount();
             updateGraphSubVerticesOccupancy();
             updateFrontier();
-            if(h_costToGoal_ != 0)
-                {
-                    printf("Goal Reached: %f\n", h_costToGoal_);
-                    break;
-                }
+            if(h_costToGoal_ != 0) break;
         }
 
-    std::cout << "time inside KGMT is " << (std::clock() - t_kgmtStart) / (double)CLOCKS_PER_SEC << std::endl;
+    double executionTime = (std::clock() - t_kgmtStart) / (double)CLOCKS_PER_SEC;
+    writeExecutionTimeToCSV(executionTime);
+    std::cout << "KGMT execution time: " << executionTime << std::endl;
 }
 
 void KGMT::planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr)
@@ -458,4 +456,14 @@ void KGMT::writeDeviceVectorsToCSV(int itr)
     filename.str("");
     filename << "Data/TreeSize/TreeSize" << itr << "/treeSize.csv";
     writeValueToCSV(h_treeSize_, filename.str());
+}
+
+void KGMT::writeExecutionTimeToCSV(double time)
+{
+    std::ostringstream filename;
+    std::filesystem::create_directories("Data");
+    std::filesystem::create_directories("Data/ExecutionTime");
+    filename.str("");
+    filename << "Data/ExecutionTime/executionTime.csv";
+    writeValueToCSV(time, filename.str());
 }

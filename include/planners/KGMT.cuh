@@ -17,6 +17,7 @@ public:
     void updateGraphValidCount();
     void updateGraphSubVerticesOccupancy();
     void writeDeviceVectorsToCSV(int itr);
+    void writeExecutionTimeToCSV(double time);
 
     /****************************    FIELDS    ****************************/
     // --- host fields ---
