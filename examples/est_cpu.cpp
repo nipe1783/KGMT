@@ -31,7 +31,6 @@ std::vector<float> readObstaclesFromCSV_CPU(const std::string& filename, int& nu
 
 int main(void)
 {
-    // float h_initial[SAMPLE_DIM] = {.5, .5, 0.0, 0.0, 0.0, 0.0, 0.0}, h_goal[SAMPLE_DIM] = {2, 18, 0.0, 0.0, 0.0, 0.0, 0.0};
     float h_initial[SAMPLE_DIM] = {0.3, 0.02, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
           h_goal[SAMPLE_DIM]    = {.7, .95, .9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
