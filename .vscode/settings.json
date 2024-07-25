@@ -72,7 +72,12 @@
         "cfenv": "cpp",
         "source_location": "cpp",
         "typeindex": "cpp",
-        "stdfloat": "cpp"
+        "stdfloat": "cpp",
+        "strstream": "cpp",
+        "forward_list": "cpp",
+        "list": "cpp",
+        "unordered_set": "cpp",
+        "shared_mutex": "cpp"
     },
     "python.pythonPath": "/home/nicolas/dev/research/KGMT/venv/bin/python",
     "python.analysis.extraPaths": [

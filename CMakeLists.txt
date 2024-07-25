@@ -33,13 +33,15 @@ set(SOURCE_FILES
     src/statePropagator/statePropagator.cu
     src/cpu/collisionCheck/CollisionCheck.cpp
     src/cpu/planners/EST_6DI.cpp
+    src/cpu/planners/RRT_6DI.cpp
+    src/cpu/planners/PDST_6DI.cpp
 )
 
 # Add a library target for your non-CUDA code
 add_library(KGMT_lib ${SOURCE_FILES})
 
 # Add your CUDA executable
-add_executable(main examples/main.cu)
+add_executable(main examples/gpu/main.cu)
 
 # Link the library and other dependencies with the CUDA executable
 target_link_libraries(main
@@ -53,7 +55,7 @@ target_link_libraries(main
 )
 
 # Add your CUDA executable
-add_executable(benchMain examples/benchMain.cu)
+add_executable(benchMain examples/gpu/benchMain.cu)
 
 # Link the library and other dependencies with the CUDA executable
 target_link_libraries(benchMain
@@ -66,7 +68,7 @@ target_link_libraries(benchMain
     Python3::NumPy
 )
 
-add_executable(est_cpu examples/est_cpu.cpp)
+add_executable(est_cpu examples/cpu/est_cpu.cpp)
 
 # Link the library and other dependencies with the CUDA executable
 target_link_libraries(est_cpu
@@ -78,6 +80,33 @@ target_link_libraries(est_cpu
     Python3::NumPy
     ${OMPL_LIBRARIES}
 )
+
+add_executable(rrt_cpu examples/cpu/rrt_cpu.cpp)
+
+# Link the library and other dependencies with the CUDA executable
+target_link_libraries(rrt_cpu
+    KGMT_lib
+    ${Boost_LIBRARIES}
+    ${EIGEN3_LIBRARIES}
+    yaml-cpp
+    Python3::Python
+    Python3::NumPy
+    ${OMPL_LIBRARIES}
+)
+
+add_executable(pdst_cpu examples/cpu/pdst_cpu.cpp)
+
+# Link the library and other dependencies with the CUDA executable
+target_link_libraries(pdst_cpu
+    KGMT_lib
+    ${Boost_LIBRARIES}
+    ${EIGEN3_LIBRARIES}
+    yaml-cpp
+    Python3::Python
+    Python3::NumPy
+    ${OMPL_LIBRARIES}
+)
+
 
 # Ensure CUDA separable compilation
 set_target_properties(KGMT_lib PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
