@@ -78,7 +78,6 @@
 #define R1 8
 #define R2 4
 #define SAMPLE_DIM 10
-#define NUM_DISC 10
 #define WS_SIZE 1.0f
 #define MODEL 1
 #define MAX_TREE_SIZE 30000
@@ -95,12 +94,15 @@
 #define UNI_LENGTH 1.0f
 
 // --- DOUBLE INTEGRATOR: MODEL 1 ---
+#define STATE_DIM 6
 #define DI_MIN_VEL -0.3f
 #define DI_MAX_VEL 0.3f
 #define DI_MIN_ACC -.2f
 #define DI_MAX_ACC .2f
 #define DI_MIN_DT 0.1f
 #define DI_MAX_DT 2.0f
+#define STEP_SIZE 0.1f
+#define MAX_PROPAGATION_DURATION 10
 
 #define NUM_R1_VERTICES ((DIM == 3) ? (R1 * R1 * R1) : (R1 * R1))
 #define NUM_R2_VERTICES ((DIM == 3) ? (R1 * R1 * R1 * R2 * R2 * R2) : (R1 * R1 * R2 * R2))
@@ -109,6 +111,3 @@
 #define R2_SIZE (WS_SIZE / (R1 * R2))
 #define EPSILON 1e-6f
 #define VERBOSE 1
-
-// float h_initial[SAMPLE_DIM] = {0.3, 0.02, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-//           h_goal[SAMPLE_DIM]    = {.7, .95, .9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};

@@ -32,12 +32,12 @@ std::vector<float> readObstaclesFromCSV_CPU(const std::string& filename, int& nu
 int main(void)
 {
     // float h_initial[SAMPLE_DIM] = {.5, .5, 0.0, 0.0, 0.0, 0.0, 0.0}, h_goal[SAMPLE_DIM] = {2, 18, 0.0, 0.0, 0.0, 0.0, 0.0};
-    float h_initial[SAMPLE_DIM] = {0.5, 0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-          h_goal[SAMPLE_DIM]    = {2, 19, 2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    float h_initial[SAMPLE_DIM] = {0.3, 0.02, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+          h_goal[SAMPLE_DIM]    = {.7, .95, .9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     int numObstacles = 1;
     float* d_obstacles;
-    std::vector<float> obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/obstacles.csv", numObstacles, DIM);
+    std::vector<float> obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/pillars/obstacles.csv", numObstacles, DIM);
 
     EST_6DI est;
     est.plan(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);

@@ -3,20 +3,24 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**",
-                "/usr/include/**",
-                "/usr/local/include/**",
-                "/home/nicolas/miniconda3/envs/cudf_dev/include",
-                "/home/nicolas/miniconda3/envs/cudf_dev/include/cudf",
-                "/home/nicolas/miniconda3/envs/cudf_dev/include/rmm",
-                "/home/nicolas/miniconda3/envs/cudf_dev/include/cugraph",
-                "/usr/include/eigen3",
-                "${workspaceFolder}/include"
+                "/home/nicolas/dev/research/KGMT/**",
+                "/usr/local/include/ompl-1.6",
+                "/usr/include/eigen3"
             ],
-            "intelliSenseMode": "linux-gcc-x64",
-            "compilerPath": "/home/nicolas/miniconda3/envs/cudf_dev/bin/clang",
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
             "cStandard": "c17",
-            "cppStandard": "c++17"
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-x64",
+            "compilerPathInCppPropertiesJson": "/usr/bin/gcc",
+            "mergeConfigurations": false,
+            "browse": {
+                "path": [
+                    "/home/nicolas/dev/research/KGMT/**",
+                    "/home/nicolas/dev/research/KGMT"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
         }
     ],
     "version": 4

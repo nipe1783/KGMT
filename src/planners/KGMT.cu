@@ -109,6 +109,7 @@ void KGMT::planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, ui
     while(h_itr_ < MAX_ITER)
         {
             h_itr_++;
+            printf("Iteration: %d, Tree Size: %d, Frontier Size: %d\n", h_itr_, h_treeSize_, h_frontierSize_);
             graph_.updateVertices();
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
             updateFrontier();
@@ -293,10 +294,12 @@ void KGMT::updateFrontier()
     // --- Update Tree Size ---
     h_treeSize_ += h_frontierNextSize_;
 }
-
 void KGMT::writeDeviceVectorsToCSV(int itr)
 {
     std::ostringstream filename;
+    bool append = itr != 0;
+
+    // Create necessary directories
     std::filesystem::create_directories("Data");
     std::filesystem::create_directories("Data/Samples/Samples" + std::to_string(itr));
     std::filesystem::create_directories("Data/Parents/Parents" + std::to_string(itr));
@@ -306,30 +309,37 @@ void KGMT::writeDeviceVectorsToCSV(int itr)
     std::filesystem::create_directories("Data/FrontierSize/FrontierSize" + std::to_string(itr));
     std::filesystem::create_directories("Data/TreeSize/TreeSize" + std::to_string(itr));
 
+    // Write Samples
     filename.str("");
     filename << "Data/Samples/Samples" << itr << "/samples" << h_itr_ << ".csv";
-    copyAndWriteVectorToCSV(d_treeSamples_, filename.str(), MAX_TREE_SIZE, SAMPLE_DIM, h_itr_ > 1);
+    copyAndWriteVectorToCSV(d_treeSamples_, filename.str(), MAX_TREE_SIZE, SAMPLE_DIM, append);
 
+    // Write Parents
     filename.str("");
     filename << "Data/Parents/Parents" << itr << "/parents" << h_itr_ << ".csv";
-    copyAndWriteVectorToCSV(d_treeSamplesParentIdxs_, filename.str(), MAX_TREE_SIZE, 1, h_itr_ > 1);
+    copyAndWriteVectorToCSV(d_treeSamplesParentIdxs_, filename.str(), MAX_TREE_SIZE, 1, append);
 
+    // Write Total Count Per Vertex
     filename.str("");
     filename << "Data/TotalCountPerVertex/TotalCountPerVertex" << itr << "/totalCountPerVertex.csv";
-    copyAndWriteVectorToCSV(graph_.d_counterArray_, filename.str(), 1, NUM_R1_VERTICES, h_itr_ > 1);
+    copyAndWriteVectorToCSV(graph_.d_counterArray_, filename.str(), 1, NUM_R1_VERTICES, append);
 
+    // Write Valid Count Per Vertex
     filename.str("");
     filename << "Data/ValidCountPerVertex/ValidCountPerVertex" << itr << "/validCountPerVertex.csv";
-    copyAndWriteVectorToCSV(graph_.d_validCounterArray_, filename.str(), 1, NUM_R1_VERTICES, h_itr_ > 1);
+    copyAndWriteVectorToCSV(graph_.d_validCounterArray_, filename.str(), 1, NUM_R1_VERTICES, append);
 
+    // Write Vertex Scores
     filename.str("");
     filename << "Data/VertexScores/VertexScores" << itr << "/vertexScores.csv";
-    copyAndWriteVectorToCSV(graph_.d_vertexScoreArray_, filename.str(), 1, NUM_R1_VERTICES, h_itr_ > 1);
+    copyAndWriteVectorToCSV(graph_.d_vertexScoreArray_, filename.str(), 1, NUM_R1_VERTICES, append);
 
+    // Write Frontier Size
     filename.str("");
     filename << "Data/FrontierSize/FrontierSize" << itr << "/frontierSize.csv";
     writeValueToCSV(h_frontierSize_, filename.str());
 
+    // Write Tree Size
     filename.str("");
     filename << "Data/TreeSize/TreeSize" << itr << "/treeSize.csv";
     writeValueToCSV(h_treeSize_, filename.str());
