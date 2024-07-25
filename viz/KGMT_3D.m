@@ -3,7 +3,7 @@ clc
 clear all
 
 % Parameters
-numFiles = 5;
+numFiles = 11;
 radius = 0.05;
 N = 8;
 n = 4;
@@ -82,22 +82,52 @@ for i = 1:numFiles
         u = samples(j, stateSize+1:sampleSize-1);
         duration = samples(j, sampleSize);
         numDisc = duration/STEP_SIZE;
+        % x = x0(1);
+        % y = x0(2);
+        % z = x0(3);
+        % vx = x0(4);
+        % vy = x0(5);
+        % vz = x0(6);
+        % ax = u(1);
+        % ay = u(2);
+        % az = u(3);
         x = x0(1);
         y = x0(2);
         z = x0(3);
-        vx = x0(4);
-        vy = x0(5);
-        vz = x0(6);
-        ax = u(1);
-        ay = u(2);
-        az = u(3);
+        yaw = x0(4);
+        pitch = x0(5);
+        v = x0(6);
+        yawRate = u(1);
+        pitchRate = u(2);
+        a = u(3);
         for k = 1:(numDisc)
-            x = x + (vx + (vx + 2 * (vx + ax * STEP_SIZE / 2) + (vx + ax * STEP_SIZE))) * STEP_SIZE / 6;
-            y = y + (vy + (vy + 2 * (vy + ay * STEP_SIZE / 2) + (vy + ay * STEP_SIZE))) * STEP_SIZE / 6;
-            z = z + (vz + (vz + 2 * (vz + az * STEP_SIZE / 2) + (vz + az * STEP_SIZE))) * STEP_SIZE / 6;
-            vx = vx + (ax + 2 * ax + 2 * ax + ax) * STEP_SIZE / 6;
-            vy = vy + (ay + 2 * ay + 2 * ay + ay) * STEP_SIZE / 6;
-            vz = vz + (az + 2 * az + 2 * az + az) * STEP_SIZE / 6;
+            % x = x + (vx + (vx + 2 * (vx + ax * STEP_SIZE / 2) + (vx + ax * STEP_SIZE))) * STEP_SIZE / 6;
+            % y = y + (vy + (vy + 2 * (vy + ay * STEP_SIZE / 2) + (vy + ay * STEP_SIZE))) * STEP_SIZE / 6;
+            % z = z + (vz + (vz + 2 * (vz + az * STEP_SIZE / 2) + (vz + az * STEP_SIZE))) * STEP_SIZE / 6;
+            % vx = vx + (ax + 2 * ax + 2 * ax + ax) * STEP_SIZE / 6;
+            % vy = vy + (ay + 2 * ay + 2 * ay + ay) * STEP_SIZE / 6;
+            % vz = vz + (az + 2 * az + 2 * az + az) * STEP_SIZE / 6;
+           x = x + (STEP_SIZE / 6.0) * ...
+                (v * cos(pitch) * cos(yaw) + ...
+                 2.0 * ((v + 0.5 * STEP_SIZE * a) * cos(pitch + 0.5 * STEP_SIZE * pitchRate) * cos(yaw + 0.5 * STEP_SIZE * yawRate) + ...
+                        (v + 0.5 * STEP_SIZE * a) * cos(pitch + 0.5 * STEP_SIZE * pitchRate) * cos(yaw + 0.5 * STEP_SIZE * yawRate)) + ...
+                 (v + STEP_SIZE * a) * cos(pitch + STEP_SIZE * pitchRate) * cos(yaw + STEP_SIZE * yawRate));
+            
+            y = y + (STEP_SIZE / 6.0) * ...
+                (v * cos(pitch) * sin(yaw) + ...
+                 2.0 * ((v + 0.5 * STEP_SIZE * a) * cos(pitch + 0.5 * STEP_SIZE * pitchRate) * sin(yaw + 0.5 * STEP_SIZE * yawRate) + ...
+                        (v + 0.5 * STEP_SIZE * a) * cos(pitch + 0.5 * STEP_SIZE * pitchRate) * sin(yaw + 0.5 * STEP_SIZE * yawRate)) + ...
+                 (v + STEP_SIZE * a) * cos(pitch + STEP_SIZE * pitchRate) * sin(yaw + STEP_SIZE * yawRate));
+            
+            z = z + (STEP_SIZE / 6.0) * ...
+                (v * sin(pitch) + ...
+                 2.0 * ((v + 0.5 * STEP_SIZE * a) * sin(pitch + 0.5 * STEP_SIZE * pitchRate) + ...
+                        (v + 0.5 * STEP_SIZE * a) * sin(pitch + 0.5 * STEP_SIZE * pitchRate)) + ...
+                 (v + STEP_SIZE * a) * sin(pitch + STEP_SIZE * pitchRate));
+            
+            yaw = yaw + STEP_SIZE * yawRate;
+            pitch = pitch + STEP_SIZE * pitchRate;
+            v = v + (STEP_SIZE / 6.0) * (a + 2.0 * (a + a) + a);
             segmentX = [segmentX, x];
             segmentY = [segmentY, y];
             segmentZ = [segmentZ, z];

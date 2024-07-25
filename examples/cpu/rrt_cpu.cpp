@@ -1,4 +1,4 @@
-#include "cpu/planners/RRT_6DI.h"
+#include "cpu/planners/OMPL_Planner.h"
 #include <iostream>
 
 std::vector<float> readObstaclesFromCSV_CPU(const std::string& filename, int& numObstacles, int workspaceDim)
@@ -38,8 +38,8 @@ int main(void)
     float* d_obstacles;
     std::vector<float> obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/pillars/obstacles.csv", numObstacles, DIM);
 
-    RRT_6DI rrt;
-    rrt.plan(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
+    OMPL_Planner rrt;
+    rrt.planRRT(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
 
     return 0;
 }
