@@ -198,6 +198,93 @@ __device__ bool propagateAndCheckDoubleIntRungeKutta(float* x0, float* x1, curan
 }
 
 /***************************/
+/* DUBINS AIRPLANE PROPAGATION FUNCTION */
+/***************************/
+__device__ bool propagateAndCheckDubinsAirplaneRungeKutta(float* x0, float* x1, curandState* seed, float* obstacles, int obstaclesCount)
+{
+    float a                 = DUBINS_AIRPLANE_MIN_ACC + curand_uniform(seed) * (DUBINS_AIRPLANE_MAX_ACC - DUBINS_AIRPLANE_MIN_ACC);
+    float yawRate           = DUBINS_AIRPLANE_MIN_YR + curand_uniform(seed) * (DUBINS_AIRPLANE_MAX_YR - DUBINS_AIRPLANE_MIN_YR);
+    float pitchRate         = DUBINS_AIRPLANE_MIN_PR + curand_uniform(seed) * (DUBINS_AIRPLANE_MAX_PR - DUBINS_AIRPLANE_MIN_PR);
+    int propagationDuration = 1 + (int)(curand_uniform(seed) * (MAX_PROPAGATION_DURATION));
+
+    float x     = x0[0];
+    float y     = x0[1];
+    float z     = x0[2];
+    float yaw   = x0[3];
+    float pitch = x0[4];
+    float v     = x0[5];
+
+    bool motionValid = true;
+    float bbMin[DIM], bbMax[DIM];
+
+    for(int i = 0; i < propagationDuration; i++)
+        {
+            float x0State[DIM] = {x, y, z};
+
+            // --- State Propagation using 4th Order Runge-Kutta Method ---
+            x +=
+              (STEP_SIZE / 6.0f) *
+              (v * cosf(pitch) * cosf(yaw) +
+               2.0f * ((v + 0.5f * STEP_SIZE * a) * cosf(pitch + 0.5f * STEP_SIZE * pitchRate) * cosf(yaw + 0.5f * STEP_SIZE * yawRate) +
+                       (v + 0.5f * STEP_SIZE * a) * cosf(pitch + 0.5f * STEP_SIZE * pitchRate) * cosf(yaw + 0.5f * STEP_SIZE * yawRate)) +
+               (v + STEP_SIZE * a) * cosf(pitch + STEP_SIZE * pitchRate) * cosf(yaw + STEP_SIZE * yawRate));
+            y +=
+              (STEP_SIZE / 6.0f) *
+              (v * cosf(pitch) * sinf(yaw) +
+               2.0f * ((v + 0.5f * STEP_SIZE * a) * cosf(pitch + 0.5f * STEP_SIZE * pitchRate) * sinf(yaw + 0.5f * STEP_SIZE * yawRate) +
+                       (v + 0.5f * STEP_SIZE * a) * cosf(pitch + 0.5f * STEP_SIZE * pitchRate) * sinf(yaw + 0.5f * STEP_SIZE * yawRate)) +
+               (v + STEP_SIZE * a) * cosf(pitch + STEP_SIZE * pitchRate) * sinf(yaw + STEP_SIZE * yawRate));
+            z += (STEP_SIZE / 6.0f) * (v * sinf(pitch) +
+                                       2.0f * ((v + 0.5f * STEP_SIZE * a) * sinf(pitch + 0.5f * STEP_SIZE * pitchRate) +
+                                               (v + 0.5f * STEP_SIZE * a) * sinf(pitch + 0.5f * STEP_SIZE * pitchRate)) +
+                                       (v + STEP_SIZE * a) * sinf(pitch + STEP_SIZE * pitchRate));
+            yaw += STEP_SIZE * yawRate;
+            pitch += STEP_SIZE * pitchRate;
+            v += (STEP_SIZE / 6.0f) * (a + 2.0f * (a + a) + a);
+
+            float x1State[DIM] = {x, y, z};
+
+            // --- Workspace Limit Check ---
+            if(x < 0 || x > WS_SIZE || y < 0 || y > WS_SIZE || z < 0 || z > WS_SIZE)
+                {
+                    motionValid = false;
+                    break;
+                }
+
+            // --- Obstacle Collision Check ---
+            for(int d = 0; d < DIM; d++)
+                {
+                    if(x0State[d] > x1State[d])
+                        {
+                            bbMin[d] = x1State[d];
+                            bbMax[d] = x0State[d];
+                        }
+                    else
+                        {
+                            bbMin[d] = x0State[d];
+                            bbMax[d] = x1State[d];
+                        }
+                }
+
+            motionValid = motionValid && isMotionValid(x0State, x1State, bbMin, bbMax, obstacles, obstaclesCount);
+            if(!motionValid) break;
+        }
+
+    x1[0] = x;
+    x1[1] = y;
+    x1[2] = z;
+    x1[3] = yaw;
+    x1[4] = pitch;
+    x1[5] = v;
+    x1[6] = yawRate;
+    x1[7] = pitchRate;
+    x1[8] = a;
+    x1[9] = STEP_SIZE * propagationDuration;
+
+    return motionValid;
+}
+
+/***************************/
 /* GET PROPAGATION FUNCTION */
 /***************************/
 __device__ PropagateAndCheckFunc getPropagateAndCheckFunc()
@@ -208,6 +295,8 @@ __device__ PropagateAndCheckFunc getPropagateAndCheckFunc()
                 return propagateAndCheckUnicycle;
             case 1:
                 return propagateAndCheckDoubleIntRungeKutta;
+            case 2:
+                return propagateAndCheckDubinsAirplaneRungeKutta;
             default:
                 return nullptr;
         }

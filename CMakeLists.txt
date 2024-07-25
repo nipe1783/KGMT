@@ -32,9 +32,7 @@ set(SOURCE_FILES
     src/helper/helper.cu
     src/statePropagator/statePropagator.cu
     src/cpu/collisionCheck/CollisionCheck.cpp
-    src/cpu/planners/EST_6DI.cpp
-    src/cpu/planners/RRT_6DI.cpp
-    src/cpu/planners/PDST_6DI.cpp
+    src/cpu/planners/OMPL_Planner.cpp
 )
 
 # Add a library target for your non-CUDA code

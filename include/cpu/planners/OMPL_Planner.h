@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ompl/control/planners/rrt/RRT.h>
+#include <ompl/control/planners/pdst/PDST.h>
 #include <ompl/control/planners/est/EST.h>
 #include <ompl/control/SimpleSetup.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
@@ -19,12 +21,12 @@ namespace ob = ompl::base;
 namespace oc = ompl::control;
 namespace fs = std::filesystem;
 
-class EST_6DI
+class OMPL_Planner
 {
 public:
     // constructor and destructor:
-    EST_6DI();
-    ~EST_6DI();
+    OMPL_Planner();
+    ~OMPL_Planner();
 
     // fields:
     ob::RealVectorBounds boundsPos_, boundsVel_;
@@ -33,7 +35,9 @@ public:
     float* obstacles_;
 
     // methods:
-    void plan(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
+    void planRRT(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
+    void planEST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
+    void planPDST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     oc::SimpleSetupPtr kinodynamicSimpleSetUp(const float* initial, const float* goal);
 
     ob::StateSpacePtr createStateSpace();
