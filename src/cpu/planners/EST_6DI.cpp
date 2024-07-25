@@ -139,7 +139,6 @@ oc::ControlSpacePtr EST_6DI::createControlSpace(ob::StateSpacePtr &space) {
     return cspace;
 }
 
-
 oc::SimpleSetupPtr EST_6DI::kinodynamicSimpleSetUp(const float* initial, const float* goal)
 {
     ob::StateSpacePtr space = createStateSpace();
@@ -149,7 +148,11 @@ oc::SimpleSetupPtr EST_6DI::kinodynamicSimpleSetUp(const float* initial, const f
 
     auto odeFunction = std::bind(&doubleIntegratorODE, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
     auto odeSolver = std::make_shared<oc::ODEBasicSolver<>>(ss->getSpaceInformation(), odeFunction);
+
+
     ss->setStatePropagator(oc::ODESolver::getStatePropagator(odeSolver));
+    ss->getSpaceInformation()->setPropagationStepSize(STEP_SIZE);
+    ss->getSpaceInformation()->setMinMaxControlDuration(1, MAX_PROPAGATION_DURATION);
 
     // set the custom projection evaluator
     space->registerDefaultProjection(ob::ProjectionEvaluatorPtr(new CustomProjection(space.get())));

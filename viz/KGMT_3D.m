@@ -3,25 +3,16 @@ clc
 clear all
 
 % Parameters
-numFiles = 8;
-width = 20.0;
-height = 20.0;
-depth = 20.0;
+numFiles = 5;
 radius = 0.05;
 N = 8;
 n = 4;
-R1_width = width / N;
-R1_height = height / N;
-R1_depth = depth / N;
-R2_width = R1_width / n;
-R2_height = R1_height / n;
-R2_depth = R1_depth / n;
-numDisc = 10;
 sampleSize = 10;
 stateSize = 6;
 controlSize = 3;
 xGoal = [.7, .95, .9];
 alphaValue = 0.1;
+STEP_SIZE = .1;
 
 % Obstacle file path
 obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/pillars/obstacles.csv';
@@ -90,25 +81,30 @@ for i = 1:numFiles
         segmentZ = [x0(3)];
         u = samples(j, stateSize+1:sampleSize-1);
         duration = samples(j, sampleSize);
-        dt = duration / numDisc;
+        numDisc = duration/STEP_SIZE;
         x = x0(1);
         y = x0(2);
         z = x0(3);
         vx = x0(4);
         vy = x0(5);
         vz = x0(6);
+        ax = u(1);
+        ay = u(2);
+        az = u(3);
         for k = 1:(numDisc)
-            x = x + vx*dt;
-            y = y + vy*dt;
-            z = z + vz*dt;
-            vx = vx + u(1)*dt;
-            vy = vy + u(2)*dt;
-            vz = vz + u(3)*dt;
-
+            x = x + (vx + (vx + 2 * (vx + ax * STEP_SIZE / 2) + (vx + ax * STEP_SIZE))) * STEP_SIZE / 6;
+            y = y + (vy + (vy + 2 * (vy + ay * STEP_SIZE / 2) + (vy + ay * STEP_SIZE))) * STEP_SIZE / 6;
+            z = z + (vz + (vz + 2 * (vz + az * STEP_SIZE / 2) + (vz + az * STEP_SIZE))) * STEP_SIZE / 6;
+            vx = vx + (ax + 2 * ax + 2 * ax + ax) * STEP_SIZE / 6;
+            vy = vy + (ay + 2 * ay + 2 * ay + ay) * STEP_SIZE / 6;
+            vz = vz + (az + 2 * az + 2 * az + az) * STEP_SIZE / 6;
             segmentX = [segmentX, x];
             segmentY = [segmentY, y];
             segmentZ = [segmentZ, z];
         end
+        segmentX = [segmentX, samples(j, 1)];
+        segmentY = [segmentY, samples(j, 2)];
+        segmentZ = [segmentZ, samples(j, 3)];
 
         plot3(segmentX, segmentY, segmentZ, '-.', 'Color', 'k', 'LineWidth', 0.01);
         plot3(samples(j, 1), samples(j, 2), samples(j, 3), 'bo', 'MarkerFaceColor', 'b', 'MarkerSize', 2);

@@ -65,7 +65,7 @@ void writeVectorToCSV(const thrust::host_vector<T>& vec, const std::string& file
         {
             file.open(filename);
         }
-    file << std::fixed << std::setprecision(10);
+    file << std::fixed << std::setprecision(6);
 
     for(int i = 0; i < rows; i++)
         {

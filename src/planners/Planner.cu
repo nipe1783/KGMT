@@ -21,7 +21,8 @@ Planner::Planner()
             printf("/***************************/\n");
             printf("/* Workspace Dimension: %d */\n", DIM);
             printf("/* Workspace Size: %f */\n", WS_SIZE);
-            printf("/* Discretization steps in trajectory: %d */\n", NUM_DISC);
+            printf("/* Maximum discretization steps in propagation: %d */\n", MAX_PROPAGATION_DURATION);
+            printf("/* Propagation step Size: %f */\n", STEP_SIZE);
             printf("/* Max Tree Size: %d */\n", MAX_TREE_SIZE);
             printf("/* Goal Distance Threshold: %f */\n", GOAL_THRESH);
             printf("/* Max Planning Iterations: %d */\n", MAX_ITER);
