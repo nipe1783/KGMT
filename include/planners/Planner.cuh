@@ -28,7 +28,7 @@ public:
 
     /****************************    FIELDS    ****************************/
     // --- host fields ---
-    uint h_treeSize_ = 0, h_itr_ = 0, h_blockSize_ = 64, h_gridSize_;
+    uint h_treeSize_ = 0, h_itr_ = 0, h_blockSize_ = 128, h_gridSize_;
     float h_costToGoal_ = 0.0;
 
     // --- device fields ---
