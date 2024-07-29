@@ -10,7 +10,7 @@ int main(void)
     float* d_obstacles;
 
     // --- Load Workspace Obstacles ---
-    std::vector<float> obstacles = readObstaclesFromCSV("../include/config/obstacles/trees/obstacles.csv", numObstacles, DIM);
+    std::vector<float> obstacles = readObstaclesFromCSV("../include/config/obstacles/pillars/obstacles.csv", numObstacles, DIM);
 
     // --- Transfer Obstacles to device ---
     cudaMalloc(&d_obstacles, numObstacles * 2 * DIM * sizeof(float));
