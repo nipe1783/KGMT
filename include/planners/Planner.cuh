@@ -28,7 +28,7 @@ public:
 
     /****************************    FIELDS    ****************************/
     // --- host fields ---
-    uint h_treeSize_ = 0, h_itr_ = 0, h_blockSize_ = 512, h_gridSize_;
+    uint h_treeSize_ = 0, h_itr_ = 0, h_blockSize_ = 64, h_gridSize_;
     float h_costToGoal_ = 0.0;
 
     // --- device fields ---
@@ -60,3 +60,8 @@ __global__ void findInd(uint numSamples, bool* S, uint* scanIdx, uint* activeS);
 /***************************/
 // --- Finds active indices in an integer array. ---
 __global__ void findInd(uint numSamples, uint* S, uint* scanIdx, uint* activeS);
+
+/***************************/
+/* REPEAT INDICES KERNEL */
+/***************************/
+__global__ void repeatInd(uint numSamples, uint* activeS, uint* C, uint* prefixSum, uint* repeatedInd);

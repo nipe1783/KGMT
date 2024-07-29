@@ -79,7 +79,7 @@
 #define R2 4
 #define SAMPLE_DIM 10
 #define WS_SIZE 1.0f
-#define MODEL 2
+#define MODEL 1
 #define MAX_TREE_SIZE 30000
 #define GOAL_THRESH 0.05f
 #define MAX_ITER 100
