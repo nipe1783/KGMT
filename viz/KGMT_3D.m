@@ -11,19 +11,19 @@ catch
 end
 
 % Parameters
-numFiles = 9;
+numFiles = 14;
 radius = 0.05;
 N = 8;
 n = 4;
 sampleSize = 10;
 stateSize = 6;
 controlSize = 3;
-xGoal = [.7, .95, .9];
+xGoal = [.9, .95, .9];
 alphaValue = 0.1;
 STEP_SIZE = .1;
 
 % Obstacle file path
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/pillars/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/narrowPassage/obstacles.csv';
 obstacles = readmatrix(obstacleFilePath);
 
 for i = 1:numFiles
