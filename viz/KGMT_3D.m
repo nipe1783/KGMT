@@ -3,7 +3,7 @@ clc
 clear all
 
 % Parameters
-numFiles = 11;
+numFiles = 8;
 radius = 0.05;
 N = 8;
 n = 4;

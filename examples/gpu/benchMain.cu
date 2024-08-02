@@ -2,6 +2,9 @@
 #include "planners/KGMT.cuh"
 int main(void)
 {
+    // --- Remove Previous Bench Data ---
+    system("rm -rf Data/*");
+
     float h_initial[SAMPLE_DIM] = {0.3, 0.02, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
           h_goal[SAMPLE_DIM]    = {.7, .95, .9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     KGMT kgmt;
