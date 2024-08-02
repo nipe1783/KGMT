@@ -240,7 +240,7 @@ __host__ __device__ int getEdge(int fromVertex, int toVertex, int* hashTable, in
 __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterArray, int* counterArray, float* vertexScores)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
-    if(tid >= NUM_R1_VERTICES) return;
+    if(tid >= NUM_R1_VERTICES - 1) return;
 
     __shared__ float s_totalScore;
     float score = 0.0;
@@ -259,8 +259,9 @@ __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterA
             coverage /= R2_PER_R1;
 
             // --- From OMPL Syclop ref: https://ompl.kavrakilab.org/classompl_1_1control_1_1Syclop.html---
-            score = pow(((EPSILON + numValidSamples) / (EPSILON + numValidSamples + (counterArray[tid] - numValidSamples))), 4) /
-                    ((1 + coverage) * (1 + pow(counterArray[tid], 2)));
+            float freeVol =
+              (EPSILON + numValidSamples) / (EPSILON + numValidSamples + (counterArray[tid] - numValidSamples)) * pow(R1_SIZE, DIM);
+            score = pow(freeVol, 1) / ((1 + coverage) * (1 + pow(counterArray[tid], 2)));
         }
 
     // --- Sum scores from each thread to determine score threshold ---
@@ -281,7 +282,8 @@ __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterA
         }
     else
         {
-            vertexScores[tid] = score / s_totalScore;
+            // TODO: check if adding epsilon is ok.
+            vertexScores[tid] = (score + EPSILON) / s_totalScore;
         }
 }
 

@@ -270,39 +270,59 @@ __global__ void propagateFrontier_kernel2(bool* frontier, uint* activeFrontierId
 __global__ void
 updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNextIdxs, uint frontierNextSize, float* xGoal, int treeSize,
                       float* unexploredSamples, float* treeSamples, int* unexploredSamplesParentIdxs, int* treeSamplesParentIdxs,
-                      float* treeSampleCosts, float* costToGoal, uint* activeFrontierRepeatCount, int* validVertexCounter)
+                      float* treeSampleCosts, float* costToGoal, uint* activeFrontierRepeatCount, int* validVertexCounter,
+                      curandState* randomSeeds, float* vertexScores)
 {
-    int tid           = blockIdx.x * blockDim.x + threadIdx.x;
-    frontierNext[tid] = false;
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     __shared__ float s_xGoal[SAMPLE_DIM];
     if(threadIdx.x < SAMPLE_DIM) s_xGoal[threadIdx.x] = xGoal[threadIdx.x];
     __syncthreads();
 
-    if(tid >= frontierNextSize) return;
-    // --- Update Tree ---
-    int x1TreeIdx                    = treeSize + tid;               // --- Index of new tree sample ---
-    int x1UnexploredIdx              = activeFrontierNextIdxs[tid];  // --- Index of sample in unexplored sample set ---
-    float* x1                        = &unexploredSamples[x1UnexploredIdx * SAMPLE_DIM];  // --- sample from unexplored set ---
-    int x0Idx                        = unexploredSamplesParentIdxs[x1UnexploredIdx];      // --- parent of the unexplored sample ---
-    treeSamplesParentIdxs[x1TreeIdx] = x0Idx;  // --- Transfer parent of unexplored sample to tree ---
-    for(int i = 0; i < SAMPLE_DIM; i++) treeSamples[x1TreeIdx * SAMPLE_DIM + i] = x1[i];  // --- Transfer unexplored sample to tree ---
-    treeSampleCosts[x1TreeIdx] = distance(x1, s_xGoal);                                   // --- Update cost of new sample ---
+    if(tid < frontierNextSize)
+        {
+            if(tid < MAX_TREE_SIZE)
+                {
+                    // --- Update Tree ---
+                    int x1TreeIdx       = treeSize + tid;               // --- Index of new tree sample ---
+                    int x1UnexploredIdx = activeFrontierNextIdxs[tid];  // --- Index of sample in unexplored sample set ---
+                    frontierNext[activeFrontierNextIdxs[tid]] = false;
+                    float* x1 = &unexploredSamples[x1UnexploredIdx * SAMPLE_DIM];  // --- sample from unexplored set ---
+                    int x0Idx = unexploredSamplesParentIdxs[x1UnexploredIdx];      // --- parent of the unexplored sample ---
+                    treeSamplesParentIdxs[x1TreeIdx] = x0Idx;                      // --- Transfer parent of unexplored sample to tree ---
+                    for(int i = 0; i < SAMPLE_DIM; i++)
+                        treeSamples[x1TreeIdx * SAMPLE_DIM + i] = x1[i];  // --- Transfer unexplored sample to tree ---
+                    treeSampleCosts[x1TreeIdx] = distance(x1, s_xGoal);   // --- Update cost of new sample ---
 
-    // --- Update Frontier ---
-    frontier[x1TreeIdx] = true;
+                    // --- Update Frontier ---
+                    frontier[x1TreeIdx] = true;
 
-    int xVertex = (DIM == 2) ? getVertex(treeSamples[x1TreeIdx * SAMPLE_DIM], treeSamples[x1TreeIdx * SAMPLE_DIM + 1])
-                             : getVertex(treeSamples[x1TreeIdx * SAMPLE_DIM], treeSamples[x1TreeIdx * SAMPLE_DIM + 1],
-                                         treeSamples[x1TreeIdx * SAMPLE_DIM + 2]);
+                    int xVertex = (DIM == 2) ? getVertex(treeSamples[x1TreeIdx * SAMPLE_DIM], treeSamples[x1TreeIdx * SAMPLE_DIM + 1])
+                                             : getVertex(treeSamples[x1TreeIdx * SAMPLE_DIM], treeSamples[x1TreeIdx * SAMPLE_DIM + 1],
+                                                         treeSamples[x1TreeIdx * SAMPLE_DIM + 2]);
 
-    if(validVertexCounter[xVertex] < 10)
-        activeFrontierRepeatCount[x1TreeIdx] = 15;
-    else
-        activeFrontierRepeatCount[x1TreeIdx] = 1;
+                    if(validVertexCounter[xVertex] < 10)
+                        activeFrontierRepeatCount[x1TreeIdx] = 15;
+                    else
+                        activeFrontierRepeatCount[x1TreeIdx] = 1;
 
-    // --- Goal Criteria Check ---
-    if(treeSampleCosts[x1TreeIdx] < GOAL_THRESH) costToGoal[0] = treeSampleCosts[x1TreeIdx];
+                    // --- Goal Criteria Check ---
+                    if(treeSampleCosts[x1TreeIdx] < GOAL_THRESH) costToGoal[0] = treeSampleCosts[x1TreeIdx];
+                }
+        }
+    else if(tid < frontierNextSize + treeSize)
+        {
+            int treeIdx      = tid - frontierNextSize;
+            int xVertex      = (DIM == 2) ? getVertex(treeSamples[treeIdx * SAMPLE_DIM], treeSamples[treeIdx * SAMPLE_DIM + 1])
+                                          : getVertex(treeSamples[treeIdx * SAMPLE_DIM], treeSamples[treeIdx * SAMPLE_DIM + 1],
+                                                      treeSamples[treeIdx * SAMPLE_DIM + 2]);
+            curandState seed = randomSeeds[treeIdx];
+            if(frontier[treeIdx] == 0 && curand_uniform(&seed) <= vertexScores[xVertex])
+                {
+                    frontier[treeIdx]                  = true;
+                    activeFrontierRepeatCount[treeIdx] = 1;
+                }
+        }
 }
 
 void KGMT::updateFrontier()
@@ -314,10 +334,11 @@ void KGMT::updateFrontier()
 
     // --- Update Frontier ---
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
-    updateFrontier_kernel<<<std::min(int(h_frontierNextSize_), int(floor(MAX_TREE_SIZE / h_blockSize_))), h_blockSize_>>>(
+    updateFrontier_kernel<<<iDivUp(h_frontierNextSize_ + h_treeSize_, h_blockSize_), h_blockSize_>>>(
       d_frontier_ptr_, d_frontierNext_ptr_, d_activeFrontierIdxs_ptr_, h_frontierNextSize_, d_goalSample_ptr_, h_treeSize_,
       d_unexploredSamples_ptr_, d_treeSamples_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_treeSamplesParentIdxs_ptr_,
-      d_treeSampleCosts_ptr_, d_costToGoal_ptr_, d_activeFrontierRepeatCount_ptr_, graph_.d_validCounterArray_ptr_);
+      d_treeSampleCosts_ptr_, d_costToGoal_ptr_, d_activeFrontierRepeatCount_ptr_, graph_.d_validCounterArray_ptr_, d_randomSeeds_ptr_,
+      graph_.d_vertexScoreArray_ptr_);
 
     // --- Check for goal criteria ---
     cudaMemcpy(&h_costToGoal_, d_costToGoal_ptr_, sizeof(float), cudaMemcpyDeviceToHost);
@@ -329,7 +350,7 @@ void KGMT::updateFrontier()
 void KGMT::writeDeviceVectorsToCSV(int itr)
 {
     std::ostringstream filename;
-    bool append = itr != 0;
+    bool append = h_itr_ != 0;
 
     // Create necessary directories
     std::filesystem::create_directories("Data");
