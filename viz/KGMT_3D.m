@@ -11,19 +11,19 @@ catch
 end
 
 % Parameters
-numFiles = 14;
+numFiles = 7;
 radius = 0.05;
 N = 8;
 n = 4;
 sampleSize = 10;
 stateSize = 6;
 controlSize = 3;
-xGoal = [.9, .95, .9];
-alphaValue = 0.1;
+xGoal = [.7, .95, .9];
+alphaValue = 0.8;
 STEP_SIZE = .1;
 
 % Obstacle file path
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/narrowPassage/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/pillars/obstacles.csv';
 obstacles = readmatrix(obstacleFilePath);
 
 for i = 1:numFiles
@@ -130,4 +130,18 @@ for i = 1:numFiles
     drawnow;
     saveas(gcf, sprintf('figs/top_KGMT_Iteration_%d.jpg', i));
     print(sprintf('figs/top_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300'); % Save with 300 DPI
+
+    % Save view looking along the x-axis from above
+    midY = (min(samples(:,2)) + max(samples(:,2))) / 2;
+    midZ = (min(samples(:,3)) + max(samples(:,3))) / 2;
+    campos([0, midY, max(samples(:,3)) + 1]); % Position the camera above the max z-value
+    camtarget([0, midY, midZ]); % Set the target point to the middle
+    view([-1, .2, 0.6]); % Look along the x-axis
+    drawnow;
+    saveas(gcf, sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i));
+    print(sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300'); % Save with 300 DPI
+
+    % Close the figure
+    close(gcf);
+
 end

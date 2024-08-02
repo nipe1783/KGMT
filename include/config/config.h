@@ -124,5 +124,5 @@
 #define R2_PER_R1 ((DIM == 3) ? (R2 * R2 * R2) : (R2 * R2))
 #define R1_SIZE (WS_SIZE / R1)
 #define R2_SIZE (WS_SIZE / (R1 * R2))
-#define EPSILON 1e-5f
+#define EPSILON 1e-2f
 #define VERBOSE 1

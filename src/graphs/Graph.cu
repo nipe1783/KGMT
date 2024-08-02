@@ -283,7 +283,7 @@ __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterA
     else
         {
             // TODO: check if adding epsilon is ok.
-            vertexScores[tid] = (score + EPSILON) / s_totalScore;
+            vertexScores[tid] = EPSILON + (score / s_totalScore);
         }
 }
 
