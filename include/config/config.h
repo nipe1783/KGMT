@@ -79,7 +79,7 @@
 #define R2 4
 #define SAMPLE_DIM 10
 #define WS_SIZE 1.0f
-#define MODEL 2
+#define MODEL 1
 #define MAX_TREE_SIZE 30000
 #define GOAL_THRESH 0.05f
 #define MAX_ITER 100
@@ -124,5 +124,5 @@
 #define R2_PER_R1 ((DIM == 3) ? (R2 * R2 * R2) : (R2 * R2))
 #define R1_SIZE (WS_SIZE / R1)
 #define R2_SIZE (WS_SIZE / (R1 * R2))
-#define EPSILON 1e-6f
+#define EPSILON 1e-5f
 #define VERBOSE 1

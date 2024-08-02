@@ -8,18 +8,24 @@ KGMT::KGMT()
     d_frontier_                    = thrust::device_vector<bool>(MAX_TREE_SIZE);
     d_frontierNext_                = thrust::device_vector<bool>(MAX_TREE_SIZE);
     d_activeFrontierIdxs_          = thrust::device_vector<uint>(MAX_TREE_SIZE);
+    d_activeFrontierRepeatIdxs_    = thrust::device_vector<uint>(MAX_TREE_SIZE);
     d_unexploredSamples_           = thrust::device_vector<float>(MAX_TREE_SIZE * SAMPLE_DIM);
     d_unexploredSamplesParentIdxs_ = thrust::device_vector<int>(MAX_TREE_SIZE);
     d_frontierScanIdx_             = thrust::device_vector<uint>(MAX_TREE_SIZE);
+    d_frontierRepeatScanIdx_       = thrust::device_vector<uint>(MAX_TREE_SIZE);
     d_goalSample_                  = thrust::device_vector<float>(SAMPLE_DIM);
+    d_activeFrontierRepeatCount_   = thrust::device_vector<uint>(MAX_TREE_SIZE);
 
     d_frontier_ptr_                    = thrust::raw_pointer_cast(d_frontier_.data());
     d_frontierNext_ptr_                = thrust::raw_pointer_cast(d_frontierNext_.data());
     d_activeFrontierIdxs_ptr_          = thrust::raw_pointer_cast(d_activeFrontierIdxs_.data());
+    d_activeFrontierRepeatIdxs_ptr_    = thrust::raw_pointer_cast(d_activeFrontierRepeatIdxs_.data());
     d_unexploredSamples_ptr_           = thrust::raw_pointer_cast(d_unexploredSamples_.data());
     d_unexploredSamplesParentIdxs_ptr_ = thrust::raw_pointer_cast(d_unexploredSamplesParentIdxs_.data());
     d_frontierScanIdx_ptr_             = thrust::raw_pointer_cast(d_frontierScanIdx_.data());
+    d_frontierRepeatScanIdx_ptr_       = thrust::raw_pointer_cast(d_frontierRepeatScanIdx_.data());
     d_goalSample_ptr_                  = thrust::raw_pointer_cast(d_goalSample_.data());
+    d_activeFrontierRepeatCount_ptr_   = thrust::raw_pointer_cast(d_activeFrontierRepeatCount_.data());
 
     h_activeBlockSize_ = 32;
 
@@ -43,6 +49,7 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
     thrust::fill(d_unexploredSamples_.begin(), d_unexploredSamples_.end(), 0.0f);
     thrust::fill(d_unexploredSamplesParentIdxs_.begin(), d_unexploredSamplesParentIdxs_.end(), -1);
     thrust::fill(d_frontierScanIdx_.begin(), d_frontierScanIdx_.end(), 0);
+    thrust::fill(d_frontierRepeatScanIdx_.begin(), d_frontierRepeatScanIdx_.end(), 0);
     thrust::fill(d_goalSample_.begin(), d_goalSample_.end(), 0.0f);
     thrust::fill(graph_.d_activeSubVertices_.begin(), graph_.d_activeSubVertices_.end(), false);
     thrust::fill(graph_.d_vertexScoreArray_.begin(), graph_.d_vertexScoreArray_.end(), 0.0f);
@@ -52,6 +59,8 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
     thrust::fill(d_treeSamplesParentIdxs_.begin(), d_treeSamplesParentIdxs_.end(), -1);
     thrust::fill(d_treeSampleCosts_.begin(), d_treeSampleCosts_.end(), 0.0f);
     thrust::fill(d_frontier_.begin(), d_frontier_.begin() + 1, true);
+    thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
+    thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.begin() + 1, 5);
     h_treeSize_   = 1;
     h_itr_        = 0;
     h_costToGoal_ = 0;
@@ -87,6 +96,7 @@ void KGMT::planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, ui
     thrust::fill(d_unexploredSamples_.begin(), d_unexploredSamples_.end(), 0.0f);
     thrust::fill(d_unexploredSamplesParentIdxs_.begin(), d_unexploredSamplesParentIdxs_.end(), -1);
     thrust::fill(d_frontierScanIdx_.begin(), d_frontierScanIdx_.end(), 0);
+    thrust::fill(d_frontierRepeatScanIdx_.begin(), d_frontierRepeatScanIdx_.end(), 0);
     thrust::fill(d_goalSample_.begin(), d_goalSample_.end(), 0.0f);
     thrust::fill(graph_.d_activeSubVertices_.begin(), graph_.d_activeSubVertices_.end(), false);
     thrust::fill(graph_.d_vertexScoreArray_.begin(), graph_.d_vertexScoreArray_.end(), 0.0f);
@@ -96,6 +106,8 @@ void KGMT::planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, ui
     thrust::fill(d_treeSamplesParentIdxs_.begin(), d_treeSamplesParentIdxs_.end(), -1);
     thrust::fill(d_treeSampleCosts_.begin(), d_treeSampleCosts_.end(), 0.0f);
     thrust::fill(d_frontier_.begin(), d_frontier_.begin() + 1, true);
+    thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
+    thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.begin() + 1, 5);
     h_treeSize_   = 1;
     h_itr_        = 0;
     h_costToGoal_ = 0;
@@ -133,29 +145,37 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
     (d_frontier_[MAX_TREE_SIZE - 1]) ? ++h_frontierSize_ : 0;
     findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_frontier_ptr_, d_frontierScanIdx_ptr_, d_activeFrontierIdxs_ptr_);
 
-    int gridSize = iDivUp(h_frontierSize_ * h_activeBlockSize_, h_activeBlockSize_);
+    // --- Build frontier repeat vector. ---
+    thrust::exclusive_scan(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), d_frontierRepeatScanIdx_.begin(), 0,
+                           thrust::plus<uint>());
+    repeatInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_activeFrontierIdxs_ptr_, d_activeFrontierRepeatCount_ptr_,
+                                             d_frontierRepeatScanIdx_ptr_, d_activeFrontierRepeatIdxs_ptr_);
+    h_frontierRepeatSize_ = d_frontierRepeatScanIdx_[MAX_TREE_SIZE - 1];
+    (d_activeFrontierRepeatCount_[MAX_TREE_SIZE - 1]) ? h_frontierRepeatSize_ += d_activeFrontierRepeatCount_[MAX_TREE_SIZE - 1] : 0;
+
+    int gridSize = iDivUp(h_frontierRepeatSize_ * h_activeBlockSize_, h_activeBlockSize_);
     if(h_activeBlockSize_ * gridSize > (MAX_TREE_SIZE - h_treeSize_))
         {
-            int iterations     = std::min(int(float(MAX_TREE_SIZE - h_treeSize_) / float(h_frontierSize_)), int(h_activeBlockSize_));
-            int unexploredSize = iterations * h_frontierSize_;
+            int iterations     = std::min(int(float(MAX_TREE_SIZE - h_treeSize_) / float(h_frontierRepeatSize_)), int(h_activeBlockSize_));
+            int unexploredSize = iterations * h_frontierRepeatSize_;
             gridSize           = int(floor(MAX_TREE_SIZE / h_activeBlockSize_));
 
             // --- Propagate Frontier. iterations new samples per frontier sample---
             propagateFrontier_kernel2<<<gridSize, h_activeBlockSize_>>>(
-              d_frontier_ptr_, d_activeFrontierIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierSize_, d_randomSeeds_ptr_,
-              d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount, graph_.d_activeSubVertices_ptr_,
+              d_frontier_ptr_, d_activeFrontierRepeatIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierRepeatSize_,
+              d_randomSeeds_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount, graph_.d_activeSubVertices_ptr_,
               graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, graph_.d_counterArray_ptr_, graph_.d_validCounterArray_ptr_, iterations,
               unexploredSize);
-            thrust::fill(d_frontier_.begin(), d_frontier_.end(), false);  // TODO: is there a way to do this inside of the prop kernel?
         }
     else
         {
             // --- Propagate Frontier. Block Size new samples per frontier sample. ---
             propagateFrontier_kernel1<<<gridSize, h_activeBlockSize_>>>(
-              d_frontier_ptr_, d_activeFrontierIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierSize_, d_randomSeeds_ptr_,
-              d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount, graph_.d_activeSubVertices_ptr_,
+              d_frontier_ptr_, d_activeFrontierRepeatIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierRepeatSize_,
+              d_randomSeeds_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount, graph_.d_activeSubVertices_ptr_,
               graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, graph_.d_counterArray_ptr_, graph_.d_validCounterArray_ptr_);
         }
+    thrust::fill(d_frontier_.begin(), d_frontier_.end(), false);  // TODO: is there a way to do this inside of the prop kernel?
 }
 
 /***************************/
@@ -247,32 +267,62 @@ __global__ void propagateFrontier_kernel2(bool* frontier, uint* activeFrontierId
 /* FRONTIER UPDATE KERNEL */
 /***************************/
 // --- Adds previous frontier to the tree and builds new frontier. ---
-__global__ void updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNextIdxs, uint frontierNextSize, float* xGoal,
-                                      int treeSize, float* unexploredSamples, float* treeSamples, int* unexploredSamplesParentIdxs,
-                                      int* treeSamplesParentIdxs, float* treeSampleCosts, float* costToGoal)
+__global__ void
+updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNextIdxs, uint frontierNextSize, float* xGoal, int treeSize,
+                      float* unexploredSamples, float* treeSamples, int* unexploredSamplesParentIdxs, int* treeSamplesParentIdxs,
+                      float* treeSampleCosts, float* costToGoal, uint* activeFrontierRepeatCount, int* validVertexCounter,
+                      curandState* randomSeeds, float* vertexScores)
 {
-    int tid           = blockIdx.x * blockDim.x + threadIdx.x;
-    frontierNext[tid] = false;
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     __shared__ float s_xGoal[SAMPLE_DIM];
     if(threadIdx.x < SAMPLE_DIM) s_xGoal[threadIdx.x] = xGoal[threadIdx.x];
     __syncthreads();
 
-    if(tid >= frontierNextSize) return;
-    // --- Update Tree ---
-    int x1TreeIdx                    = treeSize + tid;               // --- Index of new tree sample ---
-    int x1UnexploredIdx              = activeFrontierNextIdxs[tid];  // --- Index of sample in unexplored sample set ---
-    float* x1                        = &unexploredSamples[x1UnexploredIdx * SAMPLE_DIM];  // --- sample from unexplored set ---
-    int x0Idx                        = unexploredSamplesParentIdxs[x1UnexploredIdx];      // --- parent of the unexplored sample ---
-    treeSamplesParentIdxs[x1TreeIdx] = x0Idx;  // --- Transfer parent of unexplored sample to tree ---
-    for(int i = 0; i < SAMPLE_DIM; i++) treeSamples[x1TreeIdx * SAMPLE_DIM + i] = x1[i];  // --- Transfer unexplored sample to tree ---
-    treeSampleCosts[x1TreeIdx] = distance(x1, s_xGoal);                                   // --- Update cost of new sample ---
+    if(tid < frontierNextSize)
+        {
+            if(tid < MAX_TREE_SIZE)
+                {
+                    // --- Update Tree ---
+                    int x1TreeIdx       = treeSize + tid;               // --- Index of new tree sample ---
+                    int x1UnexploredIdx = activeFrontierNextIdxs[tid];  // --- Index of sample in unexplored sample set ---
+                    frontierNext[activeFrontierNextIdxs[tid]] = false;
+                    float* x1 = &unexploredSamples[x1UnexploredIdx * SAMPLE_DIM];  // --- sample from unexplored set ---
+                    int x0Idx = unexploredSamplesParentIdxs[x1UnexploredIdx];      // --- parent of the unexplored sample ---
+                    treeSamplesParentIdxs[x1TreeIdx] = x0Idx;                      // --- Transfer parent of unexplored sample to tree ---
+                    for(int i = 0; i < SAMPLE_DIM; i++)
+                        treeSamples[x1TreeIdx * SAMPLE_DIM + i] = x1[i];  // --- Transfer unexplored sample to tree ---
+                    treeSampleCosts[x1TreeIdx] = distance(x1, s_xGoal);   // --- Update cost of new sample ---
 
-    // --- Update Frontier ---
-    frontier[x1TreeIdx] = true;
+                    // --- Update Frontier ---
+                    frontier[x1TreeIdx] = true;
 
-    // --- Goal Criteria Check ---
-    if(treeSampleCosts[x1TreeIdx] < GOAL_THRESH) costToGoal[0] = treeSampleCosts[x1TreeIdx];
+                    int xVertex = (DIM == 2) ? getVertex(treeSamples[x1TreeIdx * SAMPLE_DIM], treeSamples[x1TreeIdx * SAMPLE_DIM + 1])
+                                             : getVertex(treeSamples[x1TreeIdx * SAMPLE_DIM], treeSamples[x1TreeIdx * SAMPLE_DIM + 1],
+                                                         treeSamples[x1TreeIdx * SAMPLE_DIM + 2]);
+
+                    if(validVertexCounter[xVertex] < 10)
+                        activeFrontierRepeatCount[x1TreeIdx] = 15;
+                    else
+                        activeFrontierRepeatCount[x1TreeIdx] = 1;
+
+                    // --- Goal Criteria Check ---
+                    if(treeSampleCosts[x1TreeIdx] < GOAL_THRESH) costToGoal[0] = treeSampleCosts[x1TreeIdx];
+                }
+        }
+    else if(tid < frontierNextSize + treeSize)
+        {
+            int treeIdx      = tid - frontierNextSize;
+            int xVertex      = (DIM == 2) ? getVertex(treeSamples[treeIdx * SAMPLE_DIM], treeSamples[treeIdx * SAMPLE_DIM + 1])
+                                          : getVertex(treeSamples[treeIdx * SAMPLE_DIM], treeSamples[treeIdx * SAMPLE_DIM + 1],
+                                                      treeSamples[treeIdx * SAMPLE_DIM + 2]);
+            curandState seed = randomSeeds[treeIdx];
+            if(frontier[treeIdx] == 0 && curand_uniform(&seed) <= vertexScores[xVertex])
+                {
+                    frontier[treeIdx]                  = true;
+                    activeFrontierRepeatCount[treeIdx] = 1;
+                }
+        }
 }
 
 void KGMT::updateFrontier()
@@ -283,10 +333,12 @@ void KGMT::updateFrontier()
     findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_frontierNext_ptr_, d_frontierScanIdx_ptr_, d_activeFrontierIdxs_ptr_);
 
     // --- Update Frontier ---
-    updateFrontier_kernel<<<std::min(int(h_frontierNextSize_), int(floor(MAX_TREE_SIZE / h_blockSize_))), h_blockSize_>>>(
+    thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
+    updateFrontier_kernel<<<iDivUp(h_frontierNextSize_ + h_treeSize_, h_blockSize_), h_blockSize_>>>(
       d_frontier_ptr_, d_frontierNext_ptr_, d_activeFrontierIdxs_ptr_, h_frontierNextSize_, d_goalSample_ptr_, h_treeSize_,
       d_unexploredSamples_ptr_, d_treeSamples_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_treeSamplesParentIdxs_ptr_,
-      d_treeSampleCosts_ptr_, d_costToGoal_ptr_);
+      d_treeSampleCosts_ptr_, d_costToGoal_ptr_, d_activeFrontierRepeatCount_ptr_, graph_.d_validCounterArray_ptr_, d_randomSeeds_ptr_,
+      graph_.d_vertexScoreArray_ptr_);
 
     // --- Check for goal criteria ---
     cudaMemcpy(&h_costToGoal_, d_costToGoal_ptr_, sizeof(float), cudaMemcpyDeviceToHost);
@@ -294,10 +346,11 @@ void KGMT::updateFrontier()
     // --- Update Tree Size ---
     h_treeSize_ += h_frontierNextSize_;
 }
+
 void KGMT::writeDeviceVectorsToCSV(int itr)
 {
     std::ostringstream filename;
-    bool append = itr != 0;
+    bool append = h_itr_ != 0;
 
     // Create necessary directories
     std::filesystem::create_directories("Data");

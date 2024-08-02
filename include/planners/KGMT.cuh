@@ -19,16 +19,18 @@ public:
     /****************************    FIELDS    ****************************/
     // --- host fields ---
     Graph graph_;
-    uint h_frontierSize_, h_frontierNextSize_, h_activeBlockSize_;
+    uint h_frontierSize_, h_frontierNextSize_, h_activeBlockSize_, h_frontierRepeatSize_;
 
     // --- device fields ---
     thrust::device_vector<bool> d_frontier_, d_frontierNext_;
-    thrust::device_vector<uint> d_activeFrontierIdxs_, d_frontierScanIdx_;
+    thrust::device_vector<uint> d_activeFrontierIdxs_, d_frontierScanIdx_, d_activeFrontierRepeatCount_, d_frontierRepeatScanIdx_,
+      d_activeFrontierRepeatIdxs_;
     thrust::device_vector<int> d_unexploredSamplesParentIdxs_;
     thrust::device_vector<float> d_unexploredSamples_, d_goalSample_;
     float *d_unexploredSamples_ptr_, *d_goalSample_ptr_;
     bool *d_frontier_ptr_, *d_frontierNext_ptr_;
-    uint *d_activeFrontierIdxs_ptr_, *d_frontierScanIdx_ptr_;
+    uint *d_activeFrontierIdxs_ptr_, *d_frontierScanIdx_ptr_, *d_activeFrontierRepeatCount_ptr_, *d_frontierRepeatScanIdx_ptr_,
+      *d_activeFrontierRepeatIdxs_ptr_;
     int* d_unexploredSamplesParentIdxs_ptr_;
 };
 
@@ -49,6 +51,8 @@ __global__ void propagateFrontier_kernel2(bool* frontier, uint* activeFrontierId
                                           int obstaclesCount, int* activeSubVertices, float* vertexScores, bool* frontierNext,
                                           int* vertexCounter, int* validVertexCounter, int iterations, int unexploredSize);
 
-__global__ void updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNextIdxs, uint frontierNextSize, float* xGoal,
-                                      int treeSize, float* unexploredSamples, float* treeSamples, int* unexploredSamplesParentIdxs,
-                                      int* treeSamplesParentIdxs, float* treeSampleCosts, float* costToGoal);
+__global__ void
+updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNextIdxs, uint frontierNextSize, float* xGoal, int treeSize,
+                      float* unexploredSamples, float* treeSamples, int* unexploredSamplesParentIdxs, int* treeSamplesParentIdxs,
+                      float* treeSampleCosts, float* costToGoal, uint* activeFrontierRepeatCount, int* validVertexCounter,
+                      curandState* randomSeeds, float* vertexScores);

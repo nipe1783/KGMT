@@ -59,3 +59,17 @@ __global__ void findInd(uint numSamples, uint* S, uint* scanIdx, uint* activeS)
     if(!S[node]) return;
     activeS[scanIdx[node]] = node;
 }
+
+__global__ void repeatInd(uint numSamples, uint* activeS, uint* C, uint* prefixSum, uint* repeatedInd)
+{
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if(tid >= numSamples) return;
+
+    uint index    = activeS[tid];
+    uint count    = C[index];
+    uint startPos = prefixSum[index];
+    for(uint i = 0; i < count; ++i)
+        {
+            repeatedInd[startPos + i] = index;
+        }
+}
