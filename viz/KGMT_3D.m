@@ -11,7 +11,7 @@ catch
 end
 
 % Parameters
-numFiles = 7;
+numFiles = 8;
 radius = 0.05;
 N = 8;
 n = 4;

@@ -82,7 +82,7 @@
 #define MODEL 1
 #define MAX_TREE_SIZE 30000
 #define GOAL_THRESH 0.05f
-#define MAX_ITER 100
+#define MAX_ITER 1000
 #define STEP_SIZE 0.1f
 #define MAX_PROPAGATION_DURATION 10
 

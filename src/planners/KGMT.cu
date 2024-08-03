@@ -175,7 +175,6 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
               d_randomSeeds_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount, graph_.d_activeSubVertices_ptr_,
               graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, graph_.d_counterArray_ptr_, graph_.d_validCounterArray_ptr_);
         }
-    thrust::fill(d_frontier_.begin(), d_frontier_.end(), false);  // TODO: is there a way to do this inside of the prop kernel?
 }
 
 /***************************/
@@ -234,7 +233,8 @@ __global__ void propagateFrontier_kernel2(bool* frontier, uint* activeFrontierId
                                           int obstaclesCount, int* activeSubVertices, float* vertexScores, bool* frontierNext,
                                           int* vertexCounter, int* validVertexCounter, int iterations, int unexploredSize)
 {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int tid       = blockIdx.x * blockDim.x + threadIdx.x;
+    frontier[tid] = false;
     if(tid >= unexploredSize) return;
 
     int activeFrontierIdx = tid / iterations;
@@ -279,6 +279,7 @@ updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNe
     if(threadIdx.x < SAMPLE_DIM) s_xGoal[threadIdx.x] = xGoal[threadIdx.x];
     __syncthreads();
 
+    // --- Add next frontier to frontier ---
     if(tid < frontierNextSize)
         {
             if(tid < MAX_TREE_SIZE)
@@ -310,6 +311,7 @@ updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNe
                     if(treeSampleCosts[x1TreeIdx] < GOAL_THRESH) costToGoal[0] = treeSampleCosts[x1TreeIdx];
                 }
         }
+    // --- Add inactive tree samples back to frontier. ---
     else if(tid < frontierNextSize + treeSize)
         {
             int treeIdx      = tid - frontierNextSize;
