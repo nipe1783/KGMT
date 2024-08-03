@@ -115,9 +115,9 @@ set_target_properties(benchMain PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -diag-suppress=20012,20013,20014,20015 --expt-relaxed-constexpr --ptxas-options=-v")
 
 # Set CUDA architectures
-set_property(TARGET main PROPERTY CUDA_ARCHITECTURES 52)
-set_property(TARGET benchMain PROPERTY CUDA_ARCHITECTURES 52)
-set_property(TARGET KGMT_lib PROPERTY CUDA_ARCHITECTURES 52)
+set_property(TARGET main PROPERTY CUDA_ARCHITECTURES 86)
+set_property(TARGET benchMain PROPERTY CUDA_ARCHITECTURES 86)
+set_property(TARGET KGMT_lib PROPERTY CUDA_ARCHITECTURES 86)
 
 # Suppress all warnings from Eigen
 add_definitions(-DEIGEN_NO_DEBUG)
