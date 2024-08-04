@@ -16,6 +16,10 @@
 #include <filesystem>
 #include <fstream>
 #include "cpu/collisionCheck/CollisionCheck.h"
+#include <ompl/tools/multiplan/ParallelPlan.h>
+#include <omp.h>
+#include <thread>
+#include <chrono>
 
 namespace ob = ompl::base;
 namespace oc = ompl::control;
@@ -29,18 +33,19 @@ public:
     ~OMPL_Planner();
 
     // fields:
-    ob::RealVectorBounds boundsPos_, boundsVel_;
     float safetyMargin_;
     int obstaclesCount_;
     float* obstacles_;
 
     // methods:
+    void planParallelPDST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
+    void planParallelRRT(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
+    void planParallelEST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     void planRRT(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     void planEST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     void planPDST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     oc::SimpleSetupPtr kinodynamicSimpleSetUp(const float* initial, const float* goal);
 
     ob::StateSpacePtr createStateSpace();
-    oc::ControlSpacePtr createControlSpace(ob::StateSpacePtr &space);
-
+    oc::ControlSpacePtr createControlSpace(ob::StateSpacePtr& space);
 };
