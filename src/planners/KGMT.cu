@@ -155,12 +155,13 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
 
     if(h_frontierRepeatSize_ * h_activeBlockSize_ > (MAX_TREE_SIZE - h_treeSize_))
         {
-            int iterations = std::min(int(float(MAX_TREE_SIZE - h_treeSize_) / float(h_frontierRepeatSize_)), int(h_activeBlockSize_));
+            h_propIterations_ = std::min(int(float(MAX_TREE_SIZE - h_treeSize_) / float(h_frontierRepeatSize_)), int(h_activeBlockSize_));
             // --- Propagate Frontier. iterations new samples per frontier sample---
-            propagateFrontier_kernel2<<<iDivUp(iterations * h_frontierRepeatSize_, h_activeBlockSize_), h_activeBlockSize_>>>(
+            propagateFrontier_kernel2<<<iDivUp(h_propIterations_ * h_frontierRepeatSize_, h_activeBlockSize_), h_activeBlockSize_>>>(
               d_frontier_ptr_, d_activeFrontierRepeatIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierRepeatSize_,
               d_randomSeeds_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount, graph_.d_activeSubVertices_ptr_,
-              graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, graph_.d_counterArray_ptr_, graph_.d_validCounterArray_ptr_, iterations);
+              graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, graph_.d_counterArray_ptr_, graph_.d_validCounterArray_ptr_,
+              h_propIterations_);
         }
     else
         {
@@ -360,6 +361,7 @@ void KGMT::writeDeviceVectorsToCSV(int itr)
     std::filesystem::create_directories("Data/VertexScores/VertexScores" + std::to_string(itr));
     std::filesystem::create_directories("Data/FrontierSize/FrontierSize" + std::to_string(itr));
     std::filesystem::create_directories("Data/TreeSize/TreeSize" + std::to_string(itr));
+    std::filesystem::create_directories("Data/ExpandedNodes/ExpandedNodes" + std::to_string(itr));
 
     // Write Samples
     filename.str("");
@@ -405,6 +407,18 @@ void KGMT::writeDeviceVectorsToCSV(int itr)
     filename.str("");
     filename << "Data/TreeSize/TreeSize" << itr << "/treeSize.csv";
     writeValueToCSV(h_treeSize_, filename.str());
+
+    // Expanded Nodes
+    filename.str("");
+    filename << "Data/ExpandedNodes/ExpandedNodes" << itr << "/expandedNodes.csv";
+    if(h_frontierRepeatSize_ * h_activeBlockSize_ > (MAX_TREE_SIZE - h_treeSize_))
+        {
+            writeValueToCSV(h_propIterations_ * h_frontierRepeatSize_, filename.str());
+        }
+    else
+        {
+            writeValueToCSV(h_frontierRepeatSize_ * h_activeBlockSize_, filename.str());
+        }
 }
 
 void KGMT::writeExecutionTimeToCSV(double time)

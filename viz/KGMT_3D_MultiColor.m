@@ -2,16 +2,8 @@ close all
 clc
 clear all
 
-try
-    opengl hardware
-    disp('Using hardware OpenGL.');
-catch
-    opengl software
-    disp('Using software OpenGL.');
-end
-
 % Parameters
-numFiles = 8;
+numFiles = 7;
 radius = 0.05;
 N = 8;
 n = 4;
@@ -19,12 +11,22 @@ sampleSize = 10;
 stateSize = 6;
 controlSize = 3;
 xGoal = [.7, .95, .9];
-alphaValue = 0.8;
+alpha = .6;
 STEP_SIZE = .1;
 
 % Obstacle file path
 obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/pillars/obstacles.csv';
 obstacles = readmatrix(obstacleFilePath);
+
+treeSizePath = "/home/nicolas/dev/research/KGMT/build/Data/TreeSize/TreeSize0/treeSize.csv";
+treeSizes = readmatrix(treeSizePath);
+
+colors = [0 0 1;  % Blue
+           0 .7 0;  % Green
+          .7 0 .7;  % Pink
+          .7 .7 0;  % Yellow
+          0 .7 .7; % Turquoise
+          1 .5 0]; % orange
 
 % Create and save iteration 0 figure
 fig = figure('Position', [100, 100, 1000, 1000]); % Set figure size
@@ -157,7 +159,13 @@ for i = 1:numFiles
     lighting gouraud;
 
     % Plot paths
+    iteration = 1;
+    colorIndex = 1;
     for j = 2:size(parentRelations, 1)
+        if j > treeSizes(iteration)
+            iteration = iteration + 1;
+            colorIndex = mod(colorIndex, length(colors)) + 1;
+        end
         if parentRelations(j) == -1
             break;
         end
@@ -193,7 +201,7 @@ for i = 1:numFiles
         segmentZ = [segmentZ, samples(j, 3)];
 
         plot3(segmentX, segmentY, segmentZ, '-.', 'Color', 'k', 'LineWidth', 0.01);
-        plot3(samples(j, 1), samples(j, 2), samples(j, 3), 'bo', 'MarkerFaceColor', 'b', 'MarkerSize', 2);
+        plot3(samples(j, 1), samples(j, 2), samples(j, 3), 'o', 'Color', colors(colorIndex, :), 'MarkerFaceColor', colors(colorIndex, :), 'MarkerSize', 2);
     end
 
     % Save original view with high resolution

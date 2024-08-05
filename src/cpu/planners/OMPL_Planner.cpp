@@ -276,6 +276,8 @@ oc::SimpleSetupPtr OMPL_Planner::kinodynamicSimpleSetUp(const float* initial, co
 
 void OMPL_Planner::planRRT(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin)
 {
+    ompl::msg::setLogLevel(ompl::msg::LOG_ERROR);
+
     safetyMargin_   = safetyMargin;
     obstacles_      = obstacles;
     obstaclesCount_ = numObstacles;
@@ -289,7 +291,6 @@ void OMPL_Planner::planRRT(const float* initial, const float* goal, float* obsta
     ss->setPlanner(planner);
     ss->getSpaceInformation()->setStateValidityCheckingResolution(0.005);
     ss->setup();
-    ss->print();
 
     // --- Solving Problem ---
     auto start = std::chrono::high_resolution_clock::now();

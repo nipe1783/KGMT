@@ -19,7 +19,7 @@ public:
     /****************************    FIELDS    ****************************/
     // --- host fields ---
     Graph graph_;
-    uint h_frontierSize_, h_frontierNextSize_, h_activeBlockSize_, h_frontierRepeatSize_;
+    uint h_frontierSize_, h_frontierNextSize_, h_activeBlockSize_, h_frontierRepeatSize_, h_propIterations_;
 
     // --- device fields ---
     thrust::device_vector<bool> d_frontier_, d_frontierNext_;
