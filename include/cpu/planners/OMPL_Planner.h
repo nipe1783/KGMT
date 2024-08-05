@@ -20,6 +20,7 @@
 #include <omp.h>
 #include <thread>
 #include <chrono>
+#include <ompl/base/PlannerData.h>
 
 namespace ob = ompl::base;
 namespace oc = ompl::control;

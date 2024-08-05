@@ -416,10 +416,12 @@ void OMPL_Planner::planParallelRRT(const float* initial, const float* goal, floa
             ompl::tools::ParallelPlan pp(ss->getProblemDefinition());
 
             // --- Creating numThread planners ---
+            std::vector<std::shared_ptr<oc::RRT>> planners;
             for(unsigned int i = 0; i < numThreads; ++i)
                 {
                     auto planner = std::make_shared<oc::RRT>(ss->getSpaceInformation());
                     pp.addPlanner(planner);
+                    planners.push_back(planner);
                 }
             ss->getSpaceInformation()->setStateValidityCheckingResolution(0.005);
             ss->setup();
@@ -437,6 +439,12 @@ void OMPL_Planner::planParallelRRT(const float* initial, const float* goal, floa
                 {
                     std::cout << "Found solution in " << elapsedTime << " seconds." << std::endl;
                     writeExecutionTimeToCSV(elapsedTime);
+                    for(size_t i = 0; i < planners.size(); ++i)
+                        {
+                            ompl::base::PlannerData data(ss->getSpaceInformation());
+                            planners[i]->getPlannerData(data);
+                            // std::cout << "Planner " << i << " created " << data.numVertices() << " states." << std::endl;
+                        }
                 }
             else
                 {

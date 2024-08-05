@@ -39,7 +39,7 @@ int main(void)
     std::vector<float> obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/pillars/obstacles.csv", numObstacles, DIM);
 
     OMPL_Planner rrt;
-    rrt.planParallelPDST(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
+    rrt.planParallelRRT(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
 
     return 0;
 }
