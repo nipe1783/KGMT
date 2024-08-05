@@ -20,11 +20,11 @@ int main(void)
     cudaMemcpy(d_obstacles, obstacles.data(), numObstacles * 2 * DIM * sizeof(float), cudaMemcpyHostToDevice);
 
     // --- Execute planner N times ---
-    int N = 100;
+    int N = 1000;
     for(int i = 0; i < N; i++)
         {
             // --- Execute planner ---
-            kgmt.planBench(h_initial, h_goal, d_obstacles, numObstacles, i);
+            kgmt.plan(h_initial, h_goal, d_obstacles, numObstacles);
         }
 
     // --- Free memory ---

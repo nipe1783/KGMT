@@ -15,3 +15,9 @@ viz/figs/*
 # NSIGHT
 NSight/*
 !NSight/command.md
+
+
+# Benchmarking
+benchmarking/*
+!benchmarking/bench.m
+!benchmarking/benchmarking.py
