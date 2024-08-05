@@ -6,15 +6,20 @@ Planner::Planner()
     d_treeSamples_           = thrust::device_vector<float>(MAX_TREE_SIZE * SAMPLE_DIM);
     d_treeSamplesParentIdxs_ = thrust::device_vector<int>(MAX_TREE_SIZE);
     d_treeSampleCosts_       = thrust::device_vector<float>(MAX_TREE_SIZE);
+    d_controlPathToGoal_     = thrust::device_vector<float>(MAX_ITER * SAMPLE_DIM);
 
     d_treeSamples_ptr_           = thrust::raw_pointer_cast(d_treeSamples_.data());
     d_treeSamplesParentIdxs_ptr_ = thrust::raw_pointer_cast(d_treeSamplesParentIdxs_.data());
     d_treeSampleCosts_ptr_       = thrust::raw_pointer_cast(d_treeSampleCosts_.data());
+    d_controlPathToGoal_ptr_     = thrust::raw_pointer_cast(d_controlPathToGoal_.data());
 
     h_gridSize_ = iDivUp(MAX_TREE_SIZE, h_blockSize_);
 
     cudaMalloc(&d_randomSeeds_ptr_, MAX_TREE_SIZE * sizeof(curandState));
     cudaMalloc(&d_costToGoal_ptr_, sizeof(float));
+    cudaMalloc(&d_pathToGoal_ptr_, sizeof(int));
+
+    h_controlPathToGoal_ = new float[SAMPLE_DIM * MAX_ITER];
 
     if(VERBOSE)
         {
