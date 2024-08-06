@@ -73,69 +73,6 @@ __device__ bool propagateAndCheckUnicycle(float* x0, float* x1, curandState* see
 /***************************/
 /* DOUBLE INTEGRATOR PROPAGATION FUNCTION */
 /***************************/
-__device__ bool propagateAndCheckDoubleIntEular(float* x0, float* x1, curandState* seed, float* obstacles, int obstaclesCount)
-{
-    float ax                = DI_MIN_ACC + curand_uniform(seed) * (DI_MAX_ACC - DI_MIN_ACC);
-    float ay                = DI_MIN_ACC + curand_uniform(seed) * (DI_MAX_ACC - DI_MIN_ACC);
-    float az                = DI_MIN_ACC + curand_uniform(seed) * (DI_MAX_ACC - DI_MIN_ACC);
-    float duration          = DI_MIN_DT + curand_uniform(seed) * (DI_MAX_DT - DI_MIN_DT);
-    int propagationDuration = 1 + (int)(curand_uniform(seed) * (MAX_PROPAGATION_DURATION));
-
-    float x  = x0[0];
-    float y  = x0[1];
-    float z  = x0[2];
-    float vx = x0[3];
-    float vy = x0[4];
-    float vz = x0[5];
-
-    bool motionValid = true;
-    float bbMin[DIM], bbMax[DIM];
-    for(int i = 0; i < propagationDuration; i++)
-        {
-            float x0State[DIM] = {x, y, z};
-
-            // --- State Propagation. Eular Method ---
-            x += vx * STEP_SIZE;
-            y += vy * STEP_SIZE;
-            z += vz * STEP_SIZE;
-            vx += ax * STEP_SIZE;
-            vy += ay * STEP_SIZE;
-            vz += az * STEP_SIZE;
-            float x1State[DIM] = {x, y, z};
-
-            // --- Workspace Limit Check ---
-            if(x < 0 || x > WS_SIZE || y < 0 || y > WS_SIZE || z < 0 || z > WS_SIZE)
-                {
-                    motionValid = false;
-                    break;
-                }
-
-            // --- Obstacle Collision Check ---
-            for(int d = 0; d < DIM; d++)
-                {
-                    if(x0State[d] > x1State[d])
-                        {
-                            bbMin[d] = x1State[d];
-                            bbMax[d] = x0State[d];
-                        }
-                    else
-                        {
-                            bbMin[d] = x0State[d];
-                            bbMax[d] = x1State[d];
-                        }
-                }
-
-            motionValid = motionValid && isMotionValid(x0State, x1State, bbMin, bbMax, obstacles, obstaclesCount);
-            if(!motionValid) break;
-        }
-
-    x1[0] = x, x1[1] = y, x1[2] = z, x1[3] = vx, x1[4] = vy, x1[5] = vz, x1[6] = ax, x1[7] = ay, x1[8] = az, x1[9] = duration;
-    return motionValid;
-}
-
-/***************************/
-/* DOUBLE INTEGRATOR PROPAGATION FUNCTION */
-/***************************/
 __device__ bool propagateAndCheckDoubleIntRungeKutta(float* x0, float* x1, curandState* seed, float* obstacles, int obstaclesCount)
 {
     float ax                = DI_MIN_ACC + curand_uniform(seed) * (DI_MAX_ACC - DI_MIN_ACC);
@@ -163,6 +100,13 @@ __device__ bool propagateAndCheckDoubleIntRungeKutta(float* x0, float* x1, curan
             vx += (ax + 2 * ax + 2 * ax + ax) * STEP_SIZE / 6;
             vy += (ay + 2 * ay + 2 * ay + ay) * STEP_SIZE / 6;
             vz += (az + 2 * az + 2 * az + az) * STEP_SIZE / 6;
+
+            // --- Dyanmics Validity Check ---
+            if(vx < DI_MIN_VEL || vx > DI_MAX_VEL || vy < DI_MIN_VEL || vy > DI_MAX_VEL || vz < DI_MIN_VEL || vz > DI_MAX_VEL)
+                {
+                    motionValid = false;
+                    break;
+                }
 
             float x1State[DIM] = {x, y, z};
 
@@ -241,6 +185,18 @@ __device__ bool propagateAndCheckDubinsAirplaneRungeKutta(float* x0, float* x1, 
             yaw += STEP_SIZE * yawRate;
             pitch += STEP_SIZE * pitchRate;
             v += (STEP_SIZE / 6.0f) * (a + 2.0f * (a + a) + a);
+
+            // --- Dynamics Validity Check ---'
+            if(v < DUBINS_AIRPLANE_MIN_VEL || v > DUBINS_AIRPLANE_MAX_VEL)
+                {
+                    motionValid = false;
+                    break;
+                }
+            else if(pitch < DUBINS_AIRPLANE_MIN_PITCH || pitch > DUBINS_AIRPLANE_MAX_PITCH)
+                {
+                    motionValid = false;
+                    break;
+                }
 
             float x1State[DIM] = {x, y, z};
 

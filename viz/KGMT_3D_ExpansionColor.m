@@ -3,7 +3,7 @@ clc
 clear all
 
 % Parameters
-numFiles = 7;
+numFiles = 1;
 radius = 0.05;
 N = 8;
 n = 4;
@@ -13,6 +13,7 @@ controlSize = 3;
 xGoal = [.7, .95, .9];
 alpha = .6;
 STEP_SIZE = .1;
+model = 1;
 
 % Obstacle file path
 obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/pillars/obstacles.csv';
@@ -22,23 +23,17 @@ treeSizePath = "/home/nicolas/dev/research/KGMT/build/Data/TreeSize/TreeSize0/tr
 treeSizes = readmatrix(treeSizePath);
 treeSizes = [0; treeSizes];
 
-
-
 colors = [0 0 1;  % Blue
            0 .9 0;  % Green
           .9 0 .9;  % Pink
           .7 .7 0;  % Yellow
           0 .7 .7; % Turquoise
-          1 .5 0]; % orange
+          1 .5 0]; % Orange
 
-% Create and save iteration 0 figure
-fig = figure('Position', [100, 100, 1000, 1000]); % Set figure size
+fig = figure('Position', [100, 100, 1000, 1000]); 
 hold on;
 axis equal;
 title('Iteration 0');
-xlabel('X Position');
-ylabel('Y Position');
-zlabel('Z Position');
 
 sampleFilePath = "/home/nicolas/dev/research/KGMT/build/Data/Samples/Samples0/samples1.csv";
 samples = readmatrix(sampleFilePath);
@@ -48,16 +43,12 @@ controls = readmatrix(controlPath);
 controls = flipud(controls);
 controls = [samples(1,1), samples(1,2), samples(1,3), samples(1,4), samples(1,5), samples(1,6), 0, 0, 0, 0; controls];
 
-% Plot start point
 plot3(samples(1,1), samples(1,2), samples(1,3), 'ko', 'MarkerFaceColor', 'b', 'MarkerSize', 10);
 
-
-% Plot goal region
 [X, Y, Z] = sphere(20);
 surf(radius * X + xGoal(1), radius * Y + xGoal(2), radius * Z + xGoal(3), ...
      'FaceColor', 'g', 'FaceAlpha', 0.5, 'EdgeColor', 'none');
 
-% Plot obstacles
 for j = 1:size(obstacles, 1)
     x_min = obstacles(j, 1);
     y_min = obstacles(j, 2);
@@ -84,59 +75,49 @@ for j = 1:size(obstacles, 1)
     patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', 0.6);
 end
 
-% Add light source
 camlight('headlight'); 
 lighting gouraud;
 
-% Save original view with high resolution
 view(3);
 drawnow;
 saveas(gcf, 'figs/KGMT_Iteration_0.jpg');
-print('figs/KGMT_Iteration_0.jpg', '-djpeg', '-r300'); % Save with 300 DPI
+print('figs/KGMT_Iteration_0.jpg', '-djpeg', '-r300');
 
-% Save top-down view with high resolution
 view(2);
 drawnow;
 saveas(gcf, 'figs/top_KGMT_Iteration_0.jpg');
-print('figs/top_KGMT_Iteration_0.jpg', '-djpeg', '-r300'); % Save with 300 DPI
+print('figs/top_KGMT_Iteration_0.jpg', '-djpeg', '-r300');
 
-% Save view looking along the x-axis from above
-midY = 0.5 * xGoal(2);  % Midpoint of y-axis
-midZ = 0.5 * xGoal(3);  % Midpoint of z-axis
-campos([0, midY, xGoal(3) + 1]); % Position the camera above the max z-value
-camtarget([0, midY, midZ]); % Set the target point to the middle
-view([-1, .2, 0.6]); % Look along the x-axis
+midY = 0.5 * xGoal(2); 
+midZ = 0.5 * xGoal(3); 
+campos([0, midY, xGoal(3) + 1]); 
+camtarget([0, midY, midZ]); 
+view([-1, .2, 0.6]); 
 drawnow;
 saveas(gcf, 'figs/xAxis_KGMT_Iteration_0.jpg');
-print('figs/xAxis_KGMT_Iteration_0.jpg', '-djpeg', '-r300'); % Save with 300 DPI
+print('figs/xAxis_KGMT_Iteration_0.jpg', '-djpeg', '-r300'); 
 
-% Close the figure
 close(gcf);
 iteration = 1;
-for i = numFiles:numFiles
+
+for i = 1:numFiles
     sampleFilePath = "/home/nicolas/dev/research/KGMT/build/Data/Samples/Samples0/samples" + i + ".csv";
     parentFilePath = "/home/nicolas/dev/research/KGMT/build/Data/Parents/Parents0/parents" + i + ".csv";
 
     samples = readmatrix(sampleFilePath);
     parentRelations = readmatrix(parentFilePath);
 
-    % Create figure and set to full screen
-    fig = figure('Position', [100, 100, 1000, 1000]); % Set figure size
+    fig = figure('Position', [100, 100, 1000, 1000]); 
     hold on;
     axis equal;
     title(sprintf('Iteration %d', i));
-    xlabel('X Position');
-    ylabel('Y Position');
-    zlabel('Z Position');
+
     plot3(samples(1,1), samples(1,2), samples(1,3), 'ko', 'MarkerFaceColor', 'b', 'MarkerSize', 10);
 
-
-    % Plot goal region
     [X, Y, Z] = sphere(20);
     surf(radius * X + xGoal(1), radius * Y + xGoal(2), radius * Z + xGoal(3), ...
          'FaceColor', 'g', 'FaceAlpha', 0.5, 'EdgeColor', 'none');
 
-    % Plot obstacles
     for j = 1:size(obstacles, 1)
         x_min = obstacles(j, 1);
         y_min = obstacles(j, 2);
@@ -163,11 +144,9 @@ for i = numFiles:numFiles
         patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', 0.6);
     end
 
-    % Add light source
     camlight('headlight'); 
     lighting gouraud;
 
-    % Plot paths
     colorIndex = 1;
     for j = 2:size(parentRelations, 1)
         if j > treeSizes(iteration)
@@ -180,11 +159,57 @@ for i = numFiles:numFiles
             break;
         end
         x0 = samples((parentRelations(j) + 1), 1:stateSize);
+        sample = samples(j, :);
+        if model == 1
+            [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
+        elseif model == 2
+            [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
+        end
+        plot3(segmentX, segmentY, segmentZ, '-.', 'Color', 'k', 'LineWidth', 0.01);
+        plot3(samples(j, 1), samples(j, 2), samples(j, 3), 'o', 'Color', colors(colorIndex, :), 'MarkerFaceColor', colors(colorIndex, :), 'MarkerSize', 2);
+    end
+
+    if i == numFiles
+        for j = 2:size(controls, 1)
+            x0 = controls(j-1, 1:stateSize);
+            sample = controls(j,:);
+            if model == 1
+                [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
+            elseif model == 2
+                [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
+            end
+            plot3(segmentX, segmentY, segmentZ, 'Color', 'g', 'LineWidth', 1);
+        end
+    end
+
+    view(3);
+    drawnow;
+    saveas(gcf, sprintf('figs/KGMT_Iteration_%d.jpg', i));
+    print(sprintf('figs/KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
+
+    view(2);
+    drawnow;
+    saveas(gcf, sprintf('figs/top_KGMT_Iteration_%d.jpg', i));
+    print(sprintf('figs/top_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
+
+    midY = (min(samples(:,2)) + max(samples(:,2))) / 2;
+    midZ = (min(samples(:,3)) + max(samples(:,3))) / 2;
+    campos([0, midY, max(samples(:,3)) + 1]);
+    camtarget([0, midY, midZ]);
+    view([-1, .2, 0.6]);
+    drawnow;
+    saveas(gcf, sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i));
+    print(sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
+
+    close(gcf);
+end
+
+function [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize)
         segmentX = [x0(1)];
         segmentY = [x0(2)];
         segmentZ = [x0(3)];
-        u = samples(j, stateSize+1:sampleSize-1);
-        duration = samples(j, sampleSize);
+        u = sample(stateSize+1:sampleSize-1);
+        duration = sample(sampleSize);
         numDisc = duration/STEP_SIZE;
         x = x0(1);
         y = x0(2);
@@ -206,74 +231,54 @@ for i = numFiles:numFiles
             segmentY = [segmentY, y];
             segmentZ = [segmentZ, z];
         end
-        segmentX = [segmentX, samples(j, 1)];
-        segmentY = [segmentY, samples(j, 2)];
-        segmentZ = [segmentZ, samples(j, 3)];
+        segmentX = [segmentX, sample(1)];
+        segmentY = [segmentY, sample(2)];
+        segmentZ = [segmentZ, sample(3)];
+end
 
-        plot3(segmentX, segmentY, segmentZ, '-.', 'Color', 'k', 'LineWidth', 0.01);
-        plot3(samples(j, 1), samples(j, 2), samples(j, 3), 'o', 'Color', colors(colorIndex, :), 'MarkerFaceColor', colors(colorIndex, :), 'MarkerSize', 2);
-    end
-
-    if i == numFiles
-        for j = 2:size(controls, 1)
-            x0 = controls(j-1, 1:stateSize);
-            segmentX = [x0(1)];
-            segmentY = [x0(2)];
-            segmentZ = [x0(3)];
-            u = controls(j, stateSize+1:sampleSize-1);
-            duration = controls(j, sampleSize);
-            numDisc = duration/STEP_SIZE;
-            x = x0(1);
-            y = x0(2);
-            z = x0(3);
-            vx = x0(4);
-            vy = x0(5);
-            vz = x0(6);
-            ax = u(1);
-            ay = u(2);
-            az = u(3);
-            for k = 1:(numDisc)
-                x = x + (vx + (vx + 2 * (vx + ax * STEP_SIZE / 2) + (vx + ax * STEP_SIZE))) * STEP_SIZE / 6;
-                y = y + (vy + (vy + 2 * (vy + ay * STEP_SIZE / 2) + (vy + ay * STEP_SIZE))) * STEP_SIZE / 6;
-                z = z + (vz + (vz + 2 * (vz + az * STEP_SIZE / 2) + (vz + az * STEP_SIZE))) * STEP_SIZE / 6;
-                vx = vx + (ax + 2 * ax + 2 * ax + ax) * STEP_SIZE / 6;
-                vy = vy + (ay + 2 * ay + 2 * ay + ay) * STEP_SIZE / 6;
-                vz = vz + (az + 2 * az + 2 * az + az) * STEP_SIZE / 6;
-                segmentX = [segmentX, x];
-                segmentY = [segmentY, y];
-                segmentZ = [segmentZ, z];
-            end
-            segmentX = [segmentX, controls(j, 1)];
-            segmentY = [segmentY, controls(j, 2)];
-            segmentZ = [segmentZ, controls(j, 3)];
-    
-            plot3(segmentX, segmentY, segmentZ, 'Color', 'g', 'LineWidth', 1);
+function [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize)
+        segmentX = [x0(1)];
+        segmentY = [x0(2)];
+        segmentZ = [x0(3)];
+        u = sample(stateSize+1:sampleSize-1);
+        duration = sample(sampleSize);
+        numDisc = duration/STEP_SIZE;
+        x = x0(1);
+        y = x0(2);
+        z = x0(3);
+        yaw = x0(4);
+        pitch = x0(5);
+        v = x0(6);
+        yawRate = u(1);
+        pitchRate = u(2);
+        a = u(3);
+        for k = 1:(numDisc)
+            x = x + (STEP_SIZE / 6.0) * ...
+                (v * cos(pitch) * cos(yaw) + ...
+                 2.0 * ((v + 0.5 * STEP_SIZE * a) * cos(pitch + 0.5 * STEP_SIZE * pitchRate) * cos(yaw + 0.5 * STEP_SIZE * yawRate) + ...
+                        (v + 0.5 * STEP_SIZE * a) * cos(pitch + 0.5 * STEP_SIZE * pitchRate) * cos(yaw + 0.5 * STEP_SIZE * yawRate)) + ...
+                 (v + STEP_SIZE * a) * cos(pitch + STEP_SIZE * pitchRate) * cos(yaw + STEP_SIZE * yawRate));
+            
+            y = y + (STEP_SIZE / 6.0) * ...
+                (v * cos(pitch) * sin(yaw) + ...
+                 2.0 * ((v + 0.5 * STEP_SIZE * a) * cos(pitch + 0.5 * STEP_SIZE * pitchRate) * sin(yaw + 0.5 * STEP_SIZE * yawRate) + ...
+                        (v + 0.5 * STEP_SIZE * a) * cos(pitch + 0.5 * STEP_SIZE * pitchRate) * sin(yaw + 0.5 * STEP_SIZE * yawRate)) + ...
+                 (v + STEP_SIZE * a) * cos(pitch + STEP_SIZE * pitchRate) * sin(yaw + STEP_SIZE * yawRate));
+            
+            z = z + (STEP_SIZE / 6.0) * ...
+                (v * sin(pitch) + ...
+                 2.0 * ((v + 0.5 * STEP_SIZE * a) * sin(pitch + 0.5 * STEP_SIZE * pitchRate) + ...
+                        (v + 0.5 * STEP_SIZE * a) * sin(pitch + 0.5 * STEP_SIZE * pitchRate)) + ...
+                 (v + STEP_SIZE * a) * sin(pitch + STEP_SIZE * pitchRate));
+            
+            yaw = yaw + STEP_SIZE * yawRate;
+            pitch = pitch + STEP_SIZE * pitchRate;
+            v = v + (STEP_SIZE / 6.0) * (a + 2.0 * (a + a) + a);
+            segmentX = [segmentX, x];
+            segmentY = [segmentY, y];
+            segmentZ = [segmentZ, z];
         end
-    end
-
-    % Save original view with high resolution
-    view(3);
-    drawnow;
-    saveas(gcf, sprintf('figs/KGMT_Iteration_%d.jpg', i));
-    print(sprintf('figs/KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300'); % Save with 300 DPI
-
-    % Save top-down view with high resolution
-    view(2);
-    drawnow;
-    saveas(gcf, sprintf('figs/top_KGMT_Iteration_%d.jpg', i));
-    print(sprintf('figs/top_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300'); % Save with 300 DPI
-
-    % Save view looking along the x-axis from above
-    midY = (min(samples(:,2)) + max(samples(:,2))) / 2;
-    midZ = (min(samples(:,3)) + max(samples(:,3))) / 2;
-    campos([0, midY, max(samples(:,3)) + 1]); % Position the camera above the max z-value
-    camtarget([0, midY, midZ]); % Set the target point to the middle
-    view([-1, .2, 0.6]); % Look along the x-axis
-    drawnow;
-    saveas(gcf, sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i));
-    print(sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300'); % Save with 300 DPI
-
-    % Close the figure
-    %close(gcf);
-
+        segmentX = [segmentX, sample(1)];
+        segmentY = [segmentY, sample(2)];
+        segmentZ = [segmentZ, sample(3)];
 end

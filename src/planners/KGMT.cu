@@ -170,6 +170,12 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
     if(h_frontierRepeatSize_ * h_activeBlockSize_ > (MAX_TREE_SIZE - h_treeSize_))
         {
             h_propIterations_ = std::min(int(float(MAX_TREE_SIZE - h_treeSize_) / float(h_frontierRepeatSize_)), int(h_activeBlockSize_));
+
+            if(h_propIterations_ == 0)
+                {
+                    printf("Error: Not enough space in tree to expand frontier.\n");
+                }
+
             // --- Propagate Frontier. iterations new samples per frontier sample---
             propagateFrontier_kernel2<<<iDivUp(h_propIterations_ * h_frontierRepeatSize_, h_activeBlockSize_), h_activeBlockSize_>>>(
               d_frontier_ptr_, d_activeFrontierRepeatIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierRepeatSize_,

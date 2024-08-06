@@ -268,21 +268,9 @@ oc::SimpleSetupPtr OMPL_Planner::kinodynamicSimpleSetUp(const float* initial, co
     start[0] = initial[0];
     start[1] = initial[1];
     start[2] = initial[2];
-
-    if(MODEL == 1)
-        {
-            // --- Double Integrator ---
-            start[3] = initial[3];  // vx
-            start[4] = initial[4];  // vy
-            start[5] = initial[5];  // vz
-        }
-    else if(MODEL == 2)
-        {
-            // --- Dubins Airplane ---
-            start[3] = initial[3];  // yaw
-            start[4] = initial[4];  // pitch
-            start[5] = initial[5];  // velocity
-        }
+    start[3] = initial[3];  // vx
+    start[4] = initial[4];  // vy
+    start[5] = initial[5];  // vz
 
     // --- Setting goal region ---
     OMPL_INFORM("goal x: %f, y: %f, z: %f", goal[0], goal[1], goal[2]);
@@ -483,6 +471,7 @@ void OMPL_Planner::planParallelRRT(const float* initial, const float* goal, floa
                         }
                     writeIterationsToCSV(totalIterations);
                     writeNumVerticesToCSV(numVertices);
+                    write2sys(ss);
                 }
             else
                 {

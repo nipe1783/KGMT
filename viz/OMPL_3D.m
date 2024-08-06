@@ -129,10 +129,10 @@ for i = 1:numFiles
             segmentY = [segmentY, y];
             segmentZ = [segmentZ, z];
         end
-        segmentX = [segmentX, samples(j, 1)];
-        segmentY = [segmentY, samples(j, 2)];
-        segmentZ = [segmentZ, samples(j, 3)];
-        plot3(segmentX, segmentY, segmentZ, '-.', 'Color', 'k', 'LineWidth', 0.01);
+        % segmentX = [segmentX, samples(j, 1)];
+        % segmentY = [segmentY, samples(j, 2)];
+        % segmentZ = [segmentZ, samples(j, 3)];
+        plot3(segmentX, segmentY, segmentZ, '-.', 'Color', 'k', 'LineWidth', 1);
         plot3(x, y, z, 'bo', 'MarkerFaceColor', 'b', 'MarkerSize', 2);
     end
 
