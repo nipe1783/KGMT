@@ -1,8 +1,8 @@
 #pragma once
 
-#include <ompl/control/planners/rrt/RRT.h>
-#include <ompl/control/planners/pdst/PDST.h>
-#include <ompl/control/planners/est/EST.h>
+#include "cpu/planners/ModRRT.h"
+#include "cpu/planners/ModPDST.h"
+#include "cpu/planners/ModEST.h"
 #include <ompl/control/SimpleSetup.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <ompl/control/spaces/RealVectorControlSpace.h>
@@ -20,6 +20,10 @@
 #include <omp.h>
 #include <thread>
 #include <chrono>
+#include <ompl/base/PlannerData.h>
+#include <sstream>
+#include <vector>
+#include <cmath>
 
 namespace ob = ompl::base;
 namespace oc = ompl::control;

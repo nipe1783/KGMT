@@ -60,7 +60,7 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
     thrust::fill(d_treeSampleCosts_.begin(), d_treeSampleCosts_.end(), 0.0f);
     thrust::fill(d_frontier_.begin(), d_frontier_.begin() + 1, true);
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
-    thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.begin() + 1, 5);
+    thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.begin() + 1, 5);  // TODO make this not hard coded to 5.
     h_treeSize_   = 1;
     h_itr_        = 0;
     h_costToGoal_ = 0;
@@ -77,8 +77,8 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
     while(h_itr_ < MAX_ITER)
         {
             h_itr_++;
-            graph_.updateVertices();
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
+            graph_.updateVertices();
             updateFrontier();
             if(h_pathToGoal_ != 0)
                 {
@@ -135,8 +135,8 @@ void KGMT::planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, ui
         {
             h_itr_++;
             printf("Iteration: %d, Tree Size: %d, Frontier Size: %d\n", h_itr_, h_treeSize_, h_frontierSize_);
-            graph_.updateVertices();
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
+            graph_.updateVertices();
             updateFrontier();
             writeDeviceVectorsToCSV(benchItr);
             if(h_pathToGoal_ != 0)

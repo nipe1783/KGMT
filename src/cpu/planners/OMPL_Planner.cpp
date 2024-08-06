@@ -31,6 +31,16 @@ void writeExecutionTimeToCSV(double time)
     writeValueToCSV(time, filename.str());
 }
 
+void writeIterationsToCSV(int iterations)
+{
+    std::ostringstream filename;
+    std::filesystem::create_directories("Data");
+    std::filesystem::create_directories("Data/Iterations");
+    filename.str("");
+    filename << "Data/Iterations/iterations.csv";
+    writeValueToCSV(iterations, filename.str());
+}
+
 class GoalRegionWithinSphere : public ob::GoalRegion
 {
 public:
@@ -287,7 +297,7 @@ void OMPL_Planner::planRRT(const float* initial, const float* goal, float* obsta
     oc::PathControl pathOmpl(ss->getSpaceInformation());
 
     // --- Setting Planner ---
-    auto planner = std::make_shared<oc::RRT>(ss->getSpaceInformation());
+    auto planner = std::make_shared<oc::ModRRT>(ss->getSpaceInformation());
     ss->setPlanner(planner);
     ss->getSpaceInformation()->setStateValidityCheckingResolution(0.005);
     ss->setup();
@@ -307,6 +317,7 @@ void OMPL_Planner::planRRT(const float* initial, const float* goal, float* obsta
             pathOmpl = ss->getSolutionPath();
             write2sys(ss);
             writeExecutionTimeToCSV(elapsedTime);
+            writeIterationsToCSV(planner->iterations_);
         }
     else
         {
@@ -325,7 +336,7 @@ void OMPL_Planner::planPDST(const float* initial, const float* goal, float* obst
     oc::PathControl pathOmpl(ss->getSpaceInformation());
 
     // --- Setting Planner ---
-    auto planner = std::make_shared<oc::PDST>(ss->getSpaceInformation());
+    auto planner = std::make_shared<oc::ModPDST>(ss->getSpaceInformation());
     ss->setPlanner(planner);
     ss->getSpaceInformation()->setStateValidityCheckingResolution(0.005);
     ss->setup();
@@ -346,6 +357,7 @@ void OMPL_Planner::planPDST(const float* initial, const float* goal, float* obst
             pathOmpl = ss->getSolutionPath();
             write2sys(ss);
             writeExecutionTimeToCSV(elapsedTime);
+            writeIterationsToCSV(planner->iterations_);
         }
     else
         {
@@ -364,7 +376,7 @@ void OMPL_Planner::planEST(const float* initial, const float* goal, float* obsta
     oc::PathControl pathOmpl(ss->getSpaceInformation());
 
     // --- Setting Planner ---
-    auto planner = std::make_shared<oc::EST>(ss->getSpaceInformation());
+    auto planner = std::make_shared<oc::ModEST>(ss->getSpaceInformation());
     ss->setPlanner(planner);
     ss->getSpaceInformation()->setStateValidityCheckingResolution(0.005);
     ss->setup();
@@ -385,6 +397,7 @@ void OMPL_Planner::planEST(const float* initial, const float* goal, float* obsta
             pathOmpl = ss->getSolutionPath();
             write2sys(ss);
             writeExecutionTimeToCSV(elapsedTime);
+            writeIterationsToCSV(planner->iterations_);
         }
     else
         {
@@ -416,10 +429,12 @@ void OMPL_Planner::planParallelRRT(const float* initial, const float* goal, floa
             ompl::tools::ParallelPlan pp(ss->getProblemDefinition());
 
             // --- Creating numThread planners ---
+            std::vector<std::shared_ptr<oc::ModRRT>> planners;
             for(unsigned int i = 0; i < numThreads; ++i)
                 {
-                    auto planner = std::make_shared<oc::RRT>(ss->getSpaceInformation());
+                    auto planner = std::make_shared<oc::ModRRT>(ss->getSpaceInformation());
                     pp.addPlanner(planner);
+                    planners.push_back(planner);
                 }
             ss->getSpaceInformation()->setStateValidityCheckingResolution(0.005);
             ss->setup();
@@ -437,6 +452,15 @@ void OMPL_Planner::planParallelRRT(const float* initial, const float* goal, floa
                 {
                     std::cout << "Found solution in " << elapsedTime << " seconds." << std::endl;
                     writeExecutionTimeToCSV(elapsedTime);
+
+                    int totalIterations = 0;
+                    for(size_t i = 0; i < planners.size(); ++i)
+                        {
+                            ompl::base::PlannerData data(ss->getSpaceInformation());
+                            planners[i]->getPlannerData(data);
+                            totalIterations += planners[i]->iterations_;
+                        }
+                    writeIterationsToCSV(totalIterations);
                 }
             else
                 {
@@ -473,10 +497,12 @@ void OMPL_Planner::planParallelEST(const float* initial, const float* goal, floa
             ompl::tools::ParallelPlan pp(ss->getProblemDefinition());
 
             // --- Creating numThread planners ---
+            std::vector<std::shared_ptr<oc::ModEST>> planners;
             for(unsigned int i = 0; i < numThreads; ++i)
                 {
-                    auto planner = std::make_shared<oc::EST>(ss->getSpaceInformation());
+                    auto planner = std::make_shared<oc::ModEST>(ss->getSpaceInformation());
                     pp.addPlanner(planner);
+                    planners.push_back(planner);
                 }
             ss->getSpaceInformation()->setStateValidityCheckingResolution(0.005);
             ss->setup();
@@ -494,6 +520,13 @@ void OMPL_Planner::planParallelEST(const float* initial, const float* goal, floa
                 {
                     std::cout << "Found solution in " << elapsedTime << " seconds." << std::endl;
                     writeExecutionTimeToCSV(elapsedTime);
+
+                    int totalIterations = 0;
+                    for(size_t i = 0; i < numThreads; ++i)
+                        {
+                            totalIterations += planners[i]->iterations_;
+                        }
+                    writeIterationsToCSV(totalIterations);
                 }
             else
                 {
@@ -530,10 +563,12 @@ void OMPL_Planner::planParallelPDST(const float* initial, const float* goal, flo
             ompl::tools::ParallelPlan pp(ss->getProblemDefinition());
 
             // --- Creating numThread planners ---
+            std::vector<std::shared_ptr<oc::ModPDST>> planners;
             for(unsigned int i = 0; i < numThreads; ++i)
                 {
-                    auto planner = std::make_shared<oc::PDST>(ss->getSpaceInformation());
+                    auto planner = std::make_shared<oc::ModPDST>(ss->getSpaceInformation());
                     pp.addPlanner(planner);
+                    planners.push_back(planner);
                 }
             ss->getSpaceInformation()->setStateValidityCheckingResolution(0.005);
             ss->setup();
@@ -551,6 +586,13 @@ void OMPL_Planner::planParallelPDST(const float* initial, const float* goal, flo
                 {
                     std::cout << "Found solution in " << elapsedTime << " seconds." << std::endl;
                     writeExecutionTimeToCSV(elapsedTime);
+
+                    int totalIterations = 0;
+                    for(unsigned int i = 0; i < numThreads; ++i)
+                        {
+                            totalIterations += planners[i]->iterations_;
+                        }
+                    writeIterationsToCSV(totalIterations);
                 }
             else
                 {
