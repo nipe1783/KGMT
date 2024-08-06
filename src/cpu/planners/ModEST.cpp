@@ -124,6 +124,8 @@ ompl::base::PlannerStatus ompl::control::ModEST::solve(const base::PlannerTermin
 
     while(!ptc)
         {
+            iterations_++;
+
             // Select a state to expand the tree from
             Motion *existing = selectMotion();
             assert(existing);

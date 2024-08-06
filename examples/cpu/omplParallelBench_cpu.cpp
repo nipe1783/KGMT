@@ -46,7 +46,7 @@ int main(void)
     for(int i = 0; i < N; i++)
         {
             // --- Execute planner ---
-            rrt.planParallelRRT(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
+            rrt.planParallelPDST(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
         }
 
     return 0;

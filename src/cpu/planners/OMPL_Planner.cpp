@@ -41,6 +41,16 @@ void writeIterationsToCSV(int iterations)
     writeValueToCSV(iterations, filename.str());
 }
 
+void writeNumVerticesToCSV(int numVertices)
+{
+    std::ostringstream filename;
+    std::filesystem::create_directories("Data");
+    std::filesystem::create_directories("Data/Vertices");
+    filename.str("");
+    filename << "Data/Vertices/vertices.csv";
+    writeValueToCSV(numVertices, filename.str());
+}
+
 class GoalRegionWithinSphere : public ob::GoalRegion
 {
 public:
@@ -318,6 +328,9 @@ void OMPL_Planner::planRRT(const float* initial, const float* goal, float* obsta
             write2sys(ss);
             writeExecutionTimeToCSV(elapsedTime);
             writeIterationsToCSV(planner->iterations_);
+            ompl::base::PlannerData data(ss->getSpaceInformation());
+            planner->getPlannerData(data);
+            writeNumVerticesToCSV(data.numVertices());
         }
     else
         {
@@ -358,6 +371,9 @@ void OMPL_Planner::planPDST(const float* initial, const float* goal, float* obst
             write2sys(ss);
             writeExecutionTimeToCSV(elapsedTime);
             writeIterationsToCSV(planner->iterations_);
+            ompl::base::PlannerData data(ss->getSpaceInformation());
+            planner->getPlannerData(data);
+            writeNumVerticesToCSV(data.numVertices());
         }
     else
         {
@@ -398,6 +414,9 @@ void OMPL_Planner::planEST(const float* initial, const float* goal, float* obsta
             write2sys(ss);
             writeExecutionTimeToCSV(elapsedTime);
             writeIterationsToCSV(planner->iterations_);
+            ompl::base::PlannerData data(ss->getSpaceInformation());
+            planner->getPlannerData(data);
+            writeNumVerticesToCSV(data.numVertices());
         }
     else
         {
@@ -454,13 +473,16 @@ void OMPL_Planner::planParallelRRT(const float* initial, const float* goal, floa
                     writeExecutionTimeToCSV(elapsedTime);
 
                     int totalIterations = 0;
+                    int numVertices     = 0;
                     for(size_t i = 0; i < planners.size(); ++i)
                         {
                             ompl::base::PlannerData data(ss->getSpaceInformation());
                             planners[i]->getPlannerData(data);
                             totalIterations += planners[i]->iterations_;
+                            numVertices += data.numVertices();
                         }
                     writeIterationsToCSV(totalIterations);
+                    writeNumVerticesToCSV(numVertices);
                 }
             else
                 {
@@ -522,11 +544,16 @@ void OMPL_Planner::planParallelEST(const float* initial, const float* goal, floa
                     writeExecutionTimeToCSV(elapsedTime);
 
                     int totalIterations = 0;
-                    for(size_t i = 0; i < numThreads; ++i)
+                    int numVertices     = 0;
+                    for(size_t i = 0; i < planners.size(); ++i)
                         {
+                            ompl::base::PlannerData data(ss->getSpaceInformation());
+                            planners[i]->getPlannerData(data);
                             totalIterations += planners[i]->iterations_;
+                            numVertices += data.numVertices();
                         }
                     writeIterationsToCSV(totalIterations);
+                    writeNumVerticesToCSV(numVertices);
                 }
             else
                 {
@@ -588,11 +615,16 @@ void OMPL_Planner::planParallelPDST(const float* initial, const float* goal, flo
                     writeExecutionTimeToCSV(elapsedTime);
 
                     int totalIterations = 0;
-                    for(unsigned int i = 0; i < numThreads; ++i)
+                    int numVertices     = 0;
+                    for(size_t i = 0; i < planners.size(); ++i)
                         {
+                            ompl::base::PlannerData data(ss->getSpaceInformation());
+                            planners[i]->getPlannerData(data);
                             totalIterations += planners[i]->iterations_;
+                            numVertices += data.numVertices();
                         }
                     writeIterationsToCSV(totalIterations);
+                    writeNumVerticesToCSV(numVertices);
                 }
             else
                 {
