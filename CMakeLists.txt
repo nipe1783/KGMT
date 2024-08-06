@@ -33,6 +33,9 @@ set(SOURCE_FILES
     src/statePropagator/statePropagator.cu
     src/cpu/collisionCheck/CollisionCheck.cpp
     src/cpu/planners/OMPL_Planner.cpp
+    src/cpu/planners/ModRRT.cpp;
+    src/cpu/planners/ModPDST.cpp;
+    src/cpu/planners/ModEST.cpp;
 )
 add_library(KGMT_lib ${SOURCE_FILES})
 
