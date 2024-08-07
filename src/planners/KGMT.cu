@@ -89,7 +89,8 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
 
     double executionTime = (std::clock() - t_kgmtStart) / (double)CLOCKS_PER_SEC;
     writeExecutionTimeToCSV(executionTime);
-    std::cout << "KGMT execution time: " << executionTime << " seconds. Iterations: " << h_itr_ << std::endl;
+    std::cout << "KGMT execution time: " << executionTime << " seconds. Iterations: " << h_itr_ << ". Tree Size: " << h_treeSize_
+              << std::endl;
 }
 
 void KGMT::planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr)
@@ -148,7 +149,8 @@ void KGMT::planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, ui
         }
 
     double executionTime = (std::clock() - t_kgmtStart) / (double)CLOCKS_PER_SEC;
-    std::cout << "KGMT execution time: " << executionTime << " seconds. Iterations: " << h_itr_ << std::endl;
+    std::cout << "KGMT execution time: " << executionTime << " seconds. Iterations: " << h_itr_ << ". Tree Size: " << h_treeSize_
+              << std::endl;
 }
 
 void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
@@ -174,7 +176,6 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
             if(h_propIterations_ == 0)
                 {
                     // TODO: update this. possibly update tree size in here
-                    // printf("Not Enough Room To Expand Endtire Frontier.\n");
                     h_propIterations_   = 1;
                     h_frontierNextSize_ = MAX_TREE_SIZE - h_treeSize_;
                     thrust::fill(d_frontierNext_.begin(), d_frontierNext_.end(), false);
