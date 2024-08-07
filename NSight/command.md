@@ -1,7 +1,7 @@
 Generate new report:
 
 ```
-sudo nsys profile --trace=cuda,nvtx,osrt --output=/home/nicolas/dev/research/KGMT/NSight/review --force-overwrite=true /home/nicolas/dev/research/KGMT/build/benchMain
+sudo nsys profile --trace=cuda,nvtx,osrt --output=/home/nicolas/dev/research/KGMT/NSight/review --force-overwrite=true /home/nicolas/dev/research/KGMT/build/executionTimeMain
 ```
 
 Look at new report:

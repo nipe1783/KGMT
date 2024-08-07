@@ -173,7 +173,11 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
 
             if(h_propIterations_ == 0)
                 {
-                    printf("Error: Not enough space in tree to expand frontier.\n");
+                    // TODO: update this. possibly update tree size in here
+                    // printf("Not Enough Room To Expand Endtire Frontier.\n");
+                    h_propIterations_   = 1;
+                    h_frontierNextSize_ = MAX_TREE_SIZE - h_treeSize_;
+                    thrust::fill(d_frontierNext_.begin(), d_frontierNext_.end(), false);
                 }
 
             // --- Propagate Frontier. iterations new samples per frontier sample---
@@ -303,51 +307,48 @@ updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNe
     // --- Add next frontier to frontier ---
     if(tid < frontierNextSize)
         {
-            if(tid < MAX_TREE_SIZE)
+            // --- Update Tree ---
+            int x1TreeIdx                             = treeSize + tid;               // --- Index of new tree sample ---
+            int x1UnexploredIdx                       = activeFrontierNextIdxs[tid];  // --- Index of sample in unexplored sample set ---
+            frontierNext[activeFrontierNextIdxs[tid]] = false;
+            float* x1                        = &unexploredSamples[x1UnexploredIdx * SAMPLE_DIM];  // --- sample from unexplored set ---
+            int x0Idx                        = unexploredSamplesParentIdxs[x1UnexploredIdx];      // --- parent of the unexplored sample ---
+            treeSamplesParentIdxs[x1TreeIdx] = x0Idx;  // --- Transfer parent of unexplored sample to tree ---
+            for(int i = 0; i < SAMPLE_DIM; i++)
+                treeSamples[x1TreeIdx * SAMPLE_DIM + i] = x1[i];  // --- Transfer unexplored sample to tree ---
+            treeSampleCosts[x1TreeIdx] = distance(x1, s_xGoal);   // --- Update cost of new sample ---
+
+            // --- Update Frontier ---
+            frontier[x1TreeIdx] = true;
+
+            int xVertex = (DIM == 2) ? getVertex(treeSamples[x1TreeIdx * SAMPLE_DIM], treeSamples[x1TreeIdx * SAMPLE_DIM + 1])
+                                     : getVertex(treeSamples[x1TreeIdx * SAMPLE_DIM], treeSamples[x1TreeIdx * SAMPLE_DIM + 1],
+                                                 treeSamples[x1TreeIdx * SAMPLE_DIM + 2]);
+
+            if(validVertexCounter[xVertex] < 10)
+                activeFrontierRepeatCount[x1TreeIdx] = 15;
+            else
+                activeFrontierRepeatCount[x1TreeIdx] = 1;
+
+            // --- Goal Criteria Check ---
+            if(distance(x1, s_xGoal) < GOAL_THRESH)
                 {
-                    // --- Update Tree ---
-                    int x1TreeIdx       = treeSize + tid;               // --- Index of new tree sample ---
-                    int x1UnexploredIdx = activeFrontierNextIdxs[tid];  // --- Index of sample in unexplored sample set ---
-                    frontierNext[activeFrontierNextIdxs[tid]] = false;
-                    float* x1 = &unexploredSamples[x1UnexploredIdx * SAMPLE_DIM];  // --- sample from unexplored set ---
-                    int x0Idx = unexploredSamplesParentIdxs[x1UnexploredIdx];      // --- parent of the unexplored sample ---
-                    treeSamplesParentIdxs[x1TreeIdx] = x0Idx;                      // --- Transfer parent of unexplored sample to tree ---
-                    for(int i = 0; i < SAMPLE_DIM; i++)
-                        treeSamples[x1TreeIdx * SAMPLE_DIM + i] = x1[i];  // --- Transfer unexplored sample to tree ---
-                    treeSampleCosts[x1TreeIdx] = distance(x1, s_xGoal);   // --- Update cost of new sample ---
-
-                    // --- Update Frontier ---
-                    frontier[x1TreeIdx] = true;
-
-                    int xVertex = (DIM == 2) ? getVertex(treeSamples[x1TreeIdx * SAMPLE_DIM], treeSamples[x1TreeIdx * SAMPLE_DIM + 1])
-                                             : getVertex(treeSamples[x1TreeIdx * SAMPLE_DIM], treeSamples[x1TreeIdx * SAMPLE_DIM + 1],
-                                                         treeSamples[x1TreeIdx * SAMPLE_DIM + 2]);
-
-                    if(validVertexCounter[xVertex] < 10)
-                        activeFrontierRepeatCount[x1TreeIdx] = 15;
-                    else
-                        activeFrontierRepeatCount[x1TreeIdx] = 1;
-
-                    // --- Goal Criteria Check ---
-                    if(distance(x1, s_xGoal) < GOAL_THRESH)
+                    // --- Extract Path To Goal ---
+                    pathToGoal[0] = x1TreeIdx;
+                    int i         = 0;
+                    for(int j = 0; j < SAMPLE_DIM; j++)
                         {
-                            // --- Extract Path To Goal ---
-                            pathToGoal[0] = x1TreeIdx;
-                            int i         = 0;
+                            controlPathToGoal[i * SAMPLE_DIM + j] = x1[j];
+                        }
+                    i++;
+                    while(x0Idx != -1)
+                        {
                             for(int j = 0; j < SAMPLE_DIM; j++)
                                 {
-                                    controlPathToGoal[i * SAMPLE_DIM + j] = x1[j];
+                                    controlPathToGoal[i * SAMPLE_DIM + j] = treeSamples[x0Idx * SAMPLE_DIM + j];
                                 }
+                            x0Idx = treeSamplesParentIdxs[x0Idx];
                             i++;
-                            while(x0Idx != -1)
-                                {
-                                    for(int j = 0; j < SAMPLE_DIM; j++)
-                                        {
-                                            controlPathToGoal[i * SAMPLE_DIM + j] = treeSamples[x0Idx * SAMPLE_DIM + j];
-                                        }
-                                    x0Idx = treeSamplesParentIdxs[x0Idx];
-                                    i++;
-                                }
                         }
                 }
         }

@@ -7,7 +7,7 @@
 #define SAMPLE_DIM 10
 #define WS_SIZE 1.0f
 #define MODEL 2
-#define MAX_TREE_SIZE 500000
+#define MAX_TREE_SIZE 300000
 #define GOAL_THRESH 0.05f
 #define MAX_ITER 1000
 #define STEP_SIZE 0.1f
