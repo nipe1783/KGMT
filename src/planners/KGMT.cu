@@ -283,12 +283,18 @@ __global__ void propagateFrontier_kernel2(bool* frontier, uint* activeFrontierId
 /* FRONTIER UPDATE KERNEL */
 /***************************/
 // --- Adds previous frontier to the tree and builds new frontier. ---
-__global__ void updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNextIdxs, uint frontierNextSize, float* xGoal,
-                                      int treeSize, float* unexploredSamples, float* treeSamples, int* unexploredSamplesParentIdxs,
-                                      int* treeSamplesParentIdxs, float* treeSampleCosts, int* pathToGoal, uint* activeFrontierRepeatCount,
-                                      int* validVertexCounter, curandState* randomSeeds, float* vertexScores, float* controlPathToGoal)
+__global__ void
+updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNextIdxs, uint frontierNextSize, float* xGoal, int treeSize,
+                      float* unexploredSamples, float* treeSamples, int* unexploredSamplesParentIdxs, int* treeSamplesParentIdxs,
+                      float* treeSampleCosts, int* pathToGoal, uint* activeFrontierRepeatCount, int* validVertexCounter,
+                      curandState* randomSeeds, float* vertexScores, float* controlPathToGoal, float fAccept)
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    // if(tid == 0)
+    //     {
+    //         printf("percent: %f\n", ((float)treeSize / (treeSize + frontierNextSize)));
+    //     }
 
     __shared__ float s_xGoal[SAMPLE_DIM];
     if(threadIdx.x < SAMPLE_DIM) s_xGoal[threadIdx.x] = xGoal[threadIdx.x];
@@ -354,7 +360,7 @@ __global__ void updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* 
                                           : getVertex(treeSamples[treeIdx * SAMPLE_DIM], treeSamples[treeIdx * SAMPLE_DIM + 1],
                                                       treeSamples[treeIdx * SAMPLE_DIM + 2]);
             curandState seed = randomSeeds[treeIdx];
-            if(frontier[treeIdx] == 0 && curand_uniform(&seed) <= vertexScores[xVertex])
+            if(frontier[treeIdx] == 0 && curand_uniform(&seed) <= vertexScores[xVertex] + fAccept)
                 {
                     frontier[treeIdx]                  = true;
                     activeFrontierRepeatCount[treeIdx] = 1;
@@ -369,13 +375,18 @@ void KGMT::updateFrontier()
     h_frontierNextSize_ = d_frontierScanIdx_[MAX_TREE_SIZE - 1];
     findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_frontierNext_ptr_, d_frontierScanIdx_ptr_, d_activeFrontierIdxs_ptr_);
 
+    float treeAddSize = 1 - (float(h_treeSize_ + h_frontierNextSize_) / (MAX_TREE_SIZE));
+    h_fAccept_        = (h_itr_ * h_itr_ * h_itr_ * EPSILON) * pow(treeAddSize, 5);
+    // printf("treeAddSize: %f\n", treeAddSize);
+    // printf("fAccept: %f\n", h_fAccept_);
+
     // --- Update Frontier ---
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
     updateFrontier_kernel<<<iDivUp(h_frontierNextSize_ + h_treeSize_, h_blockSize_), h_blockSize_>>>(
       d_frontier_ptr_, d_frontierNext_ptr_, d_activeFrontierIdxs_ptr_, h_frontierNextSize_, d_goalSample_ptr_, h_treeSize_,
       d_unexploredSamples_ptr_, d_treeSamples_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_treeSamplesParentIdxs_ptr_,
       d_treeSampleCosts_ptr_, d_pathToGoal_ptr_, d_activeFrontierRepeatCount_ptr_, graph_.d_validCounterArray_ptr_, d_randomSeeds_ptr_,
-      graph_.d_vertexScoreArray_ptr_, d_controlPathToGoal_ptr_);
+      graph_.d_vertexScoreArray_ptr_, d_controlPathToGoal_ptr_, h_fAccept_);
 
     // --- Check for goal criteria ---
     cudaMemcpy(&h_pathToGoal_, d_pathToGoal_ptr_, sizeof(int), cudaMemcpyDeviceToHost);

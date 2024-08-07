@@ -3,7 +3,7 @@ clc
 clear all
 
 % Parameters
-numFiles = 1;
+numFiles = 31;
 radius = 0.05;
 N = 8;
 n = 4;
@@ -13,7 +13,7 @@ controlSize = 3;
 xGoal = [.7, .95, .9];
 alpha = .6;
 STEP_SIZE = .1;
-model = 1;
+model = 2;
 
 % Obstacle file path
 obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/pillars/obstacles.csv';
@@ -41,7 +41,7 @@ samples = readmatrix(sampleFilePath);
 controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathToGoal/ControlPathToGoal0/controlPathToGoal.csv';
 controls = readmatrix(controlPath);
 controls = flipud(controls);
-controls = [samples(1,1), samples(1,2), samples(1,3), samples(1,4), samples(1,5), samples(1,6), 0, 0, 0, 0; controls];
+% controls = [samples(1,1), samples(1,2), samples(1,3), samples(1,4), samples(1,5), samples(1,6), 0, 0, 0, 0; controls];
 
 plot3(samples(1,1), samples(1,2), samples(1,3), 'ko', 'MarkerFaceColor', 'b', 'MarkerSize', 10);
 
@@ -179,6 +179,7 @@ for i = 1:numFiles
                 [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
             end
             plot3(segmentX, segmentY, segmentZ, 'Color', 'g', 'LineWidth', 1);
+            plot3(controls(j, 1), controls(j, 2), controls(j, 3), 'o', 'Color', colors(colorIndex, :), 'MarkerFaceColor', colors(colorIndex, :), 'MarkerSize', 2);
         end
     end
 

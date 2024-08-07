@@ -261,7 +261,7 @@ __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterA
             // --- From OMPL Syclop ref: https://ompl.kavrakilab.org/classompl_1_1control_1_1Syclop.html---
             float freeVol =
               (EPSILON + numValidSamples) / (EPSILON + numValidSamples + (counterArray[tid] - numValidSamples)) * pow(R1_SIZE, DIM);
-            score = pow(freeVol, 1) / ((1 + coverage) * (1 + pow(counterArray[tid], 2)));
+            score = pow(freeVol, 4) / ((1 + coverage) * (1 + pow(counterArray[tid], 2)));
         }
 
     // --- Sum scores from each thread to determine score threshold ---
