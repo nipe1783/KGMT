@@ -3,7 +3,7 @@ clc
 clear all
 
 % Parameters
-numFiles = 31;
+numFiles = 9;
 radius = 0.05;
 N = 8;
 n = 4;
@@ -38,9 +38,9 @@ title('Iteration 0');
 sampleFilePath = "/home/nicolas/dev/research/KGMT/build/Data/Samples/Samples0/samples1.csv";
 samples = readmatrix(sampleFilePath);
 
-controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathToGoal/ControlPathToGoal0/controlPathToGoal.csv';
-controls = readmatrix(controlPath);
-controls = flipud(controls);
+% controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathToGoal/ControlPathToGoal0/controlPathToGoal.csv';
+% controls = readmatrix(controlPath);
+% controls = flipud(controls);
 % controls = [samples(1,1), samples(1,2), samples(1,3), samples(1,4), samples(1,5), samples(1,6), 0, 0, 0, 0; controls];
 
 plot3(samples(1,1), samples(1,2), samples(1,3), 'ko', 'MarkerFaceColor', 'b', 'MarkerSize', 10);
@@ -169,19 +169,19 @@ for i = 1:numFiles
         plot3(samples(j, 1), samples(j, 2), samples(j, 3), 'o', 'Color', colors(colorIndex, :), 'MarkerFaceColor', colors(colorIndex, :), 'MarkerSize', 2);
     end
 
-    if i == numFiles
-        for j = 2:size(controls, 1)
-            x0 = controls(j-1, 1:stateSize);
-            sample = controls(j,:);
-            if model == 1
-                [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
-            elseif model == 2
-                [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
-            end
-            plot3(segmentX, segmentY, segmentZ, 'Color', 'g', 'LineWidth', 1);
-            plot3(controls(j, 1), controls(j, 2), controls(j, 3), 'o', 'Color', colors(colorIndex, :), 'MarkerFaceColor', colors(colorIndex, :), 'MarkerSize', 2);
-        end
-    end
+    % if i == numFiles
+    %     for j = 2:size(controls, 1)
+    %         x0 = controls(j-1, 1:stateSize);
+    %         sample = controls(j,:);
+    %         if model == 1
+    %             [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
+    %         elseif model == 2
+    %             [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
+    %         end
+    %         plot3(segmentX, segmentY, segmentZ, 'Color', 'g', 'LineWidth', 1);
+    %         plot3(controls(j, 1), controls(j, 2), controls(j, 3), 'o', 'Color', colors(colorIndex, :), 'MarkerFaceColor', colors(colorIndex, :), 'MarkerSize', 2);
+    %     end
+    % end
 
     view(3);
     drawnow;

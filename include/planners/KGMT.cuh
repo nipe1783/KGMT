@@ -6,7 +6,7 @@ class KGMT : public Planner
 {
 public:
     /**************************** CONSTRUCTORS ****************************/
-    KGMT();
+    KGMT(int h_desiredTreeSize);
 
     /****************************    METHODS    ****************************/
     void plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount) override;

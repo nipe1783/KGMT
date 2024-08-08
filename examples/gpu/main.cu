@@ -8,7 +8,7 @@ int main(void)
 
     float h_initial[SAMPLE_DIM] = {0.3, 0.02, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
           h_goal[SAMPLE_DIM]    = {0.7, .95, .9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    KGMT kgmt;
+    KGMT kgmt(MAX_TREE_SIZE);
 
     int numObstacles;
     float* d_obstacles;

@@ -20,7 +20,7 @@ class Planner
 {
 public:
     /**************************** CONSTRUCTORS ****************************/
-    Planner();
+    Planner(int h_desiredTreeSize);
 
     /****************************    METHODS    ****************************/
     virtual void plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount) = 0;
@@ -30,7 +30,7 @@ public:
     // --- host fields ---
     uint h_treeSize_ = 0, h_itr_ = 0, h_blockSize_ = 128, h_gridSize_;
     float h_costToGoal_ = 0.0;
-    int h_pathToGoal_;
+    int h_pathToGoal_, h_desiredTreeSize_, h_maxTreeSize_;
     float* h_controlPathToGoal_;
 
     // --- device fields ---

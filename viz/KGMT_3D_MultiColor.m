@@ -3,7 +3,7 @@ clc
 clear all
 
 % Parameters
-numFiles = 7;
+numFiles = 1;
 radius = 0.05;
 N = 8;
 n = 4;
@@ -103,7 +103,7 @@ saveas(gcf, 'figs/xAxis_KGMT_Iteration_0.jpg');
 print('figs/xAxis_KGMT_Iteration_0.jpg', '-djpeg', '-r300'); % Save with 300 DPI
 
 % Close the figure
-close(gcf);
+% close(gcf);
 
 for i = 1:numFiles
     sampleFilePath = "/home/nicolas/dev/research/KGMT/build/Data/Samples/Samples0/samples" + i + ".csv";
