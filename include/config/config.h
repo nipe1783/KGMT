@@ -13,6 +13,33 @@
 #define STEP_SIZE 0.1f
 #define MAX_PROPAGATION_DURATION 10
 
+#define W_DIM 3
+#define C_DIM 1
+#define V_DIM 1
+
+#define W_MIN 0.0f
+#define W_MAX 1.0f
+
+#define C_MIN -M_PI
+#define C_MAX M_PI
+
+#define V_MIN 0.0f
+#define V_MAX 0.3f
+
+#define W_R1_LENGTH 8
+#define C_R1_LENGTH 1
+#define V_R1_LENGTH 1
+
+#define W_R2_LENGTH 4
+#define C_R2_LENGTH 1
+#define V_R2_LENGTH 1
+
+#define W_R1_SIZE ((W_MAX - W_MIN) / W_R1_LENGTH)
+#define C_R1_SIZE ((C_MAX - C_MIN) / C_R1_LENGTH)
+#define V_R1_SIZE ((V_MAX - V_MIN) / V_R1_LENGTH)
+
+#define NUM_R2_PER_R1 W_R2_LENGTH *W_R2_LENGTH *W_R2_LENGTH *C_R2_LENGTH *C_R2_LENGTH *V_R2_LENGTH
+
 // --- UNICYCLE MODEL: MODEL 0 ---
 #define UNI_MIN_ACC -1.0f
 #define UNI_MAX_ACC 1.0f

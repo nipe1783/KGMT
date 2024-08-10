@@ -89,8 +89,9 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
 
     double executionTime = (std::clock() - t_kgmtStart) / (double)CLOCKS_PER_SEC;
     writeExecutionTimeToCSV(executionTime);
-    std::cout << "KGMT execution time: " << executionTime << " seconds. Iterations: " << h_itr_ << ". Tree Size: " << h_treeSize_
-              << std::endl;
+    // std::cout << "KGMT execution time: " << executionTime << " seconds. Iterations: " << h_itr_ << ". Tree Size: " << h_treeSize_
+    //           << std::endl;
+    std::cout << h_itr_ << std::endl;
 }
 
 void KGMT::planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr)
@@ -186,7 +187,7 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
               d_frontier_ptr_, d_activeFrontierRepeatIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierRepeatSize_,
               d_randomSeeds_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount, graph_.d_activeSubVertices_ptr_,
               graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, graph_.d_counterArray_ptr_, graph_.d_validCounterArray_ptr_,
-              h_propIterations_);
+              h_propIterations_, graph_.d_minValueInRegion_ptr_);
         }
     else
         {
@@ -194,7 +195,8 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
             propagateFrontier_kernel1<<<iDivUp(h_frontierRepeatSize_ * h_activeBlockSize_, h_activeBlockSize_), h_activeBlockSize_>>>(
               d_frontier_ptr_, d_activeFrontierRepeatIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierRepeatSize_,
               d_randomSeeds_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount, graph_.d_activeSubVertices_ptr_,
-              graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, graph_.d_counterArray_ptr_, graph_.d_validCounterArray_ptr_);
+              graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, graph_.d_counterArray_ptr_, graph_.d_validCounterArray_ptr_,
+              graph_.d_minValueInRegion_ptr_);
         }
 }
 
@@ -203,10 +205,10 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
 /***************************/
 // --- Propagates current frontier. Builds new frontier. ---
 // --- One Block Per Frontier Sample ---
-__global__ void
-propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
-                          curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
-                          int* activeSubVertices, float* vertexScores, bool* frontierNext, int* vertexCounter, int* validVertexCounter)
+__global__ void propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples,
+                                          uint frontierSize, curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles,
+                                          int obstaclesCount, int* activeSubVertices, float* vertexScores, bool* frontierNext,
+                                          int* vertexCounter, int* validVertexCounter, float* minValueInRegion)
 {
     if(blockIdx.x >= frontierSize) return;
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -230,8 +232,8 @@ propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeS
     unexploredSamplesParentIdxs[tid] = s_x0Idx;
     curandState randSeed             = randomSeeds[tid];
     bool valid                       = propagateAndCheck(s_x0, x1, &randSeed, obstacles, obstaclesCount);
-    int x1Vertex                     = (DIM == 2) ? getVertex(x1[0], x1[1]) : getVertex(x1[0], x1[1], x1[2]);
-    int x1SubVertex                  = (DIM == 2) ? getSubVertex(x1[0], x1[1], x1Vertex) : getSubVertex(x1[0], x1[1], x1[2], x1Vertex);
+    int x1Vertex                     = getRegion(x1);
+    int x1SubVertex                  = getSubRegion(x1, x1Vertex, minValueInRegion);
 
     // --- Update Graph sample count and populate next Frontier ---
     atomicAdd(&vertexCounter[x1Vertex], 1);
@@ -252,7 +254,7 @@ propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeS
 __global__ void propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples,
                                           uint frontierSize, curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles,
                                           int obstaclesCount, int* activeSubVertices, float* vertexScores, bool* frontierNext,
-                                          int* vertexCounter, int* validVertexCounter, int iterations)
+                                          int* vertexCounter, int* validVertexCounter, int iterations, float* minValueInRegion)
 {
     int tid       = blockIdx.x * blockDim.x + threadIdx.x;
     frontier[tid] = false;
@@ -269,8 +271,8 @@ __global__ void propagateFrontier_kernel2(bool* frontier, uint* activeFrontierId
     unexploredSamplesParentIdxs[tid] = x0Idx;
     curandState randSeed             = randomSeeds[tid];
     bool valid                       = propagateAndCheck(x0, x1, &randSeed, obstacles, obstaclesCount);
-    int x1Vertex                     = (DIM == 2) ? getVertex(x1[0], x1[1]) : getVertex(x1[0], x1[1], x1[2]);
-    int x1SubVertex                  = (DIM == 2) ? getSubVertex(x1[0], x1[1], x1Vertex) : getSubVertex(x1[0], x1[1], x1[2], x1Vertex);
+    int x1Vertex                     = getRegion(x1);
+    int x1SubVertex                  = getSubRegion(x1, x1Vertex, minValueInRegion);
 
     // --- Update Graph sample count and populate next Frontier ---
     atomicAdd(&vertexCounter[x1Vertex], 1);
@@ -295,11 +297,6 @@ updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNe
                       curandState* randomSeeds, float* vertexScores, float* controlPathToGoal, float fAccept)
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-    // if(tid == 0)
-    //     {
-    //         printf("percent: %f\n", ((float)treeSize / (treeSize + frontierNextSize)));
-    //     }
 
     __shared__ float s_xGoal[SAMPLE_DIM];
     if(threadIdx.x < SAMPLE_DIM) s_xGoal[threadIdx.x] = xGoal[threadIdx.x];
@@ -379,8 +376,6 @@ void KGMT::updateFrontier()
 
     float treeAddSize = 1 - (float(h_treeSize_ + h_frontierNextSize_) / (MAX_TREE_SIZE));
     h_fAccept_        = (h_itr_ * h_itr_ * h_itr_ * EPSILON) * pow(treeAddSize, 5);
-    // printf("treeAddSize: %f\n", treeAddSize);
-    // printf("fAccept: %f\n", h_fAccept_);
 
     // --- Update Frontier ---
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
