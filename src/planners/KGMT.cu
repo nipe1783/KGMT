@@ -61,10 +61,13 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
     thrust::fill(d_frontier_.begin(), d_frontier_.begin() + 1, true);
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.begin() + 1, 5);  // TODO make this not hard coded to 5.
-    h_treeSize_   = 1;
-    h_itr_        = 0;
-    h_costToGoal_ = 0;
-    h_pathToGoal_ = 0;
+
+    h_treeSize_     = 1;
+    h_itr_          = 0;
+    h_costToGoal_   = 0;
+    h_pathToGoal_   = 0;
+    h_frontierSize_ = 0;
+
     cudaMemcpy(d_treeSamples_ptr_, h_initial, SAMPLE_DIM * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_goalSample_ptr_, h_goal, SAMPLE_DIM * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_costToGoal_ptr_, &h_costToGoal_, sizeof(float), cudaMemcpyHostToDevice);
@@ -117,11 +120,11 @@ void KGMT::planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, ui
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.begin() + 1, 5);
 
-    h_treeSize_             = 1;
-    h_itr_                  = 0;
-    h_costToGoal_           = 0;
-    h_pathToGoal_           = 0;
-    h_controlPathToGoal_[0] = 0;
+    h_treeSize_     = 1;
+    h_itr_          = 0;
+    h_costToGoal_   = 0;
+    h_pathToGoal_   = 0;
+    h_frontierSize_ = 0;
 
     cudaMemcpy(d_treeSamples_ptr_, h_initial, SAMPLE_DIM * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_goalSample_ptr_, h_goal, SAMPLE_DIM * sizeof(float), cudaMemcpyHostToDevice);

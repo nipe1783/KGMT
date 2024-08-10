@@ -3,7 +3,7 @@ clc
 clear all
 
 % Parameters
-numFiles = 1;
+numFiles = 26;
 radius = 0.05;
 N = 8;
 n = 4;
@@ -11,7 +11,7 @@ sampleSize = 10;
 stateSize = 6;
 controlSize = 3;
 xGoal = [.7, .95, .9];
-alpha = .6;
+alpha = .9;
 STEP_SIZE = .1;
 model = 2;
 
@@ -24,8 +24,8 @@ treeSizes = readmatrix(treeSizePath);
 treeSizes = [0; treeSizes];
 
 colors = [0 0 1;  % Blue
-           0 .9 0;  % Green
-          .9 0 .9;  % Pink
+           0 .9 .2;  % Green
+          1 0 1;  % Pink
           .7 .7 0;  % Yellow
           0 .7 .7; % Turquoise
           1 .5 0]; % Orange
@@ -72,11 +72,12 @@ for j = 1:size(obstacles, 1)
         4, 1, 5, 8;
         1, 2, 3, 4;
         5, 6, 7, 8];
-    patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', 0.6);
+    patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', alpha);
 end
 
 camlight('headlight'); 
-lighting gouraud;
+camlight('right');
+lighting phong;
 
 view(3);
 drawnow;
@@ -92,7 +93,7 @@ midY = 0.5 * xGoal(2);
 midZ = 0.5 * xGoal(3); 
 campos([0, midY, xGoal(3) + 1]); 
 camtarget([0, midY, midZ]); 
-view([-1, .2, 0.6]); 
+view([-.4, -.2, 0.5]);
 drawnow;
 saveas(gcf, 'figs/xAxis_KGMT_Iteration_0.jpg');
 print('figs/xAxis_KGMT_Iteration_0.jpg', '-djpeg', '-r300'); 
@@ -141,11 +142,12 @@ for i = 1:numFiles
             4, 1, 5, 8;
             1, 2, 3, 4;
             5, 6, 7, 8];
-        patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', 0.6);
+        patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', alpha);
     end
 
     camlight('headlight'); 
-    lighting gouraud;
+    camlight('right');
+    lighting phong;
 
     colorIndex = 1;
     for j = 2:size(parentRelations, 1)
@@ -197,12 +199,13 @@ for i = 1:numFiles
     midZ = (min(samples(:,3)) + max(samples(:,3))) / 2;
     campos([0, midY, max(samples(:,3)) + 1]);
     camtarget([0, midY, midZ]);
-    view([-1, .2, 0.6]);
+    view([-.4, -.2, 0.5]);
     drawnow;
+
     saveas(gcf, sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i));
     print(sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
 
-    % close(gcf);
+    close(gcf);
 end
 
 function [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize)
