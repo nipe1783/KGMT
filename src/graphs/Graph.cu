@@ -1,156 +1,92 @@
 #include "graphs/Graph.cuh"
 #include "config/config.h"
+#include <filesystem>
 
 Graph::Graph(const float ws)
 {
-    h_numEdges_ = (DIM == 2) ? pow(R1, 2) * 4 : pow(R1, 3) * 6;
-    h_vertexArray_.resize((DIM == 2) ? pow(R1, 2) : pow(R1, 3));
-    constructVertexArray();
-    constructEdgeArray();
-    constructFromVertices();
-    constructToVertices();
     if(VERBOSE)
         {
             printf("/***************************/\n");
             printf("/* Graph Dimension: %d */\n", DIM);
-            printf("/* Number of Edges: %d */\n", h_numEdges_);
             printf("/***************************/\n");
         }
 
-    d_validCounterArray_     = thrust::device_vector<int>(NUM_R1_VERTICES);
-    d_counterArray_          = thrust::device_vector<int>(NUM_R1_VERTICES);
-    d_vertexScoreArray_      = thrust::device_vector<float>(NUM_R1_VERTICES);
-    d_activeVerticesScanIdx_ = thrust::device_vector<int>(NUM_R1_VERTICES);
-    d_activeSubVertices_     = thrust::device_vector<int>(NUM_R2_VERTICES);
+    d_validCounterArray_     = thrust::device_vector<int>(NUM_R1_REGIONS);
+    d_counterArray_          = thrust::device_vector<int>(NUM_R1_REGIONS);
+    d_vertexScoreArray_      = thrust::device_vector<float>(NUM_R1_REGIONS);
+    d_activeVerticesScanIdx_ = thrust::device_vector<int>(NUM_R1_REGIONS);
+    d_activeSubVertices_     = thrust::device_vector<int>(NUM_R2_REGIONS);
+    d_minValueInRegion_      = thrust::device_vector<float>(NUM_R1_REGIONS * STATE_DIM);
 
     d_validCounterArray_ptr_ = thrust::raw_pointer_cast(d_validCounterArray_.data());
     d_counterArray_ptr_      = thrust::raw_pointer_cast(d_counterArray_.data());
     d_vertexScoreArray_ptr_  = thrust::raw_pointer_cast(d_vertexScoreArray_.data());
     d_activeSubVertices_ptr_ = thrust::raw_pointer_cast(d_activeSubVertices_.data());
+    d_minValueInRegion_ptr_  = thrust::raw_pointer_cast(d_minValueInRegion_.data());
+
+    initializeRegions();
+
+    std::ostringstream filename;
+    std::filesystem::create_directories("Data");
+    std::filesystem::create_directories("Data/RegionMins");
+
+    filename.str("");
+    filename << "Data/RegionMins/RegionMins_" << ws << ".csv";
+    copyAndWriteVectorToCSV(d_minValueInRegion_, filename.str(), NUM_R1_REGIONS, 1, false);
 }
 
-void Graph::constructVertexArray()
+void Graph::initializeRegions()
 {
-    int edgeIdx = 0;
-    for(int i = 0; i < R1; ++i)
+    initializeRegions_kernel<<<iDivUp(NUM_R1_REGIONS, h_blockSize_), h_blockSize_>>>(d_minValueInRegion_ptr_);
+}
+
+/***************************/
+/* INITIALIZE REGIONS KERNEL */
+/***************************/
+// --- one thread per R1 region ---
+__global__ void initializeRegions_kernel(float* minValueInRegion)
+{
+    int tid = threadIdx.x + blockIdx.x * blockDim.x;
+    if(tid >= NUM_R1_REGIONS) return;
+
+    int wRegion = tid % (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH);
+    int wIndex[DIM];
+    int temp = wRegion;
+    for(int i = DIM - 1; i >= 0; --i)
         {
-            for(int j = 0; j < R1; ++j)
-                {
-                    for(int k = 0; k < (DIM == 3 ? R1 : 1); ++k)
-                        {
-                            int currentNode             = (DIM == 2) ? i * R1 + j : (i * R1 * R1) + (j * R1) + k;
-                            h_vertexArray_[currentNode] = edgeIdx;
-
-                            // Calculate the number of edges for the current node
-                            int edges = 0;
-                            if(DIM == 2)
-                                {
-                                    if(i > 0) edges++;
-                                    if(j > 0) edges++;
-                                    if(i < R1 - 1) edges++;
-                                    if(j < R1 - 1) edges++;
-                                }
-                            else if(DIM == 3)
-                                {
-                                    if(i > 0) edges++;
-                                    if(j > 0) edges++;
-                                    if(k > 0) edges++;
-                                    if(i < R1 - 1) edges++;
-                                    if(j < R1 - 1) edges++;
-                                    if(k < R1 - 1) edges++;
-                                }
-
-                            edgeIdx += edges;
-                        }
-                }
+            wIndex[i] = temp % W_R1_LENGTH;
+            temp /= W_R1_LENGTH;
         }
-}
 
-void Graph::constructEdgeArray()
-{
-    for(int i = 0; i < R1; ++i)
+    for(int i = 0; i < DIM; ++i)
         {
-            for(int j = 0; j < R1; ++j)
-                {
-                    for(int k = 0; k < (DIM == 3 ? R1 : 1); ++k)
-                        {
-                            if(DIM == 2)
-                                {
-                                    if(i > 0) h_edgeArray_.push_back((i - 1) * R1 + j);
-                                    if(j > 0) h_edgeArray_.push_back(i * R1 + (j - 1));
-                                    if(i < R1 - 1) h_edgeArray_.push_back((i + 1) * R1 + j);
-                                    if(j < R1 - 1) h_edgeArray_.push_back(i * R1 + (j + 1));
-                                }
-                            if(DIM == 3)
-                                {
-                                    if(i > 0) h_edgeArray_.push_back(((i - 1) * R1 * R1) + (j * R1) + k);
-                                    if(j > 0) h_edgeArray_.push_back((i * R1 * R1) + ((j - 1) * R1) + k);
-                                    if(k > 0) h_edgeArray_.push_back((i * R1 * R1) + (j * R1) + (k - 1));
-                                    if(i < R1 - 1) h_edgeArray_.push_back(((i + 1) * R1 * R1) + (j * R1) + k);
-                                    if(j < R1 - 1) h_edgeArray_.push_back((i * R1 * R1) + ((j + 1) * R1) + k);
-                                    if(k < R1 - 1) h_edgeArray_.push_back((i * R1 * R1) + (j * R1) + (k + 1));
-                                }
-                        }
-                }
+            minValueInRegion[tid * STATE_DIM + i] = W_MIN + wIndex[i] * W_R1_SIZE;
         }
-}
 
-void Graph::constructFromVertices()
-{
-    for(int i = 0; i < R1; ++i)
+    int aRegion = (tid / (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH)) % (C_R1_LENGTH * C_R1_LENGTH);
+    int aIndex[C_DIM];
+    temp = aRegion;
+    for(int i = C_DIM - 1; i >= 0; --i)
         {
-            for(int j = 0; j < R1; ++j)
-                {
-                    for(int k = 0; k < (DIM == 3 ? R1 : 1); ++k)
-                        {
-                            int currentVertex = (DIM == 2) ? i * R1 + j : (i * R1 * R1) + (j * R1) + k;
-                            if(DIM == 2)
-                                {
-                                    if(i > 0) h_fromVertices_.push_back(currentVertex);
-                                    if(j > 0) h_fromVertices_.push_back(currentVertex);
-                                    if(i < R1 - 1) h_fromVertices_.push_back(currentVertex);
-                                    if(j < R1 - 1) h_fromVertices_.push_back(currentVertex);
-                                }
-                            if(DIM == 3)
-                                {
-                                    if(i > 0) h_fromVertices_.push_back(currentVertex);
-                                    if(j > 0) h_fromVertices_.push_back(currentVertex);
-                                    if(k > 0) h_fromVertices_.push_back(currentVertex);
-                                    if(i < R1 - 1) h_fromVertices_.push_back(currentVertex);
-                                    if(j < R1 - 1) h_fromVertices_.push_back(currentVertex);
-                                    if(k < R1 - 1) h_fromVertices_.push_back(currentVertex);
-                                }
-                        }
-                }
+            aIndex[i] = temp % C_R1_LENGTH;
+            temp /= C_R1_LENGTH;
         }
-}
-
-void Graph::constructToVertices()
-{
-    for(int i = 0; i < R1; ++i)
+    for(int i = 0; i < C_DIM; ++i)
         {
-            for(int j = 0; j < R1; ++j)
-                {
-                    for(int k = 0; k < (DIM == 3 ? R1 : 1); ++k)
-                        {
-                            if(DIM == 2)
-                                {
-                                    if(i > 0) h_toVertices_.push_back((i - 1) * R1 + j);
-                                    if(j > 0) h_toVertices_.push_back(i * R1 + (j - 1));
-                                    if(i < R1 - 1) h_toVertices_.push_back((i + 1) * R1 + j);
-                                    if(j < R1 - 1) h_toVertices_.push_back(i * R1 + (j + 1));
-                                }
-                            if(DIM == 3)
-                                {
-                                    if(i > 0) h_toVertices_.push_back(((i - 1) * R1 * R1) + (j * R1) + k);
-                                    if(j > 0) h_toVertices_.push_back((i * R1 * R1) + ((j - 1) * R1) + k);
-                                    if(k > 0) h_toVertices_.push_back((i * R1 * R1) + (j * R1) + (k - 1));
-                                    if(i < R1 - 1) h_toVertices_.push_back(((i + 1) * R1 * R1) + (j * R1) + k);
-                                    if(j < R1 - 1) h_toVertices_.push_back((i * R1 * R1) + ((j + 1) * R1) + k);
-                                    if(k < R1 - 1) h_toVertices_.push_back((i * R1 * R1) + (j * R1) + (k + 1));
-                                }
-                        }
-                }
+            minValueInRegion[tid * STATE_DIM + DIM + i] = C_MIN + aIndex[i] * C_R1_SIZE;
+        }
+
+    int vRegion = (tid / (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH)) % V_R1_LENGTH;
+    int vIndex[V_DIM];
+    temp = vRegion;
+    for(int i = V_DIM - 1; i >= 0; --i)
+        {
+            vIndex[i] = temp % V_R1_LENGTH;
+            temp /= V_R1_LENGTH;
+        }
+    for(int i = 0; i < V_DIM; ++i)
+        {
+            minValueInRegion[tid * STATE_DIM + DIM + C_DIM + i] = V_MIN + vIndex[i] * V_R1_SIZE;
         }
 }
 
@@ -171,9 +107,9 @@ __host__ __device__ int getVertex(float x, float y, float z)
     int cellX = static_cast<int>(x / R1_SIZE);
     int cellY = static_cast<int>(y / R1_SIZE);
     int cellZ = static_cast<int>(z / R1_SIZE);
-    if(cellX >= 0 && cellX < R1 && cellY >= 0 && cellY < R1 && (cellZ >= 0 && cellZ < R1))
+    if(cellX >= 0 && cellX < R1 && cellY >= 0 && cellY < R1 && cellZ >= 0 && cellZ < R1)
         {
-            return (cellY * R1 + cellX) * R1 + cellZ;
+            return cellX * R1 * R1 + cellY * R1 + cellZ;
         }
     return -1;
 }
@@ -195,8 +131,8 @@ __host__ __device__ int getSubVertex(float x, float y, float z, int r1)
     if(r1 == -1) return -1;
 
     // Calculate base cell coordinates in the R1 grid
-    int cellY_base = r1 / (R1 * R1);
-    int cellX_base = (r1 / R1) % R1;
+    int cellX_base = r1 / (R1 * R1);
+    int cellY_base = (r1 / R1) % R1;
     int cellZ_base = r1 % R1;
 
     // Calculate sub-cell coordinates within the R1 cell
@@ -208,29 +144,99 @@ __host__ __device__ int getSubVertex(float x, float y, float z, int r1)
     if(cellX_R2 >= 0 && cellX_R2 < R2 && cellY_R2 >= 0 && cellY_R2 < R2 && cellZ_R2 >= 0 && cellZ_R2 < R2)
         {
             // Return the flattened index of the sub-cell
-            return r1 * (R2 * R2 * R2) + (cellZ_R2 * R2 * R2) + (cellY_R2 * R2) + cellX_R2;
+            return r1 * (R2 * R2 * R2) + (cellX_R2 * R2 * R2) + (cellY_R2 * R2) + cellZ_R2;
         }
     return -1;
 }
 
-__host__ __device__ int hashEdge(int key, int size)
+__host__ __device__ int getRegion(float* coord)
 {
-    return key % size;
+    // --- Workspace ---
+    int wRegion = 0;
+    int factor  = 1;
+    int index;
+    for(int i = W_DIM - 1; i >= 0; --i)
+        {
+            index = (int)(W_R1_LENGTH * (coord[i] - W_MIN) / (W_MAX - W_MIN));
+            if(index >= W_R1_LENGTH) index = W_R1_LENGTH - 1;
+
+            wRegion += factor * index;
+            factor *= W_R1_LENGTH;
+        }
+
+    if(V_DIM == 1 && C_DIM == 1)
+        {
+            return wRegion;
+        }
+
+    // --- Attitude ---
+    int aRegion = 0;
+    factor      = 1;
+    for(int i = C_DIM - 1; i >= 0; --i)
+        {
+            index = (int)(C_R1_LENGTH * (coord[i + DIM] - C_MIN) / (C_MAX - C_MIN));
+            if(index >= C_R1_LENGTH) index = C_R1_LENGTH - 1;
+
+            aRegion += factor * index;
+            factor *= C_R1_LENGTH;
+        }
+
+    // --- Velocity ---
+    int vRegion = 0;
+    factor      = 1;
+    for(int i = V_DIM - 1; i >= 0; --i)
+        {
+            index = (int)(V_R1_LENGTH * (coord[i + DIM + C_DIM] - V_MIN) / (V_MAX - V_MIN));
+            if(index >= V_R1_LENGTH) index = V_R1_LENGTH - 1;
+
+            vRegion += factor * index;
+            factor *= V_R1_LENGTH;
+        }
+
+    return wRegion * C_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH + aRegion * V_R1_LENGTH + vRegion;
 }
 
-__host__ __device__ int getEdge(int fromVertex, int toVertex, int* hashTable, int numEdges)
+__device__ int getSubRegion(float* coord, int r1, float* minRegion)
 {
-    int key  = fromVertex * 100000 + toVertex;
-    int hash = hashEdge(key, numEdges);
-    while(hashTable[2 * hash] != key)
+    // --- Workspace ---
+    int wRegion = 0;
+    int factor  = 1;
+    int index;
+
+    for(int i = DIM - 1; i >= 0; --i)
         {
-            if(hashTable[2 * hash] == -1)
-                {
-                    return -1;
-                }
-            hash = (hash + 1) % numEdges;
+            index = (int)(W_R2_LENGTH * (coord[i] - minRegion[r1 * STATE_DIM + i]) / (W_R1_SIZE));
+            if(index >= W_R2_LENGTH) index = W_R2_LENGTH - 1;
+
+            wRegion += factor * index;
+            factor *= W_R2_LENGTH;
         }
-    return hashTable[2 * hash + 1];
+
+    // --- Attitude ---
+    int aRegion = 0;
+    factor      = 1;
+    for(int i = C_DIM - 1; i >= 0; --i)
+        {
+            index = (int)(C_R2_LENGTH * (coord[i + DIM] - minRegion[r1 * STATE_DIM + i + DIM]) / (C_R1_SIZE));
+            if(index >= C_R2_LENGTH) index = C_R2_LENGTH - 1;
+
+            aRegion += factor * index;
+            factor *= C_R2_LENGTH;
+        }
+
+    // --- Velocity ---
+    int vRegion = 0;
+    factor      = 1;
+    for(int i = V_DIM - 1; i >= 0; --i)
+        {
+            index = (int)(V_R2_LENGTH * (coord[i + DIM + C_DIM] - minRegion[r1 * STATE_DIM + i + DIM + C_DIM]) / (V_R1_SIZE));
+            if(index >= V_R2_LENGTH) index = V_R2_LENGTH - 1;
+
+            vRegion += factor * index;
+            factor *= V_R2_LENGTH;
+        }
+
+    return r1 * NUM_R2_PER_R1 + (wRegion * C_R2_LENGTH * C_R2_LENGTH * V_R2_LENGTH + aRegion * V_R2_LENGTH + vRegion);
 }
 
 /***************************/
@@ -240,7 +246,7 @@ __host__ __device__ int getEdge(int fromVertex, int toVertex, int* hashTable, in
 __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterArray, int* counterArray, float* vertexScores)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
-    if(tid >= NUM_R1_VERTICES - 1) return;
+    if(tid >= NUM_R1_REGIONS - 1) return;
 
     __shared__ float s_totalScore;
     float score = 0.0;
@@ -251,12 +257,12 @@ __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterA
             float coverage      = 0;
 
             // --- Thread loops through all sub vertices to determine vertex coverage. ---
-            for(int i = tid * R2_PER_R1; i < (tid + 1) * R2_PER_R1; ++i)
+            for(int i = tid * NUM_R2_PER_R1; i < (tid + 1) * NUM_R2_PER_R1; ++i)
                 {
                     coverage += activeSubVertices[i];
                 }
 
-            coverage /= R2_PER_R1;
+            coverage /= NUM_R2_PER_R1;
 
             // --- From OMPL Syclop ref: https://ompl.kavrakilab.org/classompl_1_1control_1_1Syclop.html---
             float freeVol =
@@ -265,7 +271,7 @@ __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterA
         }
 
     // --- Sum scores from each thread to determine score threshold ---
-    typedef cub::BlockReduce<float, NUM_R1_VERTICES> BlockReduceFloatT;
+    typedef cub::BlockReduce<float, NUM_R1_REGIONS> BlockReduceFloatT;
     __shared__ typename BlockReduceFloatT::TempStorage tempStorageFloat;
     float blockSum = BlockReduceFloatT(tempStorageFloat).Sum(score);
 
@@ -290,6 +296,6 @@ __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterA
 void Graph::updateVertices()
 {
     // --- Update vertex scores and sampleScoreThreshold ---
-    updateVertices_kernel<<<1, NUM_R1_VERTICES>>>(d_activeSubVertices_ptr_, d_validCounterArray_ptr_, d_counterArray_ptr_,
-                                                  d_vertexScoreArray_ptr_);
+    updateVertices_kernel<<<1, NUM_R1_REGIONS>>>(d_activeSubVertices_ptr_, d_validCounterArray_ptr_, d_counterArray_ptr_,
+                                                 d_vertexScoreArray_ptr_);
 }

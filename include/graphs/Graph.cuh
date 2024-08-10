@@ -18,14 +18,13 @@ public:
     Graph(float h_ws);
 
     // --- host fields ---
-    int h_numEdges_, h_numActiveVertices_;
-    std::vector<int> h_fromVertices_, h_toVertices_, h_vertexArray_, h_edgeArray_, h_weightArray_;
+    int h_blockSize_ = 32;
 
     // --- device fields ---
     thrust::device_vector<int> d_validCounterArray_, d_counterArray_, d_activeVerticesScanIdx_, d_activeSubVertices_;
-    thrust::device_vector<float> d_vertexScoreArray_;
+    thrust::device_vector<float> d_vertexScoreArray_, d_minValueInRegion_;
 
-    float* d_vertexScoreArray_ptr_;
+    float *d_vertexScoreArray_ptr_, *d_minValueInRegion_ptr_;
     int *d_validCounterArray_ptr_, *d_counterArray_ptr_, *d_activeVerticesScanIdx_ptr_, *d_activeSubVertices_ptr_;
 
     /****************************    METHODS    ****************************/
@@ -33,10 +32,7 @@ public:
 
 private:
     /**************************** METHODS ****************************/
-    void constructFromVertices();
-    void constructToVertices();
-    void constructVertexArray();
-    void constructEdgeArray();
+    void initializeRegions();
 };
 
 /**************************** DEVICE FUNCTIONS ****************************/
@@ -48,14 +44,17 @@ __host__ __device__ int getVertex(float x, float y, float z);
 __host__ __device__ int getSubVertex(float x, float y, int r1);
 __host__ __device__ int getSubVertex(float x, float y, float z, int r1);
 
-// --- Given two graph vertices, Returns which edge of the graph it corresponds to. ---
-__host__ __device__ int getEdge(int fromVertex, int toVertex, int* hashTable, int numEdges);
-
-// --- Hashing Function for edge lookup. ---
-__host__ __device__ int hashEdge(int key, int size);
+__host__ __device__ int getRegion(float* coord);
+__device__ int getSubRegion(float* coord, int r1, float* minRegion);
 
 /***************************/
 /* VERTICES UPDATE KERNEL */
 /***************************/
 // --- Updates Vertex Scores for device graph vectors. Determines new threshold score for future samples in expansion set. ---
 __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterArray, int* counterArray, float* vertexScores);
+
+/***************************/
+/* INITIALIZE REGIONS KERNEL */
+/***************************/
+// --- Initializes min and max values for regions ---
+__global__ void initializeRegions_kernel(float* minValueInRegion);
