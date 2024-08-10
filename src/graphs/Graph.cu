@@ -3,17 +3,10 @@
 
 Graph::Graph(const float ws)
 {
-    h_numEdges_ = (DIM == 2) ? pow(R1, 2) * 4 : pow(R1, 3) * 6;
-    h_vertexArray_.resize((DIM == 2) ? pow(R1, 2) : pow(R1, 3));
-    constructVertexArray();
-    constructEdgeArray();
-    constructFromVertices();
-    constructToVertices();
     if(VERBOSE)
         {
             printf("/***************************/\n");
             printf("/* Graph Dimension: %d */\n", DIM);
-            printf("/* Number of Edges: %d */\n", h_numEdges_);
             printf("/***************************/\n");
         }
 
@@ -85,131 +78,6 @@ __global__ void initializeRegions_kernel(float* minValueInRegion)
     for(int i = 0; i < V_DIM; ++i)
         {
             minValueInRegion[tid * STATE_DIM + DIM + C_DIM + i] = V_MIN + vIndex[i] * V_R1_SIZE;
-        }
-}
-
-void Graph::constructVertexArray()
-{
-    int edgeIdx = 0;
-    for(int i = 0; i < R1; ++i)
-        {
-            for(int j = 0; j < R1; ++j)
-                {
-                    for(int k = 0; k < (DIM == 3 ? R1 : 1); ++k)
-                        {
-                            int currentNode             = (DIM == 2) ? i * R1 + j : (i * R1 * R1) + (j * R1) + k;
-                            h_vertexArray_[currentNode] = edgeIdx;
-
-                            // Calculate the number of edges for the current node
-                            int edges = 0;
-                            if(DIM == 2)
-                                {
-                                    if(i > 0) edges++;
-                                    if(j > 0) edges++;
-                                    if(i < R1 - 1) edges++;
-                                    if(j < R1 - 1) edges++;
-                                }
-                            else if(DIM == 3)
-                                {
-                                    if(i > 0) edges++;
-                                    if(j > 0) edges++;
-                                    if(k > 0) edges++;
-                                    if(i < R1 - 1) edges++;
-                                    if(j < R1 - 1) edges++;
-                                    if(k < R1 - 1) edges++;
-                                }
-
-                            edgeIdx += edges;
-                        }
-                }
-        }
-}
-
-void Graph::constructEdgeArray()
-{
-    for(int i = 0; i < R1; ++i)
-        {
-            for(int j = 0; j < R1; ++j)
-                {
-                    for(int k = 0; k < (DIM == 3 ? R1 : 1); ++k)
-                        {
-                            if(DIM == 2)
-                                {
-                                    if(i > 0) h_edgeArray_.push_back((i - 1) * R1 + j);
-                                    if(j > 0) h_edgeArray_.push_back(i * R1 + (j - 1));
-                                    if(i < R1 - 1) h_edgeArray_.push_back((i + 1) * R1 + j);
-                                    if(j < R1 - 1) h_edgeArray_.push_back(i * R1 + (j + 1));
-                                }
-                            if(DIM == 3)
-                                {
-                                    if(i > 0) h_edgeArray_.push_back(((i - 1) * R1 * R1) + (j * R1) + k);
-                                    if(j > 0) h_edgeArray_.push_back((i * R1 * R1) + ((j - 1) * R1) + k);
-                                    if(k > 0) h_edgeArray_.push_back((i * R1 * R1) + (j * R1) + (k - 1));
-                                    if(i < R1 - 1) h_edgeArray_.push_back(((i + 1) * R1 * R1) + (j * R1) + k);
-                                    if(j < R1 - 1) h_edgeArray_.push_back((i * R1 * R1) + ((j + 1) * R1) + k);
-                                    if(k < R1 - 1) h_edgeArray_.push_back((i * R1 * R1) + (j * R1) + (k + 1));
-                                }
-                        }
-                }
-        }
-}
-
-void Graph::constructFromVertices()
-{
-    for(int i = 0; i < R1; ++i)
-        {
-            for(int j = 0; j < R1; ++j)
-                {
-                    for(int k = 0; k < (DIM == 3 ? R1 : 1); ++k)
-                        {
-                            int currentVertex = (DIM == 2) ? i * R1 + j : (i * R1 * R1) + (j * R1) + k;
-                            if(DIM == 2)
-                                {
-                                    if(i > 0) h_fromVertices_.push_back(currentVertex);
-                                    if(j > 0) h_fromVertices_.push_back(currentVertex);
-                                    if(i < R1 - 1) h_fromVertices_.push_back(currentVertex);
-                                    if(j < R1 - 1) h_fromVertices_.push_back(currentVertex);
-                                }
-                            if(DIM == 3)
-                                {
-                                    if(i > 0) h_fromVertices_.push_back(currentVertex);
-                                    if(j > 0) h_fromVertices_.push_back(currentVertex);
-                                    if(k > 0) h_fromVertices_.push_back(currentVertex);
-                                    if(i < R1 - 1) h_fromVertices_.push_back(currentVertex);
-                                    if(j < R1 - 1) h_fromVertices_.push_back(currentVertex);
-                                    if(k < R1 - 1) h_fromVertices_.push_back(currentVertex);
-                                }
-                        }
-                }
-        }
-}
-
-void Graph::constructToVertices()
-{
-    for(int i = 0; i < R1; ++i)
-        {
-            for(int j = 0; j < R1; ++j)
-                {
-                    for(int k = 0; k < (DIM == 3 ? R1 : 1); ++k)
-                        {
-                            if(DIM == 2)
-                                {
-                                    if(i > 0) h_toVertices_.push_back((i - 1) * R1 + j);
-                                    if(j > 0) h_toVertices_.push_back(i * R1 + (j - 1));
-                                    if(i < R1 - 1) h_toVertices_.push_back((i + 1) * R1 + j);
-                                    if(j < R1 - 1) h_toVertices_.push_back(i * R1 + (j + 1));
-                                }
-                            if(DIM == 3)
-                                {
-                                    if(i > 0) h_toVertices_.push_back(((i - 1) * R1 * R1) + (j * R1) + k);
-                                    if(j > 0) h_toVertices_.push_back((i * R1 * R1) + ((j - 1) * R1) + k);
-                                    if(k > 0) h_toVertices_.push_back((i * R1 * R1) + (j * R1) + (k - 1));
-                                    if(i < R1 - 1) h_toVertices_.push_back(((i + 1) * R1 * R1) + (j * R1) + k);
-                                    if(j < R1 - 1) h_toVertices_.push_back((i * R1 * R1) + ((j + 1) * R1) + k);
-                                    if(k < R1 - 1) h_toVertices_.push_back((i * R1 * R1) + (j * R1) + (k + 1));
-                                }
-                        }
-                }
         }
 }
 
@@ -360,26 +228,6 @@ __device__ int getSubRegion(float* coord, int r1, float* minRegion)
         }
 
     return r1 * NUM_R2_PER_R1 + (wRegion * C_R2_LENGTH * C_R2_LENGTH * V_R2_LENGTH + aRegion * V_R2_LENGTH + vRegion);
-}
-
-__host__ __device__ int hashEdge(int key, int size)
-{
-    return key % size;
-}
-
-__host__ __device__ int getEdge(int fromVertex, int toVertex, int* hashTable, int numEdges)
-{
-    int key  = fromVertex * 100000 + toVertex;
-    int hash = hashEdge(key, numEdges);
-    while(hashTable[2 * hash] != key)
-        {
-            if(hashTable[2 * hash] == -1)
-                {
-                    return -1;
-                }
-            hash = (hash + 1) % numEdges;
-        }
-    return hashTable[2 * hash + 1];
 }
 
 /***************************/

@@ -18,9 +18,7 @@ public:
     Graph(float h_ws);
 
     // --- host fields ---
-    int h_numEdges_, h_numActiveVertices_;
     int h_blockSize_ = 32;
-    std::vector<int> h_fromVertices_, h_toVertices_, h_vertexArray_, h_edgeArray_, h_weightArray_;
 
     // --- device fields ---
     thrust::device_vector<int> d_validCounterArray_, d_counterArray_, d_activeVerticesScanIdx_, d_activeSubVertices_;
@@ -34,10 +32,6 @@ public:
 
 private:
     /**************************** METHODS ****************************/
-    void constructFromVertices();
-    void constructToVertices();
-    void constructVertexArray();
-    void constructEdgeArray();
     void initializeRegions();
 };
 
@@ -52,12 +46,6 @@ __host__ __device__ int getSubVertex(float x, float y, float z, int r1);
 
 __host__ __device__ int getRegion(float* coord);
 __device__ int getSubRegion(float* coord, int r1, float* minRegion);
-
-// --- Given two graph vertices, Returns which edge of the graph it corresponds to. ---
-__host__ __device__ int getEdge(int fromVertex, int toVertex, int* hashTable, int numEdges);
-
-// --- Hashing Function for edge lookup. ---
-__host__ __device__ int hashEdge(int key, int size);
 
 /***************************/
 /* VERTICES UPDATE KERNEL */
