@@ -10,12 +10,12 @@ Graph::Graph(const float ws)
             printf("/***************************/\n");
         }
 
-    d_validCounterArray_     = thrust::device_vector<int>(NUM_R1_VERTICES);
-    d_counterArray_          = thrust::device_vector<int>(NUM_R1_VERTICES);
-    d_vertexScoreArray_      = thrust::device_vector<float>(NUM_R1_VERTICES);
-    d_activeVerticesScanIdx_ = thrust::device_vector<int>(NUM_R1_VERTICES);
-    d_activeSubVertices_     = thrust::device_vector<int>(NUM_R2_VERTICES);
-    d_minValueInRegion_      = thrust::device_vector<float>(NUM_R1_VERTICES * STATE_DIM);
+    d_validCounterArray_     = thrust::device_vector<int>(NUM_R1_REGIONS);
+    d_counterArray_          = thrust::device_vector<int>(NUM_R1_REGIONS);
+    d_vertexScoreArray_      = thrust::device_vector<float>(NUM_R1_REGIONS);
+    d_activeVerticesScanIdx_ = thrust::device_vector<int>(NUM_R1_REGIONS);
+    d_activeSubVertices_     = thrust::device_vector<int>(NUM_R2_REGIONS);
+    d_minValueInRegion_      = thrust::device_vector<float>(NUM_R1_REGIONS * STATE_DIM);
 
     d_validCounterArray_ptr_ = thrust::raw_pointer_cast(d_validCounterArray_.data());
     d_counterArray_ptr_      = thrust::raw_pointer_cast(d_counterArray_.data());
@@ -28,7 +28,7 @@ Graph::Graph(const float ws)
 
 void Graph::initializeRegions()
 {
-    initializeRegions_kernel<<<iDivUp(NUM_R1_VERTICES, h_blockSize_), h_blockSize_>>>(d_minValueInRegion_ptr_);
+    initializeRegions_kernel<<<iDivUp(NUM_R1_REGIONS, h_blockSize_), h_blockSize_>>>(d_minValueInRegion_ptr_);
 }
 
 /***************************/
@@ -38,7 +38,7 @@ void Graph::initializeRegions()
 __global__ void initializeRegions_kernel(float* minValueInRegion)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
-    if(tid >= NUM_R1_VERTICES) return;
+    if(tid >= NUM_R1_REGIONS) return;
 
     int wRegion = tid % (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH);
     int wIndex[DIM];
@@ -237,7 +237,7 @@ __device__ int getSubRegion(float* coord, int r1, float* minRegion)
 __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterArray, int* counterArray, float* vertexScores)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
-    if(tid >= NUM_R1_VERTICES - 1) return;
+    if(tid >= NUM_R1_REGIONS - 1) return;
 
     __shared__ float s_totalScore;
     float score = 0.0;
@@ -262,7 +262,7 @@ __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterA
         }
 
     // --- Sum scores from each thread to determine score threshold ---
-    typedef cub::BlockReduce<float, NUM_R1_VERTICES> BlockReduceFloatT;
+    typedef cub::BlockReduce<float, NUM_R1_REGIONS> BlockReduceFloatT;
     __shared__ typename BlockReduceFloatT::TempStorage tempStorageFloat;
     float blockSum = BlockReduceFloatT(tempStorageFloat).Sum(score);
 
@@ -287,6 +287,6 @@ __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterA
 void Graph::updateVertices()
 {
     // --- Update vertex scores and sampleScoreThreshold ---
-    updateVertices_kernel<<<1, NUM_R1_VERTICES>>>(d_activeSubVertices_ptr_, d_validCounterArray_ptr_, d_counterArray_ptr_,
-                                                  d_vertexScoreArray_ptr_);
+    updateVertices_kernel<<<1, NUM_R1_REGIONS>>>(d_activeSubVertices_ptr_, d_validCounterArray_ptr_, d_counterArray_ptr_,
+                                                 d_vertexScoreArray_ptr_);
 }

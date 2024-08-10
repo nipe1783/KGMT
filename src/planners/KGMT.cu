@@ -32,8 +32,8 @@ KGMT::KGMT()
     if(VERBOSE)
         {
             printf("/* Planner Type: KGMT */\n");
-            printf("/* Number of R1 Vertices: %d */\n", NUM_R1_VERTICES);
-            printf("/* Number of R2 Vertices: %d */\n", NUM_R2_VERTICES);
+            printf("/* Number of R1 Vertices: %d */\n", NUM_R1_REGIONS);
+            printf("/* Number of R2 Vertices: %d */\n", NUM_R2_REGIONS);
             printf("/***************************/\n");
         }
 }
@@ -423,12 +423,12 @@ void KGMT::writeDeviceVectorsToCSV(int itr)
     // Write Total Count Per Vertex
     filename.str("");
     filename << "Data/TotalCountPerVertex/TotalCountPerVertex" << itr << "/totalCountPerVertex.csv";
-    copyAndWriteVectorToCSV(graph_.d_counterArray_, filename.str(), 1, NUM_R1_VERTICES, append);
+    copyAndWriteVectorToCSV(graph_.d_counterArray_, filename.str(), 1, NUM_R1_REGIONS, append);
 
     // Write Valid Count Per Vertex
     filename.str("");
     filename << "Data/ValidCountPerVertex/ValidCountPerVertex" << itr << "/validCountPerVertex.csv";
-    copyAndWriteVectorToCSV(graph_.d_validCounterArray_, filename.str(), 1, NUM_R1_VERTICES, append);
+    copyAndWriteVectorToCSV(graph_.d_validCounterArray_, filename.str(), 1, NUM_R1_REGIONS, append);
 
     // Write Frontier
     filename.str("");
@@ -443,7 +443,7 @@ void KGMT::writeDeviceVectorsToCSV(int itr)
     // Write Vertex Scores
     filename.str("");
     filename << "Data/VertexScores/VertexScores" << itr << "/vertexScores.csv";
-    copyAndWriteVectorToCSV(graph_.d_vertexScoreArray_, filename.str(), 1, NUM_R1_VERTICES, append);
+    copyAndWriteVectorToCSV(graph_.d_vertexScoreArray_, filename.str(), 1, NUM_R1_REGIONS, append);
 
     // Write Frontier Size
     filename.str("");

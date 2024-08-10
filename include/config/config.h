@@ -73,8 +73,16 @@
 #define DUBINS_AIRPLANE_MIN_PITCH -M_PI / 3
 #define DUBINS_AIRPLANE_MAX_PITCH M_PI / 3
 
-#define NUM_R1_VERTICES ((DIM == 3) ? (R1 * R1 * R1) : (R1 * R1))
-#define NUM_R2_VERTICES ((DIM == 3) ? (R1 * R1 * R1 * R2 * R2 * R2) : (R1 * R1 * R2 * R2))
+#define NUM_R1_REGIONS                                                                                \
+    ((DIM == 3) ? (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH) \
+                : (W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH * V_R1_LENGTH))
+
+#define NUM_R2_REGIONS                                                                                                             \
+    ((DIM == 3) ? (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH * W_R2_LENGTH * W_R2_LENGTH * \
+                   W_R2_LENGTH * C_R2_LENGTH * C_R2_LENGTH * V_R2_LENGTH)                                                          \
+                : (W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH * V_R1_LENGTH * W_R2_LENGTH * W_R2_LENGTH * \
+                   C_R2_LENGTH * C_R2_LENGTH * V_R2_LENGTH * V_R2_LENGTH))
+
 #define R2_PER_R1 ((DIM == 3) ? (R2 * R2 * R2) : (R2 * R2))
 #define R1_SIZE (WS_SIZE / R1)
 #define R2_SIZE (WS_SIZE / (R1 * R2))
