@@ -7,14 +7,14 @@
 #define SAMPLE_DIM 10
 #define WS_SIZE 1.0f
 #define MODEL 2
-#define MAX_TREE_SIZE 300000
+#define MAX_TREE_SIZE 200000
 #define GOAL_THRESH 0.05f
-#define MAX_ITER 1000
+#define MAX_ITER 300
 #define STEP_SIZE 0.1f
 #define MAX_PROPAGATION_DURATION 10
 
 #define W_DIM 3
-#define C_DIM 1
+#define C_DIM 2
 #define V_DIM 1
 
 #define W_MIN 0.0f
@@ -26,12 +26,12 @@
 #define V_MIN 0.0f
 #define V_MAX 0.3f
 
-#define W_R1_LENGTH 8
-#define C_R1_LENGTH 1
+#define W_R1_LENGTH 4
+#define C_R1_LENGTH 4
 #define V_R1_LENGTH 1
 
-#define W_R2_LENGTH 4
-#define C_R2_LENGTH 1
+#define W_R2_LENGTH 2
+#define C_R2_LENGTH 3
 #define V_R2_LENGTH 1
 
 #define W_R1_SIZE ((W_MAX - W_MIN) / W_R1_LENGTH)

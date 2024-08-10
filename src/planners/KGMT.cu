@@ -318,9 +318,7 @@ updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNe
             // --- Update Frontier ---
             frontier[x1TreeIdx] = true;
 
-            int xVertex = (DIM == 2) ? getVertex(treeSamples[x1TreeIdx * SAMPLE_DIM], treeSamples[x1TreeIdx * SAMPLE_DIM + 1])
-                                     : getVertex(treeSamples[x1TreeIdx * SAMPLE_DIM], treeSamples[x1TreeIdx * SAMPLE_DIM + 1],
-                                                 treeSamples[x1TreeIdx * SAMPLE_DIM + 2]);
+            int xVertex = getRegion(x1);
 
             if(validVertexCounter[xVertex] < 10)
                 activeFrontierRepeatCount[x1TreeIdx] = 15;
@@ -353,10 +351,10 @@ updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNe
     // --- Add inactive tree samples back to frontier. ---
     else if(tid < frontierNextSize + treeSize)
         {
-            int treeIdx      = tid - frontierNextSize;
-            int xVertex      = (DIM == 2) ? getVertex(treeSamples[treeIdx * SAMPLE_DIM], treeSamples[treeIdx * SAMPLE_DIM + 1])
-                                          : getVertex(treeSamples[treeIdx * SAMPLE_DIM], treeSamples[treeIdx * SAMPLE_DIM + 1],
-                                                      treeSamples[treeIdx * SAMPLE_DIM + 2]);
+            int treeIdx       = tid - frontierNextSize;
+            float* treeSample = &treeSamples[treeIdx * SAMPLE_DIM];
+            int xVertex       = getRegion(treeSample);
+
             curandState seed = randomSeeds[treeIdx];
             if(frontier[treeIdx] == 0 && curand_uniform(&seed) <= vertexScores[xVertex] + fAccept)
                 {
@@ -374,7 +372,7 @@ void KGMT::updateFrontier()
     findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_frontierNext_ptr_, d_frontierScanIdx_ptr_, d_activeFrontierIdxs_ptr_);
 
     float treeAddSize = 1 - (float(h_treeSize_ + h_frontierNextSize_) / (MAX_TREE_SIZE));
-    h_fAccept_        = (h_itr_ * h_itr_ * h_itr_ * EPSILON) * pow(treeAddSize, 5);
+    h_fAccept_        = (h_itr_ * EPSILON) * pow(treeAddSize, 5);
 
     // --- Update Frontier ---
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);

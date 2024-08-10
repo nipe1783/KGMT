@@ -1,5 +1,6 @@
 #include "graphs/Graph.cuh"
 #include "config/config.h"
+#include <filesystem>
 
 Graph::Graph(const float ws)
 {
@@ -24,6 +25,14 @@ Graph::Graph(const float ws)
     d_minValueInRegion_ptr_  = thrust::raw_pointer_cast(d_minValueInRegion_.data());
 
     initializeRegions();
+
+    std::ostringstream filename;
+    std::filesystem::create_directories("Data");
+    std::filesystem::create_directories("Data/RegionMins");
+
+    filename.str("");
+    filename << "Data/RegionMins/RegionMins_" << ws << ".csv";
+    copyAndWriteVectorToCSV(d_minValueInRegion_, filename.str(), NUM_R1_REGIONS, 1, false);
 }
 
 void Graph::initializeRegions()
@@ -248,12 +257,12 @@ __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterA
             float coverage      = 0;
 
             // --- Thread loops through all sub vertices to determine vertex coverage. ---
-            for(int i = tid * R2_PER_R1; i < (tid + 1) * R2_PER_R1; ++i)
+            for(int i = tid * NUM_R2_PER_R1; i < (tid + 1) * NUM_R2_PER_R1; ++i)
                 {
                     coverage += activeSubVertices[i];
                 }
 
-            coverage /= R2_PER_R1;
+            coverage /= NUM_R2_PER_R1;
 
             // --- From OMPL Syclop ref: https://ompl.kavrakilab.org/classompl_1_1control_1_1Syclop.html---
             float freeVol =
