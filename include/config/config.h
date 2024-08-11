@@ -26,8 +26,8 @@
 #define V_MIN 0.0f
 #define V_MAX 0.3f
 
-#define W_R1_LENGTH 4
-#define C_R1_LENGTH 4
+#define W_R1_LENGTH 8
+#define C_R1_LENGTH 8
 #define V_R1_LENGTH 1
 
 #define W_R2_LENGTH 2
@@ -73,6 +73,9 @@
 #define DUBINS_AIRPLANE_MIN_PITCH -M_PI / 3
 #define DUBINS_AIRPLANE_MAX_PITCH M_PI / 3
 
+#define NUM_PARTIAL_SUMS 1024  // NUM_R1_REGIONS / 32 only used when NUM_R1_REGIONS > 1024
+#define NUM_R1_REGIONS_KERNEL1 \
+    1024  // NUM_R1_REGIONS used inside kernel1. must be a constant so the code does not break when NUM_R1_REGIONS > 1024.
 #define NUM_R1_REGIONS                                                                                \
     ((DIM == 3) ? (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH) \
                 : (W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH * V_R1_LENGTH))
