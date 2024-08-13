@@ -170,17 +170,12 @@ __host__ __device__ int getRegion(float* coord)
             factor *= W_R1_LENGTH;
         }
 
-    if(V_DIM == 1 && C_DIM == 1)
-        {
-            return wRegion;
-        }
-
     // --- Attitude ---
     int aRegion = 0;
     factor      = 1;
     for(int i = C_DIM - 1; i >= 0; --i)
         {
-            index = (int)(C_R1_LENGTH * (coord[i + DIM] - C_MIN) / (C_MAX - C_MIN));
+            index = (int)(C_R1_LENGTH * (coord[i + W_DIM] - C_MIN) / (C_MAX - C_MIN));
             if(index >= C_R1_LENGTH) index = C_R1_LENGTH - 1;
 
             aRegion += factor * index;
@@ -199,7 +194,7 @@ __host__ __device__ int getRegion(float* coord)
             factor *= V_R1_LENGTH;
         }
 
-    return wRegion * C_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH + aRegion * V_R1_LENGTH + vRegion;
+    return wRegion * pow(C_R1_LENGTH, C_DIM) * pow(V_R1_LENGTH, V_DIM) + aRegion * pow(V_R1_LENGTH, V_DIM) + vRegion;
 }
 
 __device__ int getSubRegion(float* coord, int r1, float* minRegion)
@@ -242,7 +237,7 @@ __device__ int getSubRegion(float* coord, int r1, float* minRegion)
             factor *= V_R2_LENGTH;
         }
 
-    return r1 * NUM_R2_PER_R1 + (wRegion * C_R2_LENGTH * C_R2_LENGTH * V_R2_LENGTH + aRegion * V_R2_LENGTH + vRegion);
+    return r1 * NUM_R2_PER_R1 + (wRegion * pow(C_R2_LENGTH, C_DIM) * pow(V_R2_LENGTH, V_DIM) + aRegion * pow(V_R2_LENGTH, V_DIM) + vRegion);
 }
 
 void Graph::updateVertices()
