@@ -99,8 +99,6 @@
 /* 6D DOUBLE INTEGRATOR CONFIG  */
 /***************************/
 
-#pragma once
-
 // --- PILLARS CONFIG ---
 #define DIM 3
 #define R1 8
@@ -129,7 +127,7 @@
 
 #define W_R1_LENGTH 8
 #define C_R1_LENGTH 1
-#define V_R1_LENGTH 4
+#define V_R1_LENGTH 2
 
 #define W_R2_LENGTH 2
 #define C_R2_LENGTH 1
