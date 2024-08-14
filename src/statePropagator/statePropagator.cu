@@ -12,7 +12,7 @@ __device__ bool propagateAndCheck(float* x0, float* x1, curandState* seed, float
 /***************************/
 __device__ bool propagateAndCheckUnicycle(float* x0, float* x1, curandState* seed, float* obstacles, int obstaclesCount)
 {
-    float a                 = UNI_MIN_ACC + curand_uniform(seed) * (UNI_MAX_ACC - UNI_MIN_ACC);
+    float a                 = A_MIN + curand_uniform(seed) * (A_MAX - A_MIN);
     float steering          = UNI_MIN_STEERING + curand_uniform(seed) * (UNI_MAX_STEERING - UNI_MIN_STEERING);
     float duration          = UNI_MIN_DT + curand_uniform(seed) * (UNI_MAX_DT - UNI_MIN_DT);
     int propagationDuration = 1 + (int)(curand_uniform(seed) * (MAX_PROPAGATION_DURATION));
@@ -75,9 +75,9 @@ __device__ bool propagateAndCheckUnicycle(float* x0, float* x1, curandState* see
 /***************************/
 __device__ bool propagateAndCheckDoubleIntRungeKutta(float* x0, float* x1, curandState* seed, float* obstacles, int obstaclesCount)
 {
-    float ax                = DI_MIN_ACC + curand_uniform(seed) * (DI_MAX_ACC - DI_MIN_ACC);
-    float ay                = DI_MIN_ACC + curand_uniform(seed) * (DI_MAX_ACC - DI_MIN_ACC);
-    float az                = DI_MIN_ACC + curand_uniform(seed) * (DI_MAX_ACC - DI_MIN_ACC);
+    float ax                = A_MIN + curand_uniform(seed) * (A_MAX - A_MIN);
+    float ay                = A_MIN + curand_uniform(seed) * (A_MAX - A_MIN);
+    float az                = A_MIN + curand_uniform(seed) * (A_MAX - A_MIN);
     int propagationDuration = 1 + (int)(curand_uniform(seed) * (MAX_PROPAGATION_DURATION));
 
     float x  = x0[0];
@@ -146,7 +146,7 @@ __device__ bool propagateAndCheckDoubleIntRungeKutta(float* x0, float* x1, curan
 /***************************/
 __device__ bool propagateAndCheckDubinsAirplaneRungeKutta(float* x0, float* x1, curandState* seed, float* obstacles, int obstaclesCount)
 {
-    float a                 = DUBINS_AIRPLANE_MIN_ACC + curand_uniform(seed) * (DUBINS_AIRPLANE_MAX_ACC - DUBINS_AIRPLANE_MIN_ACC);
+    float a                 = A_MIN + curand_uniform(seed) * (A_MAX - A_MIN);
     float yawRate           = DUBINS_AIRPLANE_MIN_YR + curand_uniform(seed) * (DUBINS_AIRPLANE_MAX_YR - DUBINS_AIRPLANE_MIN_YR);
     float pitchRate         = DUBINS_AIRPLANE_MIN_PR + curand_uniform(seed) * (DUBINS_AIRPLANE_MAX_PR - DUBINS_AIRPLANE_MIN_PR);
     int propagationDuration = 1 + (int)(curand_uniform(seed) * (MAX_PROPAGATION_DURATION));
@@ -187,7 +187,7 @@ __device__ bool propagateAndCheckDubinsAirplaneRungeKutta(float* x0, float* x1, 
             v += (STEP_SIZE / 6.0f) * (a + 2.0f * (a + a) + a);
 
             // --- Dynamics Validity Check ---'
-            if(v < DUBINS_AIRPLANE_MIN_VEL || v > DUBINS_AIRPLANE_MAX_VEL)
+            if(v < V_MIN || v > V_MAX)
                 {
                     motionValid = false;
                     break;

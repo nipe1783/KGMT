@@ -44,8 +44,8 @@
 // #define NUM_R2_PER_R1 W_R2_LENGTH *W_R2_LENGTH *W_R2_LENGTH *C_R2_LENGTH *C_R2_LENGTH *V_R2_LENGTH
 
 // // --- UNICYCLE MODEL: MODEL 0 ---
-// #define UNI_MIN_ACC -1.0f
-// #define UNI_MAX_ACC 1.0f
+// #define A_MIN -1.0f
+// #define A_MAX 1.0f
 // #define UNI_MIN_STEERING -M_PI / 2
 // #define UNI_MAX_STEERING M_PI / 2
 // #define UNI_MIN_DT 0.1f
@@ -56,21 +56,21 @@
 // #define STATE_DIM 6
 // #define V_MIN -0.3f
 // #define V_MAX 0.3f
-// #define DI_MIN_ACC -.2f
-// #define DI_MAX_ACC .2f
+// #define A_MIN -.2f
+// #define A_MAX .2f
 // #define DI_MIN_DT 0.1f  // TODO: remove these
 // #define DI_MAX_DT 2.0f
 
 // // --- DUBINS AIRPLANE: MODEL 2 ---
 // #define STATE_DIM 6
-// #define DUBINS_AIRPLANE_MIN_ACC -0.3f
-// #define DUBINS_AIRPLANE_MAX_ACC 0.3f
+// #define A_MIN -0.3f
+// #define A_MAX 0.3f
 // #define DUBINS_AIRPLANE_MIN_PR (-M_PI / 4)
 // #define DUBINS_AIRPLANE_MAX_PR (M_PI / 4)
 // #define DUBINS_AIRPLANE_MIN_YR (-M_PI / 4)
 // #define DUBINS_AIRPLANE_MAX_YR (M_PI / 4)
-// #define DUBINS_AIRPLANE_MIN_VEL 0.0f
-// #define DUBINS_AIRPLANE_MAX_VEL 0.3f
+// #define V_MIN 0.0f
+// #define V_MAX0.3f
 // #define DUBINS_AIRPLANE_MIN_YAW -M_PI
 // #define DUBINS_AIRPLANE_MAX_YAW M_PI
 // #define DUBINS_AIRPLANE_MIN_PITCH -M_PI / 3
@@ -128,6 +128,9 @@
 #define V_MIN -0.3f
 #define V_MAX 0.3f
 
+#define A_MIN -0.2f
+#define A_MAX 0.2f
+
 #define W_R1_LENGTH 8
 #define C_R1_LENGTH 1
 #define V_R1_LENGTH 2
@@ -143,37 +146,8 @@
 #define W_R1_VOL (W_R1_SIZE * W_R1_SIZE * W_R1_SIZE)
 
 #define NUM_R2_PER_R1 W_R2_LENGTH *W_R2_LENGTH *W_R2_LENGTH *C_R2_LENGTH *C_R2_LENGTH *C_R2_LENGTH *V_R2_LENGTH *V_R2_LENGTH *V_R2_LENGTH
-
-// --- UNICYCLE MODEL: MODEL 0 ---
-#define UNI_MIN_ACC -1.0f
-#define UNI_MAX_ACC 1.0f
-#define UNI_MIN_STEERING -M_PI / 2
-#define UNI_MAX_STEERING M_PI / 2
-#define UNI_MIN_DT 0.1f
-#define UNI_MAX_DT 2.0f
-#define UNI_LENGTH 1.0f
-
-// --- DOUBLE INTEGRATOR: MODEL 1 ---
-#define DI_MIN_ACC -.2f
-#define DI_MAX_ACC .2f
-
-// --- DUBINS AIRPLANE: MODEL 2 ---
-#define DUBINS_AIRPLANE_MIN_ACC -0.3f
-#define DUBINS_AIRPLANE_MAX_ACC 0.3f
-#define DUBINS_AIRPLANE_MIN_PR (-M_PI / 4)
-#define DUBINS_AIRPLANE_MAX_PR (M_PI / 4)
-#define DUBINS_AIRPLANE_MIN_YR (-M_PI / 4)
-#define DUBINS_AIRPLANE_MAX_YR (M_PI / 4)
-#define DUBINS_AIRPLANE_MIN_VEL 0.0f
-#define DUBINS_AIRPLANE_MAX_VEL 0.3f
-#define DUBINS_AIRPLANE_MIN_YAW -M_PI
-#define DUBINS_AIRPLANE_MAX_YAW M_PI
-#define DUBINS_AIRPLANE_MIN_PITCH -M_PI / 3
-#define DUBINS_AIRPLANE_MAX_PITCH M_PI / 3
-
-#define NUM_PARTIAL_SUMS 1024  // NUM_R1_REGIONS / 32 only used when NUM_R1_REGIONS > 1024
-#define NUM_R1_REGIONS_KERNEL1 \
-    1024  // NUM_R1_REGIONS used inside kernel1. must be a constant so the code does not break when NUM_R1_REGIONS > 1024.
+#define NUM_R1_REGIONS_KERNEL1 1024
+#define NUM_PARTIAL_SUMS 1024
 #define NUM_R1_REGIONS \
     (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH * V_R1_LENGTH * V_R1_LENGTH)
 
@@ -183,3 +157,20 @@
 
 #define EPSILON 1e-2f
 #define VERBOSE 1
+
+// --- UNICYCLE MODEL: MODEL 0 ---
+#define UNI_MIN_STEERING -M_PI / 2
+#define UNI_MAX_STEERING M_PI / 2
+#define UNI_MIN_DT 0.1f
+#define UNI_MAX_DT 2.0f
+#define UNI_LENGTH 1.0f
+
+// --- DUBINS AIRPLANE: MODEL 2 ---
+#define DUBINS_AIRPLANE_MIN_PR (-M_PI / 4)
+#define DUBINS_AIRPLANE_MAX_PR (M_PI / 4)
+#define DUBINS_AIRPLANE_MIN_YR (-M_PI / 4)
+#define DUBINS_AIRPLANE_MAX_YR (M_PI / 4)
+#define DUBINS_AIRPLANE_MIN_YAW -M_PI
+#define DUBINS_AIRPLANE_MAX_YAW M_PI
+#define DUBINS_AIRPLANE_MIN_PITCH -M_PI / 3
+#define DUBINS_AIRPLANE_MAX_PITCH M_PI / 3

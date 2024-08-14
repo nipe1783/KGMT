@@ -209,8 +209,8 @@ ob::StateSpacePtr OMPL_Planner::createStateSpace()
             orientationSpace->setBounds(orientBounds);
 
             ob::RealVectorBounds velBounds(1);
-            velBounds.setLow(DUBINS_AIRPLANE_MIN_VEL);
-            velBounds.setHigh(DUBINS_AIRPLANE_MAX_VEL);
+            velBounds.setLow(V_MIN);
+            velBounds.setHigh(V_MAX);
             velocitySpace->setBounds(velBounds);
         }
 
@@ -226,12 +226,12 @@ oc::ControlSpacePtr OMPL_Planner::createControlSpace(ob::StateSpacePtr& space)
     if(MODEL == 1)
         {
             // --- Double Integrator ---
-            cbounds.setLow(0, DI_MIN_ACC);
-            cbounds.setHigh(0, DI_MAX_ACC);
-            cbounds.setLow(1, DI_MIN_ACC);
-            cbounds.setHigh(1, DI_MAX_ACC);
-            cbounds.setLow(2, DI_MIN_ACC);
-            cbounds.setHigh(2, DI_MAX_ACC);
+            cbounds.setLow(0, A_MIN);
+            cbounds.setHigh(0, A_MAX);
+            cbounds.setLow(1, A_MIN);
+            cbounds.setHigh(1, A_MAX);
+            cbounds.setLow(2, A_MIN);
+            cbounds.setHigh(2, A_MAX);
         }
     else if(MODEL == 2)
         {
@@ -240,8 +240,8 @@ oc::ControlSpacePtr OMPL_Planner::createControlSpace(ob::StateSpacePtr& space)
             cbounds.setHigh(0, DUBINS_AIRPLANE_MAX_YR);
             cbounds.setLow(1, DUBINS_AIRPLANE_MIN_PR);
             cbounds.setHigh(1, DUBINS_AIRPLANE_MAX_PR);
-            cbounds.setLow(2, DUBINS_AIRPLANE_MIN_ACC);
-            cbounds.setHigh(2, DUBINS_AIRPLANE_MAX_ACC);
+            cbounds.setLow(2, A_MIN);
+            cbounds.setHigh(2, A_MAX);
         }
 
     cspace->setBounds(cbounds);
