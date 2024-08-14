@@ -3,7 +3,7 @@ clc
 clear all
 
 % Parameters
-numFiles = 1;
+numFiles = 3;
 radius = 0.05;
 N = 8;
 n = 4;
@@ -38,9 +38,9 @@ title('Iteration 0');
 sampleFilePath = "/home/nicolas/dev/research/KGMT/build/Data/Samples/Samples0/samples1.csv";
 samples = gpuArray(readmatrix(sampleFilePath));
 
-controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathToGoal/ControlPathToGoal0/controlPathToGoal.csv';
-controls = gpuArray(flipud(readmatrix(controlPath)));
-controls = [samples(1,1), samples(1,2), samples(1,3), samples(1,4), samples(1,5), samples(1,6), 0, 0, 0, 0; controls];
+% controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathToGoal/ControlPathToGoal0/controlPathToGoal.csv';
+% controls = gpuArray(flipud(readmatrix(controlPath)));
+% controls = [samples(1,1), samples(1,2), samples(1,3), samples(1,4), samples(1,5), samples(1,6), 0, 0, 0, 0; controls];
 
 plot3(gather(samples(1,1)), gather(samples(1,2)), gather(samples(1,3)), 'ko', 'MarkerFaceColor', 'b', 'MarkerSize', 10);
 
@@ -161,28 +161,28 @@ for i = 1:numFiles
         end
         x0 = samples((parentRelations(j) + 1), 1:stateSize);
         sample = samples(j, :);
-        if model == 1
-            [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
-        elseif model == 2
-            [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
-        end
-        plot3(gather(segmentX), gather(segmentY), gather(segmentZ), '-.', 'Color', 'k', 'LineWidth', 0.01);
+        % if model == 1
+        %     [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
+        % elseif model == 2
+        %     [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
+        % end
+        % plot3(gather(segmentX), gather(segmentY), gather(segmentZ), '-.', 'Color', 'k', 'LineWidth', 0.01);
         plot3(gather(samples(j, 1)), gather(samples(j, 2)), gather(samples(j, 3)), 'o', 'Color', gather(colors(colorIndex, :)), 'MarkerFaceColor', gather(colors(colorIndex, :)), 'MarkerSize', 2);
     end
 
-    if i == numFiles
-        for j = 2:size(controls, 1)
-            x0 = controls(j-1, 1:stateSize);
-            sample = controls(j,:);
-            if model == 1
-                [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
-            elseif model == 2
-                [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
-            end
-            plot3(gather(segmentX), gather(segmentY), gather(segmentZ), 'Color', 'g', 'LineWidth', 1);
-            plot3(gather(controls(j, 1)), gather(controls(j, 2)), gather(controls(j, 3)), 'o', 'Color', gather(colors(colorIndex, :)), 'MarkerFaceColor', gather(colors(colorIndex, :)), 'MarkerSize', 2);
-        end
-    end
+    % if i == numFiles
+    %     for j = 2:size(controls, 1)
+    %         x0 = controls(j-1, 1:stateSize);
+    %         sample = controls(j,:);
+    %         if model == 1
+    %             [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
+    %         elseif model == 2
+    %             [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
+    %         end
+    %         plot3(gather(segmentX), gather(segmentY), gather(segmentZ), 'Color', 'g', 'LineWidth', 1);
+    %         plot3(gather(controls(j, 1)), gather(controls(j, 2)), gather(controls(j, 3)), 'o', 'Color', gather(colors(colorIndex, :)), 'MarkerFaceColor', gather(colors(colorIndex, :)), 'MarkerSize', 2);
+    %     end
+    % end
 
     view(3);
     drawnow;
@@ -204,7 +204,7 @@ for i = 1:numFiles
     saveas(gcf, sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i));
     print(sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
 
-    close(gcf);
+    % close(gcf);
 end
 
 function [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize)
@@ -240,6 +240,53 @@ function [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_
 end
 
 function [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize)
+    segmentX = gpuArray(x0(1));
+    segmentY = gpuArray(x0(2));
+    segmentZ = gpuArray(x0(3));
+    u = gpuArray(sample(stateSize+1:sampleSize-1));
+    duration = gpuArray(sample(sampleSize));
+    numDisc = gpuArray(duration / STEP_SIZE);
+    x = gpuArray(x0(1));
+    y = gpuArray(x0(2));
+    z = gpuArray(x0(3));
+    yaw = gpuArray(x0(4));
+    pitch = gpuArray(x0(5));
+    v = gpuArray(x0(6));
+    yawRate = u(1);
+    pitchRate = u(2);
+    a = u(3);
+    for k = 1:numDisc
+        x = x + (STEP_SIZE / 6.0) * ...
+            (v * cos(pitch) * cos(yaw) + ...
+             2.0 * ((v + 0.5 * STEP_SIZE * a) * cos(pitch + 0.5 * STEP_SIZE * pitchRate) * cos(yaw + 0.5 * STEP_SIZE * yawRate) + ...
+                    (v + 0.5 * STEP_SIZE * a) * cos(pitch + 0.5 * STEP_SIZE * pitchRate) * cos(yaw + 0.5 * STEP_SIZE * yawRate)) + ...
+             (v + STEP_SIZE * a) * cos(pitch + STEP_SIZE * pitchRate) * cos(yaw + STEP_SIZE * yawRate));
+        
+        y = y + (STEP_SIZE / 6.0) * ...
+            (v * cos(pitch) * sin(yaw) + ...
+             2.0 * ((v + 0.5 * STEP_SIZE * a) * cos(pitch + 0.5 * STEP_SIZE * pitchRate) * sin(yaw + 0.5 * STEP_SIZE * yawRate) + ...
+                    (v + 0.5 * STEP_SIZE * a) * cos(pitch + 0.5 * STEP_SIZE * pitchRate) * sin(yaw + 0.5 * STEP_SIZE * yawRate)) + ...
+             (v + STEP_SIZE * a) * cos(pitch + STEP_SIZE * pitchRate) * sin(yaw + STEP_SIZE * yawRate));
+        
+        z = z + (STEP_SIZE / 6.0) * ...
+            (v * sin(pitch) + ...
+             2.0 * ((v + 0.5 * STEP_SIZE * a) * sin(pitch + 0.5 * STEP_SIZE * pitchRate) + ...
+                    (v + 0.5 * STEP_SIZE * a) * sin(pitch + 0.5 * STEP_SIZE * pitchRate)) + ...
+             (v + STEP_SIZE * a) * sin(pitch + STEP_SIZE * pitchRate));
+        
+        yaw = yaw + STEP_SIZE * yawRate;
+        pitch = pitch + STEP_SIZE * pitchRate;
+        v = v + (STEP_SIZE / 6.0) * (a + 2.0 * (a + a) + a);
+        segmentX = [segmentX, x];
+        segmentY = [segmentY, y];
+        segmentZ = [segmentZ, z];
+    end
+    segmentX = [segmentX, gpuArray(sample(1))];
+    segmentY = [segmentY, gpuArray(sample(2))];
+    segmentZ = [segmentZ, gpuArray(sample(3))];
+end
+
+function [segmentX, segmentY, segmentZ] = propNonLinearQuad(x0, sample, STEP_SIZE, stateSize, sampleSize)
     segmentX = gpuArray(x0(1));
     segmentY = gpuArray(x0(2));
     segmentZ = gpuArray(x0(3));

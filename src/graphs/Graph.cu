@@ -56,15 +56,15 @@ __global__ void initializeRegions_kernel(float* minValueInRegion)
     if(tid >= NUM_R1_REGIONS) return;
 
     int wRegion = tid % (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH);
-    int wIndex[DIM];
+    int wIndex[W_DIM];
     int temp = wRegion;
-    for(int i = DIM - 1; i >= 0; --i)
+    for(int i = W_DIM - 1; i >= 0; --i)
         {
             wIndex[i] = temp % W_R1_LENGTH;
             temp /= W_R1_LENGTH;
         }
 
-    for(int i = 0; i < DIM; ++i)
+    for(int i = 0; i < W_DIM; ++i)
         {
             minValueInRegion[tid * STATE_DIM + i] = W_MIN + wIndex[i] * W_R1_SIZE;
         }
@@ -79,7 +79,7 @@ __global__ void initializeRegions_kernel(float* minValueInRegion)
         }
     for(int i = 0; i < C_DIM; ++i)
         {
-            minValueInRegion[tid * STATE_DIM + DIM + i] = C_MIN + aIndex[i] * C_R1_SIZE;
+            minValueInRegion[tid * STATE_DIM + W_DIM + i] = C_MIN + aIndex[i] * C_R1_SIZE;
         }
 
     int vRegion = (tid / (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH)) % V_R1_LENGTH;
@@ -92,7 +92,7 @@ __global__ void initializeRegions_kernel(float* minValueInRegion)
         }
     for(int i = 0; i < V_DIM; ++i)
         {
-            minValueInRegion[tid * STATE_DIM + DIM + C_DIM + i] = V_MIN + vIndex[i] * V_R1_SIZE;
+            minValueInRegion[tid * STATE_DIM + W_DIM + C_DIM + i] = V_MIN + vIndex[i] * V_R1_SIZE;
         }
 }
 
@@ -172,26 +172,32 @@ __host__ __device__ int getRegion(float* coord)
 
     // --- Attitude ---
     int aRegion = 0;
-    factor      = 1;
-    for(int i = C_DIM - 1; i >= 0; --i)
+    if(C_R1_LENGTH > 1)
         {
-            index = (int)(C_R1_LENGTH * (coord[i + W_DIM] - C_MIN) / (C_MAX - C_MIN));
-            if(index >= C_R1_LENGTH) index = C_R1_LENGTH - 1;
+            factor = 1;
+            for(int i = C_DIM - 1; i >= 0; --i)
+                {
+                    index = (int)(C_R1_LENGTH * (coord[i + W_DIM] - C_MIN) / (C_MAX - C_MIN));
+                    if(index >= C_R1_LENGTH) index = C_R1_LENGTH - 1;
 
-            aRegion += factor * index;
-            factor *= C_R1_LENGTH;
+                    aRegion += factor * index;
+                    factor *= C_R1_LENGTH;
+                }
         }
 
     // --- Velocity ---
     int vRegion = 0;
-    factor      = 1;
-    for(int i = V_DIM - 1; i >= 0; --i)
+    if(V_R1_LENGTH > 1)
         {
-            index = (int)(V_R1_LENGTH * (coord[i + DIM + C_DIM] - V_MIN) / (V_MAX - V_MIN));
-            if(index >= V_R1_LENGTH) index = V_R1_LENGTH - 1;
+            factor = 1;
+            for(int i = V_DIM - 1; i >= 0; --i)
+                {
+                    index = (int)(V_R1_LENGTH * (coord[i + W_DIM + C_DIM] - V_MIN) / (V_MAX - V_MIN));
+                    if(index >= V_R1_LENGTH) index = V_R1_LENGTH - 1;
 
-            vRegion += factor * index;
-            factor *= V_R1_LENGTH;
+                    vRegion += factor * index;
+                    factor *= V_R1_LENGTH;
+                }
         }
 
     return wRegion * pow(C_R1_LENGTH, C_DIM) * pow(V_R1_LENGTH, V_DIM) + aRegion * pow(V_R1_LENGTH, V_DIM) + vRegion;
@@ -204,7 +210,7 @@ __device__ int getSubRegion(float* coord, int r1, float* minRegion)
     int factor  = 1;
     int index;
 
-    for(int i = DIM - 1; i >= 0; --i)
+    for(int i = W_DIM - 1; i >= 0; --i)
         {
             index = (int)(W_R2_LENGTH * (coord[i] - minRegion[r1 * STATE_DIM + i]) / (W_R1_SIZE));
             if(index >= W_R2_LENGTH) index = W_R2_LENGTH - 1;
@@ -215,26 +221,32 @@ __device__ int getSubRegion(float* coord, int r1, float* minRegion)
 
     // --- Attitude ---
     int aRegion = 0;
-    factor      = 1;
-    for(int i = C_DIM - 1; i >= 0; --i)
+    if(C_R2_LENGTH > 1)
         {
-            index = (int)(C_R2_LENGTH * (coord[i + DIM] - minRegion[r1 * STATE_DIM + i + DIM]) / (C_R1_SIZE));
-            if(index >= C_R2_LENGTH) index = C_R2_LENGTH - 1;
+            factor = 1;
+            for(int i = C_DIM - 1; i >= 0; --i)
+                {
+                    index = (int)(C_R2_LENGTH * (coord[i + W_DIM] - minRegion[r1 * STATE_DIM + i + W_DIM]) / (C_R1_SIZE));
+                    if(index >= C_R2_LENGTH) index = C_R2_LENGTH - 1;
 
-            aRegion += factor * index;
-            factor *= C_R2_LENGTH;
+                    aRegion += factor * index;
+                    factor *= C_R2_LENGTH;
+                }
         }
 
     // --- Velocity ---
     int vRegion = 0;
-    factor      = 1;
-    for(int i = V_DIM - 1; i >= 0; --i)
+    if(V_R2_LENGTH > 1)
         {
-            index = (int)(V_R2_LENGTH * (coord[i + DIM + C_DIM] - minRegion[r1 * STATE_DIM + i + DIM + C_DIM]) / (V_R1_SIZE));
-            if(index >= V_R2_LENGTH) index = V_R2_LENGTH - 1;
+            factor = 1;
+            for(int i = V_DIM - 1; i >= 0; --i)
+                {
+                    index = (int)(V_R2_LENGTH * (coord[i + W_DIM + C_DIM] - minRegion[r1 * STATE_DIM + i + W_DIM + C_DIM]) / (V_R1_SIZE));
+                    if(index >= V_R2_LENGTH) index = V_R2_LENGTH - 1;
 
-            vRegion += factor * index;
-            factor *= V_R2_LENGTH;
+                    vRegion += factor * index;
+                    factor *= V_R2_LENGTH;
+                }
         }
 
     return r1 * NUM_R2_PER_R1 + (wRegion * pow(C_R2_LENGTH, C_DIM) * pow(V_R2_LENGTH, V_DIM) + aRegion * pow(V_R2_LENGTH, V_DIM) + vRegion);
@@ -288,7 +300,7 @@ partialReduction_kernel(int* activeSubVertices, int* validCounterArray, int* cou
 
             // --- From OMPL Syclop ref: https://ompl.kavrakilab.org/classompl_1_1control_1_1Syclop.html---
             float freeVol =
-              (EPSILON + numValidSamples) / (EPSILON + numValidSamples + (counterArray[tid] - numValidSamples)) * pow(R1_SIZE, DIM);
+              (EPSILON + numValidSamples) / (EPSILON + numValidSamples + (counterArray[tid] - numValidSamples)) * pow(R1_SIZE, W_DIM);
             score             = pow(freeVol, 4) / ((1 + coverage) * (1 + pow(counterArray[tid], 2)));
             vertexScores[tid] = score;
         }
@@ -368,7 +380,7 @@ __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterA
 
             // --- From OMPL Syclop ref: https://ompl.kavrakilab.org/classompl_1_1control_1_1Syclop.html---
             float freeVol =
-              (EPSILON + numValidSamples) / (EPSILON + numValidSamples + (counterArray[tid] - numValidSamples)) * pow(R1_SIZE, DIM);
+              (EPSILON + numValidSamples) / (EPSILON + numValidSamples + (counterArray[tid] - numValidSamples)) * pow(R1_SIZE, W_DIM);
             score = pow(freeVol, 4) / ((1 + coverage) * (1 + pow(counterArray[tid], 2)));
         }
 

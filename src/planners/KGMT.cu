@@ -164,6 +164,8 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
     (d_frontier_[MAX_TREE_SIZE - 1]) ? ++h_frontierSize_ : 0;
     findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_frontier_ptr_, d_frontierScanIdx_ptr_, d_activeFrontierIdxs_ptr_);
 
+    printf("Frontier Size!!!: %d\n", h_frontierSize_);
+
     // --- Build frontier repeat vector. ---
     thrust::exclusive_scan(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), d_frontierRepeatScanIdx_.begin(), 0,
                            thrust::plus<uint>());
@@ -200,6 +202,21 @@ void KGMT::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
               graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, graph_.d_counterArray_ptr_, graph_.d_validCounterArray_ptr_,
               graph_.d_minValueInRegion_ptr_);
         }
+
+    cudaDeviceSynchronize();
+
+    printf("finished propagation\n");
+    std::ostringstream filename;
+    std::filesystem::create_directories("Data");
+    std::filesystem::create_directories("Data/FrontierNew");
+
+    filename.str("");
+    filename << "Data/FrontierNew/FrontierNew" << h_itr_ << ".csv";
+    copyAndWriteVectorToCSV(d_frontierNext_, filename.str(), MAX_TREE_SIZE, 1, false);
+
+    printf("finished writing\n");
+
+    cudaDeviceSynchronize();
 }
 
 /***************************/
@@ -214,6 +231,10 @@ __global__ void propagateFrontier_kernel1(bool* frontier, uint* activeFrontierId
 {
     if(blockIdx.x >= frontierSize) return;
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if(tid == 0)
+        {
+            frontierNext[0] = true;
+        }
 
     // --- Load Frontier Sample Idx into shared memory.  ---
     __shared__ int s_x0Idx;
@@ -237,12 +258,20 @@ __global__ void propagateFrontier_kernel1(bool* frontier, uint* activeFrontierId
     int x1Vertex                     = getRegion(x1);
     int x1SubVertex                  = getSubRegion(x1, x1Vertex, minValueInRegion);
 
+    // printf("valid: %d, tid: %d, x1Vertex: %d, x1SubVertex: %d, x: %f, y: %f, z: %f, phi: %f, theta: %f, psi: %f, u: %f, v: %f, w: %f\n",
+    //        valid, tid, x1Vertex, x1SubVertex, x1[0], x1[1], x1[2], x1[3], x1[4], x1[5], x1[6], x1[7], x1[8], x1[9]);
+
     // --- Update Graph sample count and populate next Frontier ---
     atomicAdd(&vertexCounter[x1Vertex], 1);
     if(valid)
         {
             atomicAdd(&validVertexCounter[x1Vertex], 1);
-            if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || !activeSubVertices[x1SubVertex]) frontierNext[tid] = true;
+            if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || !activeSubVertices[x1SubVertex])
+                {
+                    printf("tid: %d \n", tid);
+                    frontierNext[tid] = true;
+                }
+
             if(activeSubVertices[x1SubVertex] == 0) atomicExch(&activeSubVertices[x1SubVertex], 1);
         }
 
@@ -258,7 +287,11 @@ __global__ void propagateFrontier_kernel2(bool* frontier, uint* activeFrontierId
                                           int obstaclesCount, int* activeSubVertices, float* vertexScores, bool* frontierNext,
                                           int* vertexCounter, int* validVertexCounter, int iterations, float* minValueInRegion)
 {
-    int tid       = blockIdx.x * blockDim.x + threadIdx.x;
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if(tid == 0)
+        {
+            frontierNext[0] = true;
+        }
     frontier[tid] = false;
     if(tid >= frontierSize * iterations) return;
 
@@ -276,16 +309,50 @@ __global__ void propagateFrontier_kernel2(bool* frontier, uint* activeFrontierId
     int x1Vertex                     = getRegion(x1);
     int x1SubVertex                  = getSubRegion(x1, x1Vertex, minValueInRegion);
 
+    // printf("valid: %d, tid: %d, x1Vertex: %d, x1SubVertex: %d, x: %f, y: %f, z: %f, phi: %f, theta: %f, psi: %f, u: %f, v: %f, w: %f\n",
+    //        valid, tid, x1Vertex, x1SubVertex, x1[0], x1[1], x1[2], x1[3], x1[4], x1[5], x1[6], x1[7], x1[8], x1[9]);
+
     // --- Update Graph sample count and populate next Frontier ---
     atomicAdd(&vertexCounter[x1Vertex], 1);
     if(valid)
         {
             atomicAdd(&validVertexCounter[x1Vertex], 1);
-            if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || activeSubVertices[x1SubVertex] == 0) frontierNext[tid] = true;
+            if(curand_uniform(&randSeed) < vertexScores[x1Vertex] || activeSubVertices[x1SubVertex] == 0)
+                {
+                    printf("tid: %d \n", tid);
+                    frontierNext[tid] = true;
+                }
             if(activeSubVertices[x1SubVertex] == 0) atomicExch(&activeSubVertices[x1SubVertex], 1);
         }
 
     randomSeeds[tid] = randSeed;
+}
+
+void KGMT::updateFrontier()
+{
+    printf("updating frontier\n");
+    // --- Find indices and size of the next frontier ---
+    thrust::exclusive_scan(d_frontierNext_.begin(), d_frontierNext_.end(), d_frontierScanIdx_.begin(), 0, thrust::plus<uint>());
+    printf("scanned\n");
+    h_frontierNextSize_ = d_frontierScanIdx_[MAX_TREE_SIZE - 1];
+    findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_frontierNext_ptr_, d_frontierScanIdx_ptr_, d_activeFrontierIdxs_ptr_);
+
+    float treeAddSize = 1 - (float(h_treeSize_ + h_frontierNextSize_) / (MAX_TREE_SIZE));
+    h_fAccept_        = (h_itr_ * EPSILON) * pow(treeAddSize, 5);
+
+    // --- Update Frontier ---
+    thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
+    updateFrontier_kernel<<<iDivUp(h_frontierNextSize_ + h_treeSize_, h_blockSize_), h_blockSize_>>>(
+      d_frontier_ptr_, d_frontierNext_ptr_, d_activeFrontierIdxs_ptr_, h_frontierNextSize_, d_goalSample_ptr_, h_treeSize_,
+      d_unexploredSamples_ptr_, d_treeSamples_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_treeSamplesParentIdxs_ptr_,
+      d_treeSampleCosts_ptr_, d_pathToGoal_ptr_, d_activeFrontierRepeatCount_ptr_, graph_.d_validCounterArray_ptr_, d_randomSeeds_ptr_,
+      graph_.d_vertexScoreArray_ptr_, d_controlPathToGoal_ptr_, h_fAccept_);
+
+    // --- Check for goal criteria ---
+    cudaMemcpy(&h_pathToGoal_, d_pathToGoal_ptr_, sizeof(int), cudaMemcpyDeviceToHost);
+
+    // --- Update Tree Size ---
+    h_treeSize_ += h_frontierNextSize_;
 }
 
 /***************************/
@@ -367,31 +434,6 @@ updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNe
         }
 }
 
-void KGMT::updateFrontier()
-{
-    // --- Find indices and size of the next frontier ---
-    thrust::exclusive_scan(d_frontierNext_.begin(), d_frontierNext_.end(), d_frontierScanIdx_.begin(), 0, thrust::plus<uint>());
-    h_frontierNextSize_ = d_frontierScanIdx_[MAX_TREE_SIZE - 1];
-    findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_frontierNext_ptr_, d_frontierScanIdx_ptr_, d_activeFrontierIdxs_ptr_);
-
-    float treeAddSize = 1 - (float(h_treeSize_ + h_frontierNextSize_) / (MAX_TREE_SIZE));
-    h_fAccept_        = (h_itr_ * EPSILON) * pow(treeAddSize, 5);
-
-    // --- Update Frontier ---
-    thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
-    updateFrontier_kernel<<<iDivUp(h_frontierNextSize_ + h_treeSize_, h_blockSize_), h_blockSize_>>>(
-      d_frontier_ptr_, d_frontierNext_ptr_, d_activeFrontierIdxs_ptr_, h_frontierNextSize_, d_goalSample_ptr_, h_treeSize_,
-      d_unexploredSamples_ptr_, d_treeSamples_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_treeSamplesParentIdxs_ptr_,
-      d_treeSampleCosts_ptr_, d_pathToGoal_ptr_, d_activeFrontierRepeatCount_ptr_, graph_.d_validCounterArray_ptr_, d_randomSeeds_ptr_,
-      graph_.d_vertexScoreArray_ptr_, d_controlPathToGoal_ptr_, h_fAccept_);
-
-    // --- Check for goal criteria ---
-    cudaMemcpy(&h_pathToGoal_, d_pathToGoal_ptr_, sizeof(int), cudaMemcpyDeviceToHost);
-
-    // --- Update Tree Size ---
-    h_treeSize_ += h_frontierNextSize_;
-}
-
 void KGMT::writeDeviceVectorsToCSV(int itr)
 {
     std::ostringstream filename;
@@ -401,11 +443,11 @@ void KGMT::writeDeviceVectorsToCSV(int itr)
     std::filesystem::create_directories("Data");
     std::filesystem::create_directories("Data/Samples/Samples" + std::to_string(itr));
     std::filesystem::create_directories("Data/Parents/Parents" + std::to_string(itr));
-    std::filesystem::create_directories("Data/TotalCountPerVertex/TotalCountPerVertex" + std::to_string(itr));
-    std::filesystem::create_directories("Data/ValidCountPerVertex/ValidCountPerVertex" + std::to_string(itr));
+    std::filesystem::create_directories("Data/TotalCountPerVertex/TotalCountPerVertex" + std::to_string(h_itr_));
+    std::filesystem::create_directories("Data/ValidCountPerVertex/ValidCountPerVertex" + std::to_string(h_itr_));
     std::filesystem::create_directories("Data/Frontier/Frontier" + std::to_string(itr));
     std::filesystem::create_directories("Data/FrontierRepeatCount/FrontierRepeatCount" + std::to_string(itr));
-    std::filesystem::create_directories("Data/VertexScores/VertexScores" + std::to_string(itr));
+    std::filesystem::create_directories("Data/VertexScores/VertexScores" + std::to_string(h_itr_));
     std::filesystem::create_directories("Data/FrontierSize/FrontierSize" + std::to_string(itr));
     std::filesystem::create_directories("Data/TreeSize/TreeSize" + std::to_string(itr));
     std::filesystem::create_directories("Data/ExpandedNodes/ExpandedNodes" + std::to_string(itr));
@@ -423,13 +465,13 @@ void KGMT::writeDeviceVectorsToCSV(int itr)
 
     // Write Total Count Per Vertex
     filename.str("");
-    filename << "Data/TotalCountPerVertex/TotalCountPerVertex" << itr << "/totalCountPerVertex.csv";
-    copyAndWriteVectorToCSV(graph_.d_counterArray_, filename.str(), 1, NUM_R1_REGIONS, append);
+    filename << "Data/TotalCountPerVertex/TotalCountPerVertex" << h_itr_ << "/totalCountPerVertex.csv";
+    copyAndWriteVectorToCSV(graph_.d_counterArray_, filename.str(), NUM_R1_REGIONS, 1, append);
 
     // Write Valid Count Per Vertex
     filename.str("");
-    filename << "Data/ValidCountPerVertex/ValidCountPerVertex" << itr << "/validCountPerVertex.csv";
-    copyAndWriteVectorToCSV(graph_.d_validCounterArray_, filename.str(), 1, NUM_R1_REGIONS, append);
+    filename << "Data/ValidCountPerVertex/ValidCountPerVertex" << h_itr_ << "/validCountPerVertex.csv";
+    copyAndWriteVectorToCSV(graph_.d_validCounterArray_, filename.str(), NUM_R1_REGIONS, 1, append);
 
     // Write Frontier
     filename.str("");
@@ -443,8 +485,8 @@ void KGMT::writeDeviceVectorsToCSV(int itr)
 
     // Write Vertex Scores
     filename.str("");
-    filename << "Data/VertexScores/VertexScores" << itr << "/vertexScores.csv";
-    copyAndWriteVectorToCSV(graph_.d_vertexScoreArray_, filename.str(), 1, NUM_R1_REGIONS, append);
+    filename << "Data/VertexScores/VertexScores" << h_itr_ << "/vertexScores.csv";
+    copyAndWriteVectorToCSV(graph_.d_vertexScoreArray_, filename.str(), NUM_R1_REGIONS, 1, append);
 
     // Write Frontier Size
     filename.str("");

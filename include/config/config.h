@@ -129,7 +129,7 @@
 
 // #define W_R1_LENGTH 8
 // #define C_R1_LENGTH 1
-// #define V_R1_LENGTH 4
+// #define V_R1_LENGTH 2
 
 // #define W_R2_LENGTH 2
 // #define C_R2_LENGTH 1
@@ -200,11 +200,11 @@
 #define R1 8
 #define R2 4
 #define SAMPLE_DIM 17
-#define WS_SIZE 1.0f
+#define WS_SIZE 100.0f
 #define MODEL 3
-#define MAX_TREE_SIZE 200000
+#define MAX_TREE_SIZE 300000
 #define GOAL_THRESH 0.05f
-#define MAX_ITER 1
+#define MAX_ITER 10
 #define STEP_SIZE 0.1f
 #define MAX_PROPAGATION_DURATION 10
 
@@ -213,13 +213,13 @@
 #define V_DIM 3
 
 #define W_MIN 0.0f
-#define W_MAX 1.0f
+#define W_MAX 100.0f
 
 #define C_MIN -M_PI
 #define C_MAX M_PI
 
-#define V_MIN 0.0f
-#define V_MAX 0.3f
+#define V_MIN -20.0f
+#define V_MAX 20.0f
 
 #define W_R1_LENGTH 8
 #define C_R1_LENGTH 1
@@ -283,19 +283,27 @@
 #define VERBOSE 1
 
 #define STATE_DIM 12
-#define QUAD_MIN_T 0.1f
-#define QUAD_MAX_T 1.0f
-#define GRAVITY -0.98f
-#define MASS 0.08f
-#define QUAD_ARM_LENGTH .06f
+#define QUAD_MIN_T -.1f
+#define QUAD_MAX_T .1f
+#define QUAD_MIN_Zc -2.0f
+#define QUAD_MAX_Zc 2.0f
+#define QUAD_MIN_Lc -2.0f
+#define QUAD_MAX_Lc 2.0f
+#define QUAD_MIN_Mc -2.0f
+#define QUAD_MAX_Mc 2.0f
+#define QUAD_MIN_Nc -2.0f
+#define QUAD_MAX_Nc 2.0f
+
+#define MASS 0.08
+#define QUAD_ARM_LENGTH 1.0f
 #define NU 10e-3f
 #define MU 2e-6f
-#define KM 0.003f
+#define KM 0.03f
 #define IX 1.0f
 #define IY 1.0f
 #define IZ 2.0f
-#define QUAD_MIN_VEL -1.0f
-#define QUAD_MAX_VEL 1.0f
+#define QUAD_MIN_VEL -20.0f
+#define QUAD_MAX_VEL 20.0f
 #define QUAD_MIN_ACC -1.0f
 #define QUAD_MAX_ACC 1.0f
 #define QUAD_MIN_PHI -M_PI
@@ -303,3 +311,7 @@
 #define QUAD_MIN_THETA -M_PI
 #define QUAD_MAX_THETA M_PI
 #define SQRT2 1.41421356237F
+
+#define GRAVITY -9.81f
+#define BETA 1.0f
+#define MASS_INV 1.0f / MASS
