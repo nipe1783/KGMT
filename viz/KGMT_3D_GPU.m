@@ -13,7 +13,7 @@ controlSize = 3;
 xGoal = [.7, .95, .9];
 alpha = .9;
 STEP_SIZE = .1;
-model = 2;
+model = 1;
 
 % Obstacle file path
 obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/pillars/obstacles.csv';

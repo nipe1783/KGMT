@@ -7,7 +7,7 @@ Graph::Graph(const float ws)
     if(VERBOSE)
         {
             printf("/***************************/\n");
-            printf("/* Graph Dimension: %d */\n", W_DIM * C_DIM * V_DIM);
+            printf("/* Graph Dimension: %d */\n", W_DIM + C_DIM + V_DIM);
             printf("/***************************/\n");
         }
 
