@@ -106,6 +106,7 @@ __host__ __device__ int getRegion(float* coord)
         {
             index = (int)(W_R1_LENGTH * (coord[i] - W_MIN) / (W_MAX - W_MIN));
             if(index >= W_R1_LENGTH) index = W_R1_LENGTH - 1;
+            if(index < 0) index = 0;
 
             wRegion += factor * index;
             factor *= W_R1_LENGTH;
@@ -125,6 +126,7 @@ __host__ __device__ int getRegion(float* coord)
                 {
                     index = (int)(C_R1_LENGTH * (coord[i + W_DIM] - C_MIN) / (C_MAX - C_MIN));
                     if(index >= C_R1_LENGTH) index = C_R1_LENGTH - 1;
+                    if(index < 0) index = 0;
 
                     aRegion += factor * index;
                     factor *= C_R1_LENGTH;
@@ -140,6 +142,7 @@ __host__ __device__ int getRegion(float* coord)
                 {
                     index = (int)(V_R1_LENGTH * (coord[i + W_DIM + C_DIM] - V_MIN) / (V_MAX - V_MIN));
                     if(index >= V_R1_LENGTH) index = V_R1_LENGTH - 1;
+                    if(index < 0) index = 0;
 
                     vRegion += factor * index;
                     factor *= V_R1_LENGTH;
@@ -160,6 +163,7 @@ __device__ int getSubRegion(float* coord, int r1, float* minRegion)
         {
             index = (int)(W_R2_LENGTH * (coord[i] - minRegion[r1 * STATE_DIM + i]) / (W_R1_SIZE));
             if(index >= W_R2_LENGTH) index = W_R2_LENGTH - 1;
+            if(index < 0) index = 0;
 
             wRegion += factor * index;
             factor *= W_R2_LENGTH;
@@ -174,6 +178,7 @@ __device__ int getSubRegion(float* coord, int r1, float* minRegion)
                 {
                     index = (int)(C_R2_LENGTH * (coord[i + W_DIM] - minRegion[r1 * STATE_DIM + i + W_DIM]) / (C_R1_SIZE));
                     if(index >= C_R2_LENGTH) index = C_R2_LENGTH - 1;
+                    if(index < 0) index = 0;
 
                     aRegion += factor * index;
                     factor *= C_R2_LENGTH;
@@ -189,6 +194,7 @@ __device__ int getSubRegion(float* coord, int r1, float* minRegion)
                 {
                     index = (int)(V_R2_LENGTH * (coord[i + W_DIM + C_DIM] - minRegion[r1 * STATE_DIM + i + W_DIM + C_DIM]) / (V_R1_SIZE));
                     if(index >= V_R2_LENGTH) index = V_R2_LENGTH - 1;
+                    if(index < 0) index = 0;
 
                     vRegion += factor * index;
                     factor *= V_R2_LENGTH;

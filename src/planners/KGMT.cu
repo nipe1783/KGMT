@@ -214,6 +214,7 @@ __global__ void propagateFrontier_kernel1(bool* frontier, uint* activeFrontierId
 {
     if(blockIdx.x >= frontierSize) return;
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if(tid >= MAX_TREE_SIZE) return;
 
     // --- Load Frontier Sample Idx into shared memory.  ---
     __shared__ int s_x0Idx;
@@ -261,6 +262,7 @@ __global__ void propagateFrontier_kernel2(bool* frontier, uint* activeFrontierId
     int tid       = blockIdx.x * blockDim.x + threadIdx.x;
     frontier[tid] = false;
     if(tid >= frontierSize * iterations) return;
+    if(tid >= MAX_TREE_SIZE) return;
 
     int activeFrontierIdx = tid / iterations;
     int x0Idx             = activeFrontierIdxs[activeFrontierIdx];

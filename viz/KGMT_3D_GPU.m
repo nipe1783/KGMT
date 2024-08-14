@@ -3,20 +3,20 @@ clc
 clear all
 
 % Parameters
-numFiles = 1;
-radius = 0.05;
+numFiles = 11;
+radius = 5.0;
 N = 8;
 n = 4;
 sampleSize = 10;
 stateSize = 6;
 controlSize = 3;
-xGoal = [.7, .95, .9];
+xGoal = [70, 95, 90];
 alpha = .9;
 STEP_SIZE = .1;
-model = 1;
+model = 2;
 
 % Obstacle file path
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/pillars/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/quadNonLinear/obstacles.csv';
 obstacles = gpuArray(readmatrix(obstacleFilePath));
 
 treeSizePath = "/home/nicolas/dev/research/KGMT/build/Data/TreeSize/TreeSize0/treeSize.csv";
@@ -38,9 +38,9 @@ title('Iteration 0');
 sampleFilePath = "/home/nicolas/dev/research/KGMT/build/Data/Samples/Samples0/samples1.csv";
 samples = gpuArray(readmatrix(sampleFilePath));
 
-controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathToGoal/ControlPathToGoal0/controlPathToGoal.csv';
-controls = gpuArray(flipud(readmatrix(controlPath)));
-controls = [samples(1,1), samples(1,2), samples(1,3), samples(1,4), samples(1,5), samples(1,6), 0, 0, 0, 0; controls];
+% controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathToGoal/ControlPathToGoal0/controlPathToGoal.csv';
+% controls = gpuArray(flipud(readmatrix(controlPath)));
+% controls = [samples(1,1), samples(1,2), samples(1,3), samples(1,4), samples(1,5), samples(1,6), 0, 0, 0, 0; controls];
 
 plot3(gather(samples(1,1)), gather(samples(1,2)), gather(samples(1,3)), 'ko', 'MarkerFaceColor', 'b', 'MarkerSize', 10);
 
@@ -161,28 +161,28 @@ for i = 1:numFiles
         end
         x0 = samples((parentRelations(j) + 1), 1:stateSize);
         sample = samples(j, :);
-        if model == 1
-            [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
-        elseif model == 2
-            [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
-        end
-        plot3(gather(segmentX), gather(segmentY), gather(segmentZ), '-.', 'Color', 'k', 'LineWidth', 0.01);
+        % if model == 1
+        %     [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
+        % elseif model == 2
+        %     [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
+        % end
+        % plot3(gather(segmentX), gather(segmentY), gather(segmentZ), '-.', 'Color', 'k', 'LineWidth', 0.01);
         plot3(gather(samples(j, 1)), gather(samples(j, 2)), gather(samples(j, 3)), 'o', 'Color', gather(colors(colorIndex, :)), 'MarkerFaceColor', gather(colors(colorIndex, :)), 'MarkerSize', 2);
     end
 
-    if i == numFiles
-        for j = 2:size(controls, 1)
-            x0 = controls(j-1, 1:stateSize);
-            sample = controls(j,:);
-            if model == 1
-                [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
-            elseif model == 2
-                [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
-            end
-            plot3(gather(segmentX), gather(segmentY), gather(segmentZ), 'Color', 'g', 'LineWidth', 1);
-            plot3(gather(controls(j, 1)), gather(controls(j, 2)), gather(controls(j, 3)), 'o', 'Color', gather(colors(colorIndex, :)), 'MarkerFaceColor', gather(colors(colorIndex, :)), 'MarkerSize', 2);
-        end
-    end
+    % if i == numFiles
+    %     for j = 2:size(controls, 1)
+    %         x0 = controls(j-1, 1:stateSize);
+    %         sample = controls(j,:);
+    %         if model == 1
+    %             [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
+    %         elseif model == 2
+    %             [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
+    %         end
+    %         plot3(gather(segmentX), gather(segmentY), gather(segmentZ), 'Color', 'g', 'LineWidth', 1);
+    %         plot3(gather(controls(j, 1)), gather(controls(j, 2)), gather(controls(j, 3)), 'o', 'Color', gather(colors(colorIndex, :)), 'MarkerFaceColor', gather(colors(colorIndex, :)), 'MarkerSize', 2);
+    %     end
+    % end
 
     view(3);
     drawnow;
@@ -204,7 +204,7 @@ for i = 1:numFiles
     saveas(gcf, sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i));
     print(sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
 
-    % close(gcf);
+    close(gcf);
 end
 
 function [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize)

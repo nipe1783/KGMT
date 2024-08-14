@@ -8,6 +8,8 @@ __device__ bool propagateAndCheck(float* x0, float* x1, curandState* seed, float
 __device__ bool propagateAndCheckUnicycle(float* x0, float* x1, curandState* seed, float* obstacles, int obstaclesCount);
 __device__ bool propagateAndCheckDoubleIntRungeKutta(float* x0, float* x1, curandState* seed, float* obstacles, int obstaclesCount);
 __device__ bool propagateAndCheckDubinsAirplaneRungeKutta(float* x0, float* x1, curandState* seed, float* obstacles, int obstaclesCount);
+__device__ bool propagateAndCheckQuadRungeKutta(float* x0, float* x1, curandState* seed, float* obstacles, int obstaclesCount);
+__device__ void ode(float* x0dot, float* x0, float f1, float f2, float f3, float f4);
 
 typedef bool (*PropagateAndCheckFunc)(float*, float*, curandState*, float*, int);
 
