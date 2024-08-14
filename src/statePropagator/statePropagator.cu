@@ -102,7 +102,7 @@ __device__ bool propagateAndCheckDoubleIntRungeKutta(float* x0, float* x1, curan
             vz += (az + 2 * az + 2 * az + az) * STEP_SIZE / 6;
 
             // --- Dyanmics Validity Check ---
-            if(vx < DI_MIN_VEL || vx > DI_MAX_VEL || vy < DI_MIN_VEL || vy > DI_MAX_VEL || vz < DI_MIN_VEL || vz > DI_MAX_VEL)
+            if(vx < V_MIN || vx > V_MAX || vy < V_MIN || vy > V_MAX || vz < V_MIN || vz > V_MAX)
                 {
                     motionValid = false;
                     break;

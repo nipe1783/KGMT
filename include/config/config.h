@@ -54,8 +54,8 @@
 
 // // --- DOUBLE INTEGRATOR: MODEL 1 ---
 // #define STATE_DIM 6
-// #define DI_MIN_VEL -0.3f
-// #define DI_MAX_VEL 0.3f
+// #define V_MIN -0.3f
+// #define V_MAX 0.3f
 // #define DI_MIN_ACC -.2f
 // #define DI_MAX_ACC .2f
 // #define DI_MIN_DT 0.1f  // TODO: remove these
@@ -125,7 +125,7 @@
 #define C_MIN -M_PI
 #define C_MAX M_PI
 
-#define V_MIN 0.0f
+#define V_MIN -0.3f
 #define V_MAX 0.3f
 
 #define W_R1_LENGTH 8
@@ -154,12 +154,8 @@
 #define UNI_LENGTH 1.0f
 
 // --- DOUBLE INTEGRATOR: MODEL 1 ---
-#define DI_MIN_VEL -0.3f
-#define DI_MAX_VEL 0.3f
 #define DI_MIN_ACC -.2f
 #define DI_MAX_ACC .2f
-#define DI_MIN_DT 0.1f  // TODO: remove these
-#define DI_MAX_DT 2.0f
 
 // --- DUBINS AIRPLANE: MODEL 2 ---
 #define DUBINS_AIRPLANE_MIN_ACC -0.3f

@@ -178,8 +178,8 @@ ob::StateSpacePtr OMPL_Planner::createStateSpace()
             positionSpace->setBounds(posBounds);
 
             ob::RealVectorBounds velBounds(3);
-            velBounds.setLow(DI_MIN_VEL);
-            velBounds.setHigh(DI_MAX_VEL);
+            velBounds.setLow(V_MIN);
+            velBounds.setHigh(V_MAX);
             velocitySpace->setBounds(velBounds);
         }
     else if(MODEL == 2)
