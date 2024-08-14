@@ -106,11 +106,14 @@
 #define STEP_SIZE 0.1f
 #define MAX_PROPAGATION_DURATION 10
 
-#define SAMPLE_DIM 10
 #define WS_SIZE 1.0f
 #define MODEL 1
 #define MAX_TREE_SIZE 200000
 #define GOAL_THRESH 0.05f
+
+#define STATE_DIM 6
+#define CONTROL_DIM 3
+#define SAMPLE_DIM (STATE_DIM + CONTROL_DIM + 1)
 
 #define W_DIM 3
 #define C_DIM 1
@@ -151,7 +154,6 @@
 #define UNI_LENGTH 1.0f
 
 // --- DOUBLE INTEGRATOR: MODEL 1 ---
-#define STATE_DIM 6
 #define DI_MIN_VEL -0.3f
 #define DI_MAX_VEL 0.3f
 #define DI_MIN_ACC -.2f
@@ -160,7 +162,6 @@
 #define DI_MAX_DT 2.0f
 
 // --- DUBINS AIRPLANE: MODEL 2 ---
-#define STATE_DIM 6
 #define DUBINS_AIRPLANE_MIN_ACC -0.3f
 #define DUBINS_AIRPLANE_MAX_ACC 0.3f
 #define DUBINS_AIRPLANE_MIN_PR (-M_PI / 4)
@@ -177,11 +178,12 @@
 #define NUM_PARTIAL_SUMS 1024  // NUM_R1_REGIONS / 32 only used when NUM_R1_REGIONS > 1024
 #define NUM_R1_REGIONS_KERNEL1 \
     1024  // NUM_R1_REGIONS used inside kernel1. must be a constant so the code does not break when NUM_R1_REGIONS > 1024.
-#define NUM_R1_REGIONS (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH * V_R1_LENGTH * V_R1_LENGTH)
+#define NUM_R1_REGIONS \
+    (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH * V_R1_LENGTH * V_R1_LENGTH)
 
-#define NUM_R2_REGIONS                                                                                                             \
-    (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH * V_R1_LENGTH * V_R1_LENGTH * W_R2_LENGTH * W_R2_LENGTH * \
-     W_R2_LENGTH * C_R2_LENGTH * V_R2_LENGTH * V_R2_LENGTH * V_R2_LENGTH)
+#define NUM_R2_REGIONS                                                                                                                \
+    (NUM_R1_REGIONS * W_R2_LENGTH * W_R2_LENGTH * W_R2_LENGTH * C_R2_LENGTH * C_R2_LENGTH * C_R2_LENGTH * V_R2_LENGTH * V_R2_LENGTH * \
+     V_R2_LENGTH)
 
 #define EPSILON 1e-2f
 #define VERBOSE 1
