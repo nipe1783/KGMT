@@ -96,65 +96,6 @@ __global__ void initializeRegions_kernel(float* minValueInRegion)
         }
 }
 
-__host__ __device__ int getVertex(float x, float y)
-{
-    int cellX = static_cast<int>(x / R1_SIZE);
-    int cellY = static_cast<int>(y / R1_SIZE);
-
-    if(cellX >= 0 && cellX < R1 && cellY >= 0 && cellY < R1)
-        {
-            return cellY * R1 + cellX;
-        }
-    return -1;
-}
-
-__host__ __device__ int getVertex(float x, float y, float z)
-{
-    int cellX = static_cast<int>(x / R1_SIZE);
-    int cellY = static_cast<int>(y / R1_SIZE);
-    int cellZ = static_cast<int>(z / R1_SIZE);
-    if(cellX >= 0 && cellX < R1 && cellY >= 0 && cellY < R1 && cellZ >= 0 && cellZ < R1)
-        {
-            return cellX * R1 * R1 + cellY * R1 + cellZ;
-        }
-    return -1;
-}
-
-__host__ __device__ int getSubVertex(float x, float y, int r1)
-{
-    if(r1 == -1) return -1;
-    int cellX_R2 = static_cast<int>((x - (r1 % R1) * R1_SIZE) / R2_SIZE);
-    int cellY_R2 = static_cast<int>((y - (r1 / R1) * R1_SIZE) / R2_SIZE);
-    if(cellX_R2 >= 0 && cellX_R2 < R2 && cellY_R2 >= 0 && cellY_R2 < R2)
-        {
-            return r1 * (R2 * R2) + (cellY_R2 * R2 + cellX_R2);
-        }
-    return -1;
-}
-
-__host__ __device__ int getSubVertex(float x, float y, float z, int r1)
-{
-    if(r1 == -1) return -1;
-
-    // Calculate base cell coordinates in the R1 grid
-    int cellX_base = r1 / (R1 * R1);
-    int cellY_base = (r1 / R1) % R1;
-    int cellZ_base = r1 % R1;
-
-    // Calculate sub-cell coordinates within the R1 cell
-    int cellX_R2 = static_cast<int>((x - cellX_base * R1_SIZE) / R2_SIZE);
-    int cellY_R2 = static_cast<int>((y - cellY_base * R1_SIZE) / R2_SIZE);
-    int cellZ_R2 = static_cast<int>((z - cellZ_base * R1_SIZE) / R2_SIZE);
-
-    // Check if the sub-cell coordinates are within valid bounds
-    if(cellX_R2 >= 0 && cellX_R2 < R2 && cellY_R2 >= 0 && cellY_R2 < R2 && cellZ_R2 >= 0 && cellZ_R2 < R2)
-        {
-            // Return the flattened index of the sub-cell
-            return r1 * (R2 * R2 * R2) + (cellX_R2 * R2 * R2) + (cellY_R2 * R2) + cellZ_R2;
-        }
-    return -1;
-}
-
 __host__ __device__ int getRegion(float* coord)
 {
     // --- Workspace ---
