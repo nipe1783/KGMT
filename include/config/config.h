@@ -99,8 +99,13 @@
 /* 6D DOUBLE INTEGRATOR CONFIG  */
 /***************************/
 
-// --- PILLARS CONFIG ---
-#define W_DIM 3
+#define MODEL 1
+
+#define MAX_TREE_SIZE 200000
+#define MAX_ITER 300
+#define STEP_SIZE 0.1f
+#define MAX_PROPAGATION_DURATION 10
+
 #define R1 8
 #define R2 4
 #define SAMPLE_DIM 10
@@ -108,9 +113,6 @@
 #define MODEL 1
 #define MAX_TREE_SIZE 200000
 #define GOAL_THRESH 0.05f
-#define MAX_ITER 300
-#define STEP_SIZE 0.1f
-#define MAX_PROPAGATION_DURATION 10
 
 #define W_DIM 3
 #define C_DIM 1
