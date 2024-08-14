@@ -238,16 +238,15 @@ partialReduction_kernel(int* activeSubVertices, int* validCounterArray, int* cou
             float coverage      = 0;
 
             // --- Thread loops through all sub vertices to determine vertex coverage. ---
-            for(int i = tid * R2_PER_R1; i < (tid + 1) * R2_PER_R1; ++i)
+            for(int i = tid * NUM_R2_PER_R1; i < (tid + 1) * NUM_R2_PER_R1; ++i)
                 {
                     coverage += activeSubVertices[i];
                 }
-            coverage /= R2_PER_R1;
+            coverage /= NUM_R2_PER_R1;
 
             // --- From OMPL Syclop ref: https://ompl.kavrakilab.org/classompl_1_1control_1_1Syclop.html---
-            float freeVol =
-              (EPSILON + numValidSamples) / (EPSILON + numValidSamples + (counterArray[tid] - numValidSamples)) * pow(R1_SIZE, W_DIM);
-            score             = pow(freeVol, 4) / ((1 + coverage) * (1 + pow(counterArray[tid], 2)));
+            float freeVol = (EPSILON + numValidSamples) / (EPSILON + numValidSamples + (counterArray[tid] - numValidSamples)) * W_R1_VOL;
+            score         = pow(freeVol, 4) / ((1 + coverage) * (1 + pow(counterArray[tid], 2)));
             vertexScores[tid] = score;
         }
 
@@ -325,9 +324,8 @@ __global__ void updateVertices_kernel(int* activeSubVertices, int* validCounterA
             coverage /= NUM_R2_PER_R1;
 
             // --- From OMPL Syclop ref: https://ompl.kavrakilab.org/classompl_1_1control_1_1Syclop.html---
-            float freeVol =
-              (EPSILON + numValidSamples) / (EPSILON + numValidSamples + (counterArray[tid] - numValidSamples)) * pow(R1_SIZE, W_DIM);
-            score = pow(freeVol, 4) / ((1 + coverage) * (1 + pow(counterArray[tid], 2)));
+            float freeVol = (EPSILON + numValidSamples) / (EPSILON + numValidSamples + (counterArray[tid] - numValidSamples)) * W_R1_VOL;
+            score         = pow(freeVol, 4) / ((1 + coverage) * (1 + pow(counterArray[tid], 2)));
         }
 
     // --- Sum scores from each thread to determine score threshold ---

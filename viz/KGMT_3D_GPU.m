@@ -204,7 +204,7 @@ for i = 1:numFiles
     saveas(gcf, sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i));
     print(sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
 
-    close(gcf);
+    % close(gcf);
 end
 
 function [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize)
