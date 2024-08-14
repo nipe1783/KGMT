@@ -25,7 +25,7 @@ Planner::Planner()
         {
             printf("/***************************/\n");
             printf("/* Workspace Dimension: %d */\n", W_DIM);
-            printf("/* Workspace Size: %f */\n", WS_SIZE);
+            printf("/* Workspace Size: %f */\n", W_SIZE);
             printf("/* Maximum discretization steps in propagation: %d */\n", MAX_PROPAGATION_DURATION);
             printf("/* Propagation step Size: %f */\n", STEP_SIZE);
             printf("/* Max Tree Size: %d */\n", MAX_TREE_SIZE);

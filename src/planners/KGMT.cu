@@ -3,7 +3,7 @@
 
 KGMT::KGMT()
 {
-    graph_ = Graph(WS_SIZE);
+    graph_ = Graph(W_SIZE);
 
     d_frontier_                    = thrust::device_vector<bool>(MAX_TREE_SIZE);
     d_frontierNext_                = thrust::device_vector<bool>(MAX_TREE_SIZE);

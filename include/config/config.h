@@ -8,7 +8,7 @@
 // #define R1 8
 // #define R2 4
 // #define SAMPLE_DIM 10
-// #define WS_SIZE 1.0f
+// #define W_SIZE 1.0f
 // #define MODEL 2
 // #define MAX_TREE_SIZE 200000
 // #define GOAL_THRESH 0.05f
@@ -90,8 +90,8 @@
 //                    C_R2_LENGTH * C_R2_LENGTH * V_R2_LENGTH * V_R2_LENGTH))
 
 // #define R2_PER_R1 ((W_DIM == 3) ? (R2 * R2 * R2) : (R2 * R2))
-// #define R1_SIZE (WS_SIZE / R1)
-// #define R2_SIZE (WS_SIZE / (R1 * R2))
+// #define R1_SIZE (W_SIZE / R1)
+// #define R2_SIZE (W_SIZE / (R1 * R2))
 // #define EPSILON 1e-2f
 // #define VERBOSE 1
 
@@ -106,7 +106,6 @@
 #define STEP_SIZE 0.1f
 #define MAX_PROPAGATION_DURATION 10
 
-#define WS_SIZE 1.0f
 #define MODEL 1
 #define MAX_TREE_SIZE 200000
 #define GOAL_THRESH 0.05f
@@ -121,6 +120,7 @@
 
 #define W_MIN 0.0f
 #define W_MAX 1.0f
+#define W_SIZE 1.0f
 
 #define C_MIN -M_PI
 #define C_MAX M_PI

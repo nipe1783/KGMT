@@ -170,11 +170,11 @@ ob::StateSpacePtr OMPL_Planner::createStateSpace()
 
             ob::RealVectorBounds posBounds(3);
             posBounds.setLow(0, 0.0);
-            posBounds.setHigh(0, WS_SIZE);
+            posBounds.setHigh(0, W_SIZE);
             posBounds.setLow(1, 0.0);
-            posBounds.setHigh(1, WS_SIZE);
+            posBounds.setHigh(1, W_SIZE);
             posBounds.setLow(2, 0.0);
-            posBounds.setHigh(2, WS_SIZE);
+            posBounds.setHigh(2, W_SIZE);
             positionSpace->setBounds(posBounds);
 
             ob::RealVectorBounds velBounds(3);
@@ -194,11 +194,11 @@ ob::StateSpacePtr OMPL_Planner::createStateSpace()
 
             ob::RealVectorBounds posBounds(3);
             posBounds.setLow(0, 0.0);
-            posBounds.setHigh(0, WS_SIZE);
+            posBounds.setHigh(0, W_SIZE);
             posBounds.setLow(1, 0.0);
-            posBounds.setHigh(1, WS_SIZE);
+            posBounds.setHigh(1, W_SIZE);
             posBounds.setLow(2, 0.0);
-            posBounds.setHigh(2, WS_SIZE);
+            posBounds.setHigh(2, W_SIZE);
             positionSpace->setBounds(posBounds);
 
             ob::RealVectorBounds orientBounds(2);

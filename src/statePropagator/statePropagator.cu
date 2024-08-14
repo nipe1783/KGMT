@@ -41,7 +41,7 @@ __device__ bool propagateAndCheckUnicycle(float* x0, float* x1, curandState* see
             float x1State[W_DIM] = {x, y};
 
             // --- Workspace Limit Check ---
-            if(x < 0 || x > WS_SIZE || y < 0 || y > WS_SIZE)
+            if(x < 0 || x > W_SIZE || y < 0 || y > W_SIZE)
                 {
                     motionValid = false;
                     break;
@@ -111,7 +111,7 @@ __device__ bool propagateAndCheckDoubleIntRungeKutta(float* x0, float* x1, curan
             float x1State[W_DIM] = {x, y, z};
 
             // --- Workspace Limit Check ---
-            if(x < 0 || x > WS_SIZE || y < 0 || y > WS_SIZE || z < 0 || z > WS_SIZE)
+            if(x < 0 || x > W_SIZE || y < 0 || y > W_SIZE || z < 0 || z > W_SIZE)
                 {
                     motionValid = false;
                     break;
@@ -201,7 +201,7 @@ __device__ bool propagateAndCheckDubinsAirplaneRungeKutta(float* x0, float* x1, 
             float x1State[W_DIM] = {x, y, z};
 
             // --- Workspace Limit Check ---
-            if(x < 0 || x > WS_SIZE || y < 0 || y > WS_SIZE || z < 0 || z > WS_SIZE)
+            if(x < 0 || x > W_SIZE || y < 0 || y > W_SIZE || z < 0 || z > W_SIZE)
                 {
                     motionValid = false;
                     break;
