@@ -39,7 +39,7 @@ int main(void)
 
     int numObstacles = 1;
     float* d_obstacles;
-    std::vector<float> obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/pillars/obstacles.csv", numObstacles, DIM);
+    std::vector<float> obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/pillars/obstacles.csv", numObstacles, W_DIM);
 
     OMPL_Planner pdst;
     pdst.planPDST(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);

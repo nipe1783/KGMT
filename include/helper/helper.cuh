@@ -137,11 +137,11 @@ inline int iDivUp(int a, int b)
 
 __device__ __forceinline__ float distance(float* a, float* b)
 {
-    if(DIM == 2)
+    if(W_DIM == 2)
         {
             return sqrt(pow(a[0] - b[0], 2) + pow(a[1] - b[1], 2));
         }
-    else if(DIM == 3)
+    else if(W_DIM == 3)
         {
             return sqrt(pow(a[0] - b[0], 2) + pow(a[1] - b[1], 2) + pow(a[2] - b[2], 2));
         }

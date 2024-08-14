@@ -23,22 +23,22 @@ __device__ bool propagateAndCheckUnicycle(float* x0, float* x1, curandState* see
     float v     = x0[3];
 
     float cosTheta, sinTheta, tanSteering;
-    float bbMin[DIM], bbMax[DIM];
+    float bbMin[W_DIM], bbMax[W_DIM];
 
     bool motionValid = true;
     for(int i = 0; i < propagationDuration; i++)
         {
-            float x0State[DIM] = {x, y};
-            cosTheta           = cos(theta);
-            sinTheta           = sin(theta);
-            tanSteering        = tan(steering);
+            float x0State[W_DIM] = {x, y};
+            cosTheta             = cos(theta);
+            sinTheta             = sin(theta);
+            tanSteering          = tan(steering);
 
             // --- State Propagation ---
             x += v * cosTheta * STEP_SIZE;
             y += v * sinTheta * STEP_SIZE;
             theta += (v / UNI_LENGTH) * tanSteering * STEP_SIZE;
             v += a * STEP_SIZE;
-            float x1State[DIM] = {x, y};
+            float x1State[W_DIM] = {x, y};
 
             // --- Workspace Limit Check ---
             if(x < 0 || x > WS_SIZE || y < 0 || y > WS_SIZE)
@@ -48,7 +48,7 @@ __device__ bool propagateAndCheckUnicycle(float* x0, float* x1, curandState* see
                 }
 
             // --- Obstacle Collision Check ---
-            for(int d = 0; d < DIM; d++)
+            for(int d = 0; d < W_DIM; d++)
                 {
                     if(x0State[d] > x1State[d])
                         {
@@ -88,10 +88,10 @@ __device__ bool propagateAndCheckDoubleIntRungeKutta(float* x0, float* x1, curan
     float vz = x0[5];
 
     bool motionValid = true;
-    float bbMin[DIM], bbMax[DIM];
+    float bbMin[W_DIM], bbMax[W_DIM];
     for(int i = 0; i < propagationDuration; i++)
         {
-            float x0State[DIM] = {x, y, z};
+            float x0State[W_DIM] = {x, y, z};
 
             // --- State Propagation. 4th order Runge Kutta ---
             x += (vx + (vx + 2 * (vx + ax * STEP_SIZE / 2) + (vx + ax * STEP_SIZE))) * STEP_SIZE / 6;
@@ -108,7 +108,7 @@ __device__ bool propagateAndCheckDoubleIntRungeKutta(float* x0, float* x1, curan
                     break;
                 }
 
-            float x1State[DIM] = {x, y, z};
+            float x1State[W_DIM] = {x, y, z};
 
             // --- Workspace Limit Check ---
             if(x < 0 || x > WS_SIZE || y < 0 || y > WS_SIZE || z < 0 || z > WS_SIZE)
@@ -118,7 +118,7 @@ __device__ bool propagateAndCheckDoubleIntRungeKutta(float* x0, float* x1, curan
                 }
 
             // --- Obstacle Collision Check ---
-            for(int d = 0; d < DIM; d++)
+            for(int d = 0; d < W_DIM; d++)
                 {
                     if(x0State[d] > x1State[d])
                         {
@@ -159,11 +159,11 @@ __device__ bool propagateAndCheckDubinsAirplaneRungeKutta(float* x0, float* x1, 
     float v     = x0[5];
 
     bool motionValid = true;
-    float bbMin[DIM], bbMax[DIM];
+    float bbMin[W_DIM], bbMax[W_DIM];
 
     for(int i = 0; i < propagationDuration; i++)
         {
-            float x0State[DIM] = {x, y, z};
+            float x0State[W_DIM] = {x, y, z};
 
             // --- State Propagation using 4th Order Runge-Kutta Method ---
             x +=
@@ -198,7 +198,7 @@ __device__ bool propagateAndCheckDubinsAirplaneRungeKutta(float* x0, float* x1, 
                     break;
                 }
 
-            float x1State[DIM] = {x, y, z};
+            float x1State[W_DIM] = {x, y, z};
 
             // --- Workspace Limit Check ---
             if(x < 0 || x > WS_SIZE || y < 0 || y > WS_SIZE || z < 0 || z > WS_SIZE)
@@ -208,7 +208,7 @@ __device__ bool propagateAndCheckDubinsAirplaneRungeKutta(float* x0, float* x1, 
                 }
 
             // --- Obstacle Collision Check ---
-            for(int d = 0; d < DIM; d++)
+            for(int d = 0; d < W_DIM; d++)
                 {
                     if(x0State[d] > x1State[d])
                         {

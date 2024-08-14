@@ -24,7 +24,7 @@ Planner::Planner()
     if(VERBOSE)
         {
             printf("/***************************/\n");
-            printf("/* Workspace Dimension: %d */\n", DIM);
+            printf("/* Workspace Dimension: %d */\n", W_DIM);
             printf("/* Workspace Size: %f */\n", WS_SIZE);
             printf("/* Maximum discretization steps in propagation: %d */\n", MAX_PROPAGATION_DURATION);
             printf("/* Propagation step Size: %f */\n", STEP_SIZE);

@@ -4,7 +4,7 @@
 /* DUBINS AIRPLANE CONFIG  */
 /***************************/
 // --- PILLARS CONFIG ---
-// #define DIM 3
+// #define W_DIM 3
 // #define R1 8
 // #define R2 4
 // #define SAMPLE_DIM 10
@@ -80,16 +80,16 @@
 // #define NUM_R1_REGIONS_KERNEL1 \
 //     1024  // NUM_R1_REGIONS used inside kernel1. must be a constant so the code does not break when NUM_R1_REGIONS > 1024.
 // #define NUM_R1_REGIONS                                                                                \
-//     ((DIM == 3) ? (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH) \
+//     ((W_DIM == 3) ? (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH) \
 //                 : (W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH * V_R1_LENGTH))
 
 // #define NUM_R2_REGIONS                                                                                                             \
-//     ((DIM == 3) ? (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH * W_R2_LENGTH * W_R2_LENGTH * \
+//     ((W_DIM == 3) ? (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH * W_R2_LENGTH * W_R2_LENGTH * \
 //                    W_R2_LENGTH * C_R2_LENGTH * C_R2_LENGTH * V_R2_LENGTH)                                                          \
 //                 : (W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH * V_R1_LENGTH * W_R2_LENGTH * W_R2_LENGTH * \
 //                    C_R2_LENGTH * C_R2_LENGTH * V_R2_LENGTH * V_R2_LENGTH))
 
-// #define R2_PER_R1 ((DIM == 3) ? (R2 * R2 * R2) : (R2 * R2))
+// #define R2_PER_R1 ((W_DIM == 3) ? (R2 * R2 * R2) : (R2 * R2))
 // #define R1_SIZE (WS_SIZE / R1)
 // #define R2_SIZE (WS_SIZE / (R1 * R2))
 // #define EPSILON 1e-2f
@@ -100,7 +100,7 @@
 /***************************/
 
 // --- PILLARS CONFIG ---
-#define DIM 3
+#define W_DIM 3
 #define R1 8
 #define R2 4
 #define SAMPLE_DIM 10
@@ -127,7 +127,7 @@
 
 #define W_R1_LENGTH 8
 #define C_R1_LENGTH 1
-#define V_R1_LENGTH 2
+#define V_R1_LENGTH 4
 
 #define W_R2_LENGTH 2
 #define C_R2_LENGTH 1
@@ -181,7 +181,7 @@
     (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH * C_R1_LENGTH * V_R1_LENGTH * V_R1_LENGTH * V_R1_LENGTH * W_R2_LENGTH * W_R2_LENGTH * \
      W_R2_LENGTH * C_R2_LENGTH * V_R2_LENGTH * V_R2_LENGTH * V_R2_LENGTH)
 
-#define R2_PER_R1 ((DIM == 3) ? (R2 * R2 * R2) : (R2 * R2))
+#define R2_PER_R1 ((W_DIM == 3) ? (R2 * R2 * R2) : (R2 * R2))
 #define R1_SIZE (WS_SIZE / R1)
 #define R2_SIZE (WS_SIZE / (R1 * R2))
 #define EPSILON 1e-2f
