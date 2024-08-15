@@ -252,60 +252,41 @@ __device__ bool propagateAndCheckQuadRungeKutta(float* x0, float* x1, curandStat
 
     int propagationDuration = 1 + (int)(curand_uniform(seed) * (MAX_PROPAGATION_DURATION));
 
-    float x     = x0[0];
-    float y     = x0[1];
-    float z     = x0[2];
-    float phi   = x0[3];
-    float theta = x0[4];
-    float psi   = x0[5];
-    float u     = x0[6];
-    float v     = x0[7];
-    float w     = x0[8];
-    float p     = x0[9];
-    float q     = x0[10];
-    float r     = x0[11];
-
     bool motionValid = true;
     float bbMin[W_DIM], bbMax[W_DIM];
 
-    float h1[12];
-    float h2[12];
-    float h3[12];
-    float h4[12];
+    float h0[STATE_DIM];
+    float h1[STATE_DIM];
+    float h2[STATE_DIM];
+    float h3[STATE_DIM];
+    float h4[STATE_DIM];
+
+    for(int j = 0; j < STATE_DIM; j++) h0[j] = x0[j];
 
     for(int i = 0; i < propagationDuration; i++)
         {
-            float x0State[W_DIM] = {x, y, z};
+            float x0State[W_DIM] = {h0[0], h0[1], h0[2]};
 
-            ode(h1, x0, Zc, Lc, Mc, Nc);
-            ode(h2, h1, Zc, Lc, Mc, Nc);
-            ode(h3, h2, Zc, Lc, Mc, Nc);
-            ode(h4, h3, Zc, Lc, Mc, Nc);
+            ode(h1, h0, nullptr, Zc, Lc, Mc, Nc, 0);
+            ode(h2, h0, h1, Zc, Lc, Mc, Nc, 1);
+            ode(h3, h0, h2, Zc, Lc, Mc, Nc, 2);
+            ode(h4, h0, h3, Zc, Lc, Mc, Nc, 3);
+            for(int j = 0; j < STATE_DIM; j++)
+                {
+                    h0[j] += STEP_SIZE / 6.0f * (h1[j] + 2.0f * h2[j] + 2.0f * h3[j] + h4[j]);
+                }
 
-            x += STEP_SIZE / 6 * (h1[0] + 2.0f * h2[0] + 2.0f * h3[0] + h4[0]);
-            y += STEP_SIZE / 6 * (h1[1] + 2.0f * h2[1] + 2.0f * h3[1] + h4[1]);
-            z += STEP_SIZE / 6 * (h1[2] + 2.0f * h2[2] + 2.0f * h3[2] + h4[2]);
-            phi += STEP_SIZE / 6 * (h1[3] + 2.0f * h2[3] + 2.0f * h3[3] + h4[3]);
-            theta += STEP_SIZE / 6 * (h1[4] + 2.0f * h2[4] + 2.0f * h3[4] + h4[4]);
-            psi += STEP_SIZE / 6 * (h1[5] + 2.0f * h2[5] + 2.0f * h3[5] + h4[5]);
-            u += STEP_SIZE / 6 * (h1[6] + 2.0f * h2[6] + 2.0f * h3[6] + h4[6]);
-            v += STEP_SIZE / 6 * (h1[7] + 2.0f * h2[7] + 2.0f * h3[7] + h4[7]);
-            w += STEP_SIZE / 6 * (h1[8] + 2.0f * h2[8] + 2.0f * h3[8] + h4[8]);
-            p += STEP_SIZE / 6 * (h1[9] + 2.0f * h2[9] + 2.0f * h3[9] + h4[9]);
-            q += STEP_SIZE / 6 * (h1[10] + 2.0f * h2[10] + 2.0f * h3[10] + h4[10]);
-            r += STEP_SIZE / 6 * (h1[11] + 2.0f * h2[11] + 2.0f * h3[11] + h4[11]);
-
-            float x1State[W_DIM] = {x, y, z};
+            float x1State[W_DIM] = {h0[0], h0[1], h0[2]};
 
             // --- Vehicle Dynamics Check ---
-            if(u < V_MIN || u > V_MAX || v < V_MIN || v > V_MAX || w < V_MIN || w > V_MAX)
+            if(h0[6] < V_MIN || h0[6] > V_MAX || h0[7] < V_MIN || h0[7] > V_MAX || h0[8] < V_MIN || h0[8] > V_MAX)
                 {
                     motionValid = false;
                     break;
                 }
 
             // --- Workspace Limit Check ---
-            if(x < W_MIN || x > W_MAX || y < W_MIN || y > W_MAX || z < W_MIN || z > W_MAX)
+            if(h0[0] < W_MIN || h0[0] > W_MAX || h0[1] < W_MIN || h0[1] > W_MAX || h0[2] < W_MIN || h0[2] > W_MAX)
                 {
                     motionValid = false;
                     break;
@@ -330,18 +311,8 @@ __device__ bool propagateAndCheckQuadRungeKutta(float* x0, float* x1, curandStat
             if(!motionValid) break;
         }
 
-    x1[0]  = x;
-    x1[1]  = y;
-    x1[2]  = z;
-    x1[3]  = phi;
-    x1[4]  = theta;
-    x1[5]  = psi;
-    x1[6]  = u;
-    x1[7]  = v;
-    x1[8]  = w;
-    x1[9]  = p;
-    x1[10] = q;
-    x1[11] = r;
+    for(int j = 0; j < STATE_DIM; j++) x1[j] = h0[j];
+
     x1[12] = Zc;
     x1[13] = Lc;
     x1[14] = Mc;
@@ -351,52 +322,51 @@ __device__ bool propagateAndCheckQuadRungeKutta(float* x0, float* x1, curandStat
     return motionValid;
 }
 
-__device__ void ode(float* x0dot, float* x0, float Zc, float Lc, float Mc, float Nc)
+__device__ void ode(float* x0dot, float* x0, float* h, float Zc, float Lc, float Mc, float Nc, int itr)
 {
-    float phi, theta, psi, u, v, w, p, q, r;
-    phi   = x0[3];
-    theta = x0[4];
-    psi   = x0[5];
-    u     = x0[6];
-    v     = x0[7];
-    w     = x0[8];
-    p     = x0[9];
-    q     = x0[10];
-    r     = x0[11];
+    float phi, theta, psi, u, v, w, p, q, r, delta;
+
+    if(itr == 0)
+        {
+            delta = 1;
+        }
+    else if(itr == 1 || itr == 2)
+        {
+            delta = 0.5f * STEP_SIZE;
+        }
+    else if(itr == 3)
+        {
+            delta = STEP_SIZE;
+        }
+
+    phi   = x0[3] + delta * (h ? h[3] : 0);
+    theta = x0[4] + delta * (h ? h[4] : 0);
+    psi   = x0[5] + delta * (h ? h[5] : 0);
+    u     = x0[6] + delta * (h ? h[6] : 0);
+    v     = x0[7] + delta * (h ? h[7] : 0);
+    w     = x0[8] + delta * (h ? h[8] : 0);
+    p     = x0[9] + delta * (h ? h[9] : 0);
+    q     = x0[10] + delta * (h ? h[10] : 0);
+    r     = x0[11] + delta * (h ? h[11] : 0);
 
     x0dot[0] = cos(theta) * cos(psi) * u + (sin(phi) * sin(theta) * cos(psi) - cos(phi) * sin(psi)) * v +
                (cos(phi) * sin(theta) * cos(psi) + sin(phi) * sin(psi)) * w;
-
     x0dot[1] = cos(theta) * sin(psi) * u + (sin(phi) * sin(theta) * sin(psi) + cos(phi) * cos(psi)) * v +
                (cos(phi) * sin(theta) * sin(psi) - sin(phi) * cos(psi)) * w;
-
     x0dot[2] = -sin(theta) * u + sin(phi) * cos(theta) * v + cos(phi) * cos(theta) * w;
-
     x0dot[3] = p + (q * sin(phi) + r * cos(phi)) * tan(theta);
-
     x0dot[4] = q * cos(phi) - r * sin(phi);
-
     x0dot[5] = (q * sin(phi) + r * cos(phi)) / cos(theta);
 
     float XYZ = -NU * sqrt(u * u + v * v + w * w);
-    float X   = XYZ * u;
-    x0dot[6]  = (r * v - q * w) - GRAVITY * sin(theta) + MASS_INV * X;
-
-    float Y  = XYZ * v;
-    x0dot[7] = (p * w - r * u) + GRAVITY * cos(theta) * sin(phi) + MASS_INV * Y;
-
-    float Z  = XYZ * w;
-    x0dot[8] = (q * u - p * v) + GRAVITY * cos(theta) * cos(phi) + MASS_INV * Z + MASS_INV * Zc;
+    x0dot[6]  = (r * v - q * w) - GRAVITY * sin(theta) + MASS_INV * XYZ * u;
+    x0dot[7]  = (p * w - r * u) + GRAVITY * cos(theta) * sin(phi) + MASS_INV * XYZ * v;
+    x0dot[8]  = (q * u - p * v) + GRAVITY * cos(theta) * cos(phi) + MASS_INV * XYZ * w + MASS_INV * Zc;
 
     float LMN = -MU * sqrt(p * p + q * q + r * r);
-    float L   = LMN * p;
-    x0dot[9]  = (IY - IZ) / IX * q * r + (1 / IX) * L + (1 / IX) * Lc;
-
-    float M   = LMN * q;
-    x0dot[10] = (IZ - IX) / IY * p * r + (1 / IY) * M + (1 / IY) * Mc;
-
-    float N   = LMN * r;
-    x0dot[11] = (IX - IY) / IZ * p * q + (1 / IZ) * N + (1 / IZ) * Nc;
+    x0dot[9]  = (IY - IZ) / IX * q * r + (1 / IX) * LMN * p + (1 / IX) * Lc;
+    x0dot[10] = (IZ - IX) / IY * p * r + (1 / IY) * LMN * q + (1 / IY) * Mc;
+    x0dot[11] = (IX - IY) / IZ * p * q + (1 / IZ) * LMN * r + (1 / IZ) * Nc;
 }
 
 /***************************/

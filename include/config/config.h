@@ -232,7 +232,7 @@
 
 #define W_R2_LENGTH 2
 #define C_R2_LENGTH 1
-#define V_R2_LENGTH 1
+#define V_R2_LENGTH 2
 
 #define W_R1_SIZE ((W_MAX - W_MIN) / W_R1_LENGTH)
 #define C_R1_SIZE ((C_MAX - C_MIN) / C_R1_LENGTH)
@@ -270,16 +270,14 @@
 #define DUBINS_AIRPLANE_MAX_PITCH M_PI / 3
 
 // --- NON LINEAR QUAD: MODEL 3 ---
-#define QUAD_MIN_T 0.0f
-#define QUAD_MAX_T 0.0fs
-#define QUAD_MIN_Zc -2.0f
-#define QUAD_MAX_Zc 2.0f
-#define QUAD_MIN_Lc -2.0f
-#define QUAD_MAX_Lc 2.0f
-#define QUAD_MIN_Mc -2.0f
-#define QUAD_MAX_Mc 2.0f
-#define QUAD_MIN_Nc -2.0f
-#define QUAD_MAX_Nc 2.0f
+#define QUAD_MIN_Zc 0.0f
+#define QUAD_MAX_Zc 30.0f
+#define QUAD_MIN_Lc -M_PI
+#define QUAD_MAX_Lc M_PI
+#define QUAD_MIN_Mc -M_PI
+#define QUAD_MAX_Mc M_PI
+#define QUAD_MIN_Nc -M_PI
+#define QUAD_MAX_Nc M_PI
 #define NU 10e-3f
 #define MU 2e-6f
 #define KM 0.03f
