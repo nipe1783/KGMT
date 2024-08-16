@@ -198,9 +198,9 @@
 
 #define MODEL 3
 
-#define MAX_TREE_SIZE 200000
+#define MAX_TREE_SIZE 400000
 #define MAX_ITER 300
-#define STEP_SIZE 0.1f
+#define STEP_SIZE 0.2f
 #define MAX_PROPAGATION_DURATION 10
 
 #define GOAL_THRESH 5.0f

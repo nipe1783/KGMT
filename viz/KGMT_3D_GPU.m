@@ -3,20 +3,20 @@ clc
 clear all
 
 % Parameters
-numFiles = 11;
+numFiles = 9;
 radius = 5;
 N = 8;
 n = 4;
 sampleSize = 17;
 stateSize = 12;
-controlSize = 4;
+controlSize = 3;
 xGoal = [70, 95, 90];
-alpha = .9;
+alpha = .7;
 STEP_SIZE = .1;
 model = 3;
 
 % Obstacle file path
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/quadPillars/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/quadTrees/obstacles.csv';
 obstacles = gpuArray(readmatrix(obstacleFilePath));
 
 treeSizePath = "/home/nicolas/dev/research/KGMT/build/Data/TreeSize/TreeSize0/treeSize.csv";
@@ -30,7 +30,7 @@ colors = gpuArray([0 0 1;  % Blue
                    0 .7 .7; % Turquoise
                    1 .5 0]); % Orange
 
-fig = figure('Position', [100, 100, 1000, 1000]); 
+fig = figure('Position', [100, 100, 1000, 1000t]); 
 hold on;
 axis equal;
 title('Iteration 0');
@@ -78,24 +78,24 @@ camlight('headlight');
 camlight('right');
 lighting phong;
 
-view(3);
-drawnow;
-saveas(gcf, 'figs/KGMT_Iteration_0.jpg');
-print('figs/KGMT_Iteration_0.jpg', '-djpeg', '-r300');
-
-view(2);
-drawnow;
-saveas(gcf, 'figs/top_KGMT_Iteration_0.jpg');
-print('figs/top_KGMT_Iteration_0.jpg', '-djpeg', '-r300');
-
-midY = 0.5 * xGoal(2); 
-midZ = 0.5 * xGoal(3); 
-campos([0, midY, xGoal(3) + 1]); 
-camtarget([0, midY, midZ]); 
-view([-.4, -.2, 0.5]);
-drawnow;
-saveas(gcf, 'figs/xAxis_KGMT_Iteration_0.jpg');
-print('figs/xAxis_KGMT_Iteration_0.jpg', '-djpeg', '-r300'); 
+% view(3);
+% drawnow;
+% saveas(gcf, 'figs/KGMT_Iteration_0.jpg');
+% print('figs/KGMT_Iteration_0.jpg', '-djpeg', '-r300');
+% 
+% view(2);
+% drawnow;
+% saveas(gcf, 'figs/top_KGMT_Iteration_0.jpg');
+% print('figs/top_KGMT_Iteration_0.jpg', '-djpeg', '-r300');
+% 
+% midY = 0.5 * xGoal(2); 
+% midZ = 0.5 * xGoal(3); 
+% campos([0, midY, xGoal(3) + 1]); 
+% camtarget([0, midY, midZ]); 
+% view([-.4, -.2, 0.5]);
+% drawnow;
+% saveas(gcf, 'figs/xAxis_KGMT_Iteration_0.jpg');
+% print('figs/xAxis_KGMT_Iteration_0.jpg', '-djpeg', '-r300'); 
 
 close(gcf);
 iteration = 1;
@@ -110,7 +110,7 @@ for i = 1:numFiles
     fig = figure('Position', [100, 100, 1000, 1000]); 
     hold on;
     axis equal;
-    title(sprintf('Iteration %d', i));
+    % title(sprintf('Iteration %d', i));
 
     plot3(gather(samples(1,1)), gather(samples(1,2)), gather(samples(1,3)), 'ko', 'MarkerFaceColor', 'b', 'MarkerSize', 10);
 
@@ -172,6 +172,10 @@ for i = 1:numFiles
         plot3(gather(samples(j, 1)), gather(samples(j, 2)), gather(samples(j, 3)), 'o', 'Color', gather(colors(colorIndex, :)), 'MarkerFaceColor', gather(colors(colorIndex, :)), 'MarkerSize', 2);
     end
 
+    % Define the filename for the GIF
+    gifFilename = sprintf('figs/KGMT_Iteration_%d.gif', i);
+
+
     if i == numFiles
         for j = 2:size(controls, 1)
             x0 = controls(j-1, 1:stateSize);
@@ -183,30 +187,53 @@ for i = 1:numFiles
             elseif model == 3
                 [segmentX, segmentY, segmentZ] = propQuad(x0, sample, STEP_SIZE, stateSize, sampleSize);
             end
+            
             plot3(gather(segmentX), gather(segmentY), gather(segmentZ), 'Color', 'g', 'LineWidth', 1);
             plot3(gather(controls(j, 1)), gather(controls(j, 2)), gather(controls(j, 3)), 'o', 'Color', gather(colors(colorIndex, :)), 'MarkerFaceColor', gather(colors(colorIndex, :)), 'MarkerSize', 2);
         end
     end
 
+    % Set up the initial view
     view(3);
-    drawnow;
-    saveas(gcf, sprintf('figs/KGMT_Iteration_%d.jpg', i));
-    print(sprintf('figs/KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
+    axis vis3d; % Maintain aspect ratio during rotation
+    
+    % Rotate and capture frames for 360-degree view
+    for angle = 0:1:360  % Adjust step size for smoother or faster rotation
+        view(angle, 30);
+        % Capture the plot as a frame
+        frame = getframe(gcf);
+        im = frame2im(frame);
+        [imind, cm] = rgb2ind(im, 256);
+        
+        % Write to the GIF file
+        if angle == 0
+            % Create the GIF file on the first iteration
+            imwrite(imind, cm, gifFilename, 'gif', 'Loopcount', inf, 'DelayTime', 0.1);
+        else
+            % Append to the GIF file on subsequent iterations
+            imwrite(imind, cm, gifFilename, 'gif', 'WriteMode', 'append', 'DelayTime', 0.1);
+        end
+    end
 
-    view(2);
-    drawnow;
-    saveas(gcf, sprintf('figs/top_KGMT_Iteration_%d.jpg', i));
-    print(sprintf('figs/top_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
-
-    midY = (min(gather(samples(:,2))) + max(gather(samples(:,2)))) / 2;
-    midZ = (min(gather(samples(:,3))) + max(gather(samples(:,3)))) / 2;
-    campos([0, midY, max(gather(samples(:,3))) + 1]);
-    camtarget([0, midY, midZ]);
-    view([-.4, -.2, 0.5]);
-    drawnow;
-
-    saveas(gcf, sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i));
-    print(sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
+    % view(3);
+    % drawnow;
+    % saveas(gcf, sprintf('figs/KGMT_Iteration_%d.jpg', i));
+    % print(sprintf('figs/KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
+    % 
+    % view(2);
+    % drawnow;
+    % saveas(gcf, sprintf('figs/top_KGMT_Iteration_%d.jpg', i));
+    % print(sprintf('figs/top_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
+    % 
+    % midY = (min(gather(samples(:,2))) + max(gather(samples(:,2)))) / 2;
+    % midZ = (min(gather(samples(:,3))) + max(gather(samples(:,3)))) / 2;
+    % campos([0, midY, max(gather(samples(:,3))) + 1]);
+    % camtarget([0, midY, midZ]);
+    % view([-.4, -.2, 0.5]);
+    % drawnow;
+    % 
+    % saveas(gcf, sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i));
+    % print(sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
 
     close(gcf);
 end
