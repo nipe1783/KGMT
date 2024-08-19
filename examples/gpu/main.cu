@@ -6,8 +6,8 @@ int main(void)
     // --- Remove Previous Bench Data ---
     system("rm -rf Data/*");
 
-    float h_initial[SAMPLE_DIM] = {30.0, 2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-          h_goal[SAMPLE_DIM]    = {70.0, 95.0, 90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    float h_initial[SAMPLE_DIM] = {.300, .020, .020, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+          h_goal[SAMPLE_DIM]    = {.700, .950, .900, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     // float h_initial[SAMPLE_DIM] = {0.3, 0.02, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
     //       h_goal[SAMPLE_DIM]    = {0.7, .95, .9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     KGMT kgmt;
@@ -16,7 +16,7 @@ int main(void)
     float* d_obstacles;
 
     // --- Load Workspace Obstacles ---
-    std::vector<float> obstacles = readObstaclesFromCSV("../include/config/obstacles/quadTrees/obstacles.csv", numObstacles, W_DIM);
+    std::vector<float> obstacles = readObstaclesFromCSV("../include/config/obstacles/pillars/obstacles.csv", numObstacles, W_DIM);
 
     // --- Transfer Obstacles to device ---
     cudaMalloc(&d_obstacles, numObstacles * 2 * W_DIM * sizeof(float));
