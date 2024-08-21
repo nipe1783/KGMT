@@ -303,7 +303,7 @@ void OMPL_Planner::planRRT(const float* initial, const float* goal, float* obsta
     // --- Solving Problem ---
     auto start = std::chrono::high_resolution_clock::now();
 
-    ob::PlannerStatus solved = ss->solve(30.0);
+    ob::PlannerStatus solved = ss->solve(5.0);
 
     auto end                              = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -346,7 +346,7 @@ void OMPL_Planner::planPDST(const float* initial, const float* goal, float* obst
     // --- Solving Problem ---
     auto start = std::chrono::high_resolution_clock::now();
 
-    ob::PlannerStatus solved = ss->solve(30.0);
+    ob::PlannerStatus solved = ss->solve(5.0);
 
     auto end                              = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -389,7 +389,7 @@ void OMPL_Planner::planEST(const float* initial, const float* goal, float* obsta
     // --- Solving Problem ---
     auto start = std::chrono::high_resolution_clock::now();
 
-    ob::PlannerStatus solved = ss->solve(30.0);
+    ob::PlannerStatus solved = ss->solve(5.0);
 
     auto end                              = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -449,7 +449,7 @@ void OMPL_Planner::planParallelRRT(const float* initial, const float* goal, floa
             // --- Solving Problem ---
             auto start = std::chrono::high_resolution_clock::now();
 
-            ompl::base::PlannerStatus solved = pp.solve(30.0, false);
+            ompl::base::PlannerStatus solved = pp.solve(5.0, false);
 
             auto end                              = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> elapsed = end - start;
@@ -521,7 +521,7 @@ void OMPL_Planner::planParallelEST(const float* initial, const float* goal, floa
             // --- Solving Problem ---
             auto start = std::chrono::high_resolution_clock::now();
 
-            ompl::base::PlannerStatus solved = pp.solve(30.0, false);
+            ompl::base::PlannerStatus solved = pp.solve(5.0, false);
 
             auto end                              = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> elapsed = end - start;
@@ -592,7 +592,7 @@ void OMPL_Planner::planParallelPDST(const float* initial, const float* goal, flo
             // --- Solving Problem ---
             auto start = std::chrono::high_resolution_clock::now();
 
-            ompl::base::PlannerStatus solved = pp.solve(30.0, false);
+            ompl::base::PlannerStatus solved = pp.solve(5.0, false);
 
             auto end                              = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> elapsed = end - start;
