@@ -20,7 +20,7 @@ int main(void)
     cudaMemcpy(d_obstacles, obstacles.data(), numObstacles * 2 * W_DIM * sizeof(float), cudaMemcpyHostToDevice);
 
     // --- Execute planner N times ---
-    int N = 50;
+    int N = 200;
     for(int i = 0; i < N; i++)
         {
             // --- Execute planner ---

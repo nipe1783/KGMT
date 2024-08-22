@@ -5,8 +5,8 @@ int main(void)
     // --- Remove Previous Bench Data ---
     system("rm -rf Data/*");
 
-    // float h_initial[SAMPLE_DIM] = {30.0, 2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-    //       h_goal[SAMPLE_DIM]    = {70.0, 95.0, 90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    // float h_initial[SAMPLE_DIM] = {1.0, 8, 5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+    //       h_goal[SAMPLE_DIM]    = {80, 95.0, 90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     float h_initial[SAMPLE_DIM] = {.100, .80, .05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
           h_goal[SAMPLE_DIM]    = {.800, .950, .900, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     KGMT kgmt;
@@ -22,7 +22,7 @@ int main(void)
     cudaMemcpy(d_obstacles, obstacles.data(), numObstacles * 2 * W_DIM * sizeof(float), cudaMemcpyHostToDevice);
 
     // --- Execute planner N times ---
-    int N = 500;
+    int N = 30;
     for(int i = 0; i < N; i++)
         {
             // --- Execute planner ---

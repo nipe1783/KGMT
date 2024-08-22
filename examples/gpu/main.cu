@@ -8,8 +8,8 @@ int main(void)
 
     float h_initial[SAMPLE_DIM] = {.100, .80, .05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
           h_goal[SAMPLE_DIM]    = {.800, .950, .900, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    // float h_initial[SAMPLE_DIM] = {0.3, 0.02, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-    //       h_goal[SAMPLE_DIM]    = {0.7, .95, .9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    // float h_initial[SAMPLE_DIM] = {1.0, 8, 5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+    //       h_goal[SAMPLE_DIM]    = {80, 95.0, 90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     KGMT kgmt;
 
     int numObstacles;

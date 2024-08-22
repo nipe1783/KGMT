@@ -1,5 +1,6 @@
 #include "cpu/planners/OMPL_Planner.h"
 #include <iostream>
+#include <filesystem>
 
 std::vector<float> readObstaclesFromCSV_CPU(const std::string& filename, int& numObstacles, int workspaceDim)
 {
@@ -34,20 +35,65 @@ int main(void)
     // --- Remove Previous Bench Data ---
     system("rm -rf Data/*");
 
-    float h_initial[SAMPLE_DIM] = {.100, .80, .05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-          h_goal[SAMPLE_DIM]    = {.800, .950, .900, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    // float h_initial[SAMPLE_DIM] = {.100, .080, .05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+    //       h_goal[SAMPLE_DIM]    = {.800, .950, .900, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    float h_initial[SAMPLE_DIM] = {1.0, 8, 5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+          h_goal[SAMPLE_DIM]    = {80, 95.0, 90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     int numObstacles;
-    std::vector<float> obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/clutter/obstacles.csv", numObstacles, W_DIM);
+    std::vector<float> obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/quadTrees/obstacles.csv", numObstacles, W_DIM);
 
     OMPL_Planner rrt;
-    // --- Execute planner N times ---
-    int N = 1000;
+    int N = 30;
+
+    // --- RRT ---
     for(int i = 0; i < N; i++)
         {
-            // --- Execute planner ---
-            rrt.planParallelRRT(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
+            rrt.planParallelRRT(h_initial, h_goal, obstacles.data(), numObstacles, 0.01);
         }
+
+    std::string sourceDir = "/home/nicolas/dev/research/KGMT/build/Data";
+    std::string targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/12DQuad/trees";
+
+    if(!std::filesystem::exists(targetDir))
+        {
+            std::filesystem::create_directories(targetDir);
+        }
+
+    system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
+    std::filesystem::create_directories(sourceDir);
+
+    // --- EST ---
+    for(int i = 0; i < N; i++)
+        {
+            rrt.planParallelEST(h_initial, h_goal, obstacles.data(), numObstacles, 0.01);
+        }
+
+    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/estParallel/12DQuad/trees";
+
+    if(!std::filesystem::exists(targetDir))
+        {
+            std::filesystem::create_directories(targetDir);
+        }
+
+    system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
+    std::filesystem::create_directories(sourceDir);
+
+    // --- PDST ---
+    for(int i = 0; i < N; i++)
+        {
+            rrt.planParallelPDST(h_initial, h_goal, obstacles.data(), numObstacles, 0.01);
+        }
+
+    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/12DQuad/trees";
+
+    if(!std::filesystem::exists(targetDir))
+        {
+            std::filesystem::create_directories(targetDir);
+        }
+
+    system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
+    std::filesystem::create_directories(sourceDir);
 
     return 0;
 }

@@ -4,19 +4,19 @@ clear all
 
 % Parameters
 numFiles = 1;
-radius = .05;
+radius = 5;
 N = 8;
 n = 4;
-sampleSize = 10;
-stateSize = 6;
-controlSize = 3;
-xGoal = [.80, .95, .90];
+sampleSize = 17;
+stateSize = 12;
+controlSize = 4;
+xGoal = [80, 95, 90];
 alpha = .7;
-STEP_SIZE = .1;
-model = 1;
+STEP_SIZE = .2;
+model = 3;
 
 % Obstacle file path
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/house/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/quadTrees/obstacles.csv';
 obstacles = gpuArray(readmatrix(obstacleFilePath));
 
 treeSizePath = "/home/nicolas/dev/research/KGMT/build/Data/TreeSize/TreeSize0/treeSize.csv";
@@ -40,7 +40,7 @@ samples = gpuArray(readmatrix(sampleFilePath));
 
 controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathToGoal/ControlPathToGoal0/controlPathToGoal.csv';
 controls = gpuArray(flipud(readmatrix(controlPath)));
-controls = [samples(1,1), samples(1,2), samples(1,3), samples(1,4), samples(1,5), samples(1,6), 0, 0, 0, 0; controls];
+controls = [samples(1,1), samples(1,2), samples(1,3), samples(1,4), samples(1,5), samples(1,6), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0; controls];
 
 plot3(gather(samples(1,1)), gather(samples(1,2)), gather(samples(1,3)), 'ko', 'MarkerFaceColor', 'b', 'MarkerSize', 10);
 

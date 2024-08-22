@@ -7,26 +7,26 @@ titleSize = 10;
 algorithmSize = 9;
 figureSize = [100, 100, 1000, 1000];
 
-%% Dubins Airplane:
+%% FlyingUni:
 
 % -- File Paths --
 kgmtExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmt/DubinsAirplane/executionTime.csv';
 kgmtExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmt/DubinsAirplane/Data/ExpandedNodes/';
 kgmtTreeSizePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmt/DubinsAirplane/Data/TreeSize/';
 
-kgmtStateGridExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtStateGrid/DubinsAirplane/executionTime.csv';
+kgmtStateGridExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtStateGrid/FlyingUni/house/executionTime.csv';
 kgmtStateGridExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtStateGrid/DubinsAirplane/Data/ExpandedNodes/';
 kgmtStateGridTreeSizePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtStateGrid/DubinsAirplane/Data/TreeSize/';
 
-rrtParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/DubinsAirplane/Data/ExecutionTime/executionTime.csv';
+rrtParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/FlyingUni/house/Data/ExecutionTime/executionTime.csv';
 rrtParallelTreeSize = '/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/DubinsAirplane/Data/Vertices/vertices.csv';
 rrtParallelExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/DubinsAirplane/Data/Iterations/iterations.csv';
 
-estParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/estParallel/DubinsAirplane/Data/ExecutionTime/executionTime.csv';
+estParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/estParallel/FlyingUni/house/Data/ExecutionTime/executionTime.csv';
 estParallelExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/estParallel/DubinsAirplane/Data/Iterations/iterations.csv';
 estParallelTreeSize = '/home/nicolas/dev/research/KGMT/benchmarking/estParallel/DubinsAirplane/Data/Vertices/vertices.csv';
 
-pdstParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/DubinsAirplane/Data/ExecutionTime/executionTime.csv';
+pdstParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/FlyingUni/house/Data/ExecutionTime/executionTime.csv';
 pdstParallelExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/DubinsAirplane/Data/Iterations/iterations.csv';
 pdstParallelTreeSize = '/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/DubinsAirplane/Data/Vertices/vertices.csv';
 
@@ -78,102 +78,125 @@ function plotBenchmarkResultsDA(kgmtExecutionTime, kgmtStateGridExecutionTime, r
                               kgmtExpandedNodes, kgmtStateGridExpandedNodes, rrtParallelExpandedNodes, estParallelExpandedNodes, pdstParallelExpandedNodes, ...
                               kgmtTreeSize, kgmtStateGridTreeSize, rrtParallelTreeSize, estParallelTreeSize, pdstParallelTreeSize, dynamics, ...
                               titleSize, algorithmSize, figureSize, output_dir)
-
+    
     %% Execution Time
     kgmt_mean = mean(kgmtExecutionTime);
     kgmt_std = std(kgmtExecutionTime);
     kgmt_min = min(kgmtExecutionTime);
     kgmt_max = max(kgmtExecutionTime);
-
+    kgmt_success = sum(kgmtExecutionTime < 30000) / length(kgmtExecutionTime) * 100;
+    
     kgmtStateGrid_mean = mean(kgmtStateGridExecutionTime);
     kgmtStateGrid_std = std(kgmtStateGridExecutionTime);
     kgmtStateGrid_min = min(kgmtStateGridExecutionTime);
     kgmtStateGrid_max = max(kgmtStateGridExecutionTime);
-
+    kgmtStateGrid_success = sum(kgmtStateGridExecutionTime < 30000) / length(kgmtStateGridExecutionTime) * 100;
+    
     rrtParallel_mean = mean(rrtParallelExecutionTime);
     rrtParallel_std = std(rrtParallelExecutionTime);
     rrtParallel_min = min(rrtParallelExecutionTime);
     rrtParallel_max = max(rrtParallelExecutionTime);
-
+    rrtParallel_success = sum(rrtParallelExecutionTime < 30000) / length(rrtParallelExecutionTime) * 100;
+    rrtParallel_ratio = rrtParallel_mean / kgmtStateGrid_mean;
+    
     estParallel_mean = mean(estParallelExecutionTime);
     estParallel_std = std(estParallelExecutionTime);
     estParallel_min = min(estParallelExecutionTime);
     estParallel_max = max(estParallelExecutionTime);
-
+    estParallel_success = sum(estParallelExecutionTime < 30000) / length(estParallelExecutionTime) * 100;
+    estParallel_ratio = estParallel_mean / kgmtStateGrid_mean;
+    
     pdstParallel_mean = mean(pdstParallelExecutionTime);
     pdstParallel_std = std(pdstParallelExecutionTime);
     pdstParallel_min = min(pdstParallelExecutionTime);
     pdstParallel_max = max(pdstParallelExecutionTime);
-
+    pdstParallel_success = sum(pdstParallelExecutionTime < 30000) / length(pdstParallelExecutionTime) * 100;
+    pdstParallel_ratio = pdstParallel_mean / kgmtStateGrid_mean;
+    
+    %% Print Execution Times, Success Percentages, and Ratios
     fprintf('/* KGMT Execution Time */\n');
     fprintf('Mean: %.2f ms\n', kgmt_mean);
     fprintf('Standard Deviation: %.2f ms\n', kgmt_std);
     fprintf('Minimum: %.2f ms\n', kgmt_min);
     fprintf('Maximum: %.2f ms\n', kgmt_max);
+    fprintf('Success Percentage: %.2f%%\n', kgmt_success);
     fprintf('/***************************/\n\n');
-
+    
     fprintf('/* KGMT State Grid Execution Time */\n');
     fprintf('Mean: %.2f ms\n', kgmtStateGrid_mean);
     fprintf('Standard Deviation: %.2f ms\n', kgmtStateGrid_std);
     fprintf('Minimum: %.2f ms\n', kgmtStateGrid_min);
     fprintf('Maximum: %.2f ms\n', kgmtStateGrid_max);
+    fprintf('Success Percentage: %.2f%%\n', kgmtStateGrid_success);
+    fprintf('/***************************/\n\n');
+    
+    fprintf('/* RRT-Parallel Execution Time */\n');
+    fprintf('Mean: %.2f ms\n', rrtParallel_mean);
+    fprintf('Standard Deviation: %.2f ms\n', rrtParallel_std);
+    fprintf('Minimum: %.2f ms\n', rrtParallel_min);
+    fprintf('Maximum: %.2f ms\n', rrtParallel_max);
+    fprintf('Success Percentage: %.2f%%\n', rrtParallel_success);
+    fprintf('Ratio (Mean Time / KGMT State Grid Mean Time): %.2f\n', rrtParallel_ratio);
+    fprintf('/***************************/\n\n');
+    
+    fprintf('/* EST-Parallel Execution Time */\n');
+    fprintf('Mean: %.2f ms\n', estParallel_mean);
+    fprintf('Standard Deviation: %.2f ms\n', estParallel_std);
+    fprintf('Minimum: %.2f ms\n', estParallel_min);
+    fprintf('Maximum: %.2f ms\n', estParallel_max);
+    fprintf('Success Percentage: %.2f%%\n', estParallel_success);
+    fprintf('Ratio (Mean Time / KGMT State Grid Mean Time): %.2f\n', estParallel_ratio);
+    fprintf('/***************************/\n\n');
+    
+    fprintf('/* PDST-Parallel Execution Time */\n');
+    fprintf('Mean: %.2f ms\n', pdstParallel_mean);
+    fprintf('Standard Deviation: %.2f ms\n', pdstParallel_std);
+    fprintf('Minimum: %.2f ms\n', pdstParallel_min);
+    fprintf('Maximum: %.2f ms\n', pdstParallel_max);
+    fprintf('Success Percentage: %.2f%%\n', pdstParallel_success);
+    fprintf('Ratio (Mean Time / KGMT State Grid Mean Time): %.2f\n', pdstParallel_ratio);
     fprintf('/***************************/\n\n');
 
-    data = [kgmtExecutionTime; kgmtStateGridExecutionTime];
-    group = [ones(length(kgmtExecutionTime), 1); 2 * ones(length(kgmtStateGridExecutionTime), 1)];
 
-    figure;
-    b = boxchart(group, data);
-    b.JitterOutliers = 'on';
-    b.MarkerStyle = '.';
 
-    title(sprintf('Execution Time (KGMT vs KGMT State Grid) - %s', dynamics), 'FontSize', titleSize, 'FontWeight', 'Bold');
-    ylabel('Execution Time (ms)', 'FontSize', 14, 'FontWeight', 'Bold');
-    xticks([1, 2]);
-    xticklabels({'KGMT', 'KGMT State Grid'});
-    set(gca, 'FontSize', algorithmSize);
-    set(gcf, 'Position', figureSize);
 
-    saveas(gcf, fullfile(output_dir, 'ExecutionTime_KGMT_vs_KGMTStateGrid.jpg'));
-    print(fullfile(output_dir, 'ExecutionTime_KGMT_vs_KGMTStateGrid.jpg'), '-djpeg', '-r300');
-
-    %% Nodes Expanded
-    data = [kgmtExpandedNodes; kgmtStateGridExpandedNodes];
-    group = [ones(length(kgmtExpandedNodes), 1); 2 * ones(length(kgmtStateGridExpandedNodes), 1)];
-
-    figure;
-    b = boxchart(group, data);
-    b.JitterOutliers = 'on';
-    b.MarkerStyle = '.';
-
-    title(sprintf('Number Of Nodes Expanded (KGMT vs KGMT State Grid) - %s', dynamics), 'FontSize', titleSize, 'FontWeight', 'Bold');
-    ylabel('Number Of Expanded Nodes', 'FontSize', 14, 'FontWeight', 'Bold');
-    xticks([1, 2]);
-    xticklabels({'KGMT', 'KGMT State Grid'});
-    set(gca, 'FontSize', algorithmSize);
-    set(gcf, 'Position', figureSize);
-
-    saveas(gcf, fullfile(output_dir, 'NodesExpanded_KGMT_vs_KGMTStateGrid.jpg'));
-    print(fullfile(output_dir, 'NodesExpanded_KGMT_vs_KGMTStateGrid.jpg'), '-djpeg', '-r300');
-
-    %% Tree Size
-    data = [kgmtTreeSize; kgmtStateGridTreeSize];
-    group = [ones(length(kgmtTreeSize), 1); 2 * ones(length(kgmtStateGridTreeSize), 1)];
-
-    figure;
-    b = boxchart(group, data);
-    b.JitterOutliers = 'on';
-    b.MarkerStyle = '.';
-
-    title(sprintf('Tree Size (KGMT vs KGMT State Grid) - %s', dynamics), 'FontSize', titleSize, 'FontWeight', 'Bold');
-    ylabel('Number Of Nodes In Tree', 'FontSize', 14, 'FontWeight', 'Bold');
-    xticks([1, 2]);
-    xticklabels({'KGMT', 'KGMT State Grid'});
-    set(gca, 'FontSize', algorithmSize);
-    set(gcf, 'Position', figureSize);
-
-    saveas(gcf, fullfile(output_dir, 'TreeSize_KGMT_vs_KGMTStateGrid.jpg'));
-    print(fullfile(output_dir, 'TreeSize_KGMT_vs_KGMTStateGrid.jpg'), '-djpeg', '-r300');
+    % %% Nodes Expanded
+    % data = [kgmtExpandedNodes; kgmtStateGridExpandedNodes];
+    % group = [ones(length(kgmtExpandedNodes), 1); 2 * ones(length(kgmtStateGridExpandedNodes), 1)];
+    % 
+    % figure;
+    % b = boxchart(group, data);
+    % b.JitterOutliers = 'on';
+    % b.MarkerStyle = '.';
+    % 
+    % title(sprintf('Number Of Nodes Expanded (KGMT vs KGMT State Grid) - %s', dynamics), 'FontSize', titleSize, 'FontWeight', 'Bold');
+    % ylabel('Number Of Expanded Nodes', 'FontSize', 14, 'FontWeight', 'Bold');
+    % xticks([1, 2]);
+    % xticklabels({'KGMT', 'KGMT State Grid'});
+    % set(gca, 'FontSize', algorithmSize);
+    % set(gcf, 'Position', figureSize);
+    % 
+    % saveas(gcf, fullfile(output_dir, 'NodesExpanded_KGMT_vs_KGMTStateGrid.jpg'));
+    % print(fullfile(output_dir, 'NodesExpanded_KGMT_vs_KGMTStateGrid.jpg'), '-djpeg', '-r300');
+    % 
+    % %% Tree Size
+    % data = [kgmtTreeSize; kgmtStateGridTreeSize];
+    % group = [ones(length(kgmtTreeSize), 1); 2 * ones(length(kgmtStateGridTreeSize), 1)];
+    % 
+    % figure;
+    % b = boxchart(group, data);
+    % b.JitterOutliers = 'on';
+    % b.MarkerStyle = '.';
+    % 
+    % title(sprintf('Tree Size (KGMT vs KGMT State Grid) - %s', dynamics), 'FontSize', titleSize, 'FontWeight', 'Bold');
+    % ylabel('Number Of Nodes In Tree', 'FontSize', 14, 'FontWeight', 'Bold');
+    % xticks([1, 2]);
+    % xticklabels({'KGMT', 'KGMT State Grid'});
+    % set(gca, 'FontSize', algorithmSize);
+    % set(gcf, 'Position', figureSize);
+    % 
+    % saveas(gcf, fullfile(output_dir, 'TreeSize_KGMT_vs_KGMTStateGrid.jpg'));
+    % print(fullfile(output_dir, 'TreeSize_KGMT_vs_KGMTStateGrid.jpg'), '-djpeg', '-r300');
 
     %% Full Comparison (Original Code)
     data = [kgmtExecutionTime; kgmtStateGridExecutionTime; rrtParallelExecutionTime; estParallelExecutionTime; pdstParallelExecutionTime];
@@ -194,42 +217,42 @@ function plotBenchmarkResultsDA(kgmtExecutionTime, kgmtStateGridExecutionTime, r
     saveas(gcf, fullfile(output_dir, 'ExecutionTime_Comparison.jpg'));
     print(fullfile(output_dir, 'ExecutionTime_Comparison.jpg'), '-djpeg', '-r300');
 
-    %% Nodes Expanded (Original Code)
-    data = [kgmtExpandedNodes; kgmtStateGridExpandedNodes; rrtParallelExpandedNodes; estParallelExpandedNodes; pdstParallelExpandedNodes];
-    group = [ones(length(kgmtExpandedNodes), 1); 2 * ones(length(kgmtStateGridExpandedNodes), 1); 3 * ones(length(rrtParallelExpandedNodes), 1); 4 * ones(length(estParallelExpandedNodes), 1); 5 * ones(length(pdstParallelExpandedNodes), 1)];
-
-    figure;
-    b = boxchart(group, data);
-    b.JitterOutliers = 'on';
-    b.MarkerStyle = '.';
-
-    title(sprintf('Number Of Nodes Expanded (%s)', dynamics), 'FontSize', titleSize, 'FontWeight', 'Bold');
-    ylabel('Number Of Expanded Nodes', 'FontSize', 14, 'FontWeight', 'Bold');
-    xticks([1, 2, 3, 4, 5]);
-    xticklabels({'KGMT', 'KGMT State Grid', 'RRT (CPU Parallelization)', 'EST (CPU Parallelization)', 'PDST (CPU Parallelization)'});
-    set(gca, 'FontSize', algorithmSize);
-    set(gcf, 'Position', figureSize);
-
-    saveas(gcf, fullfile(output_dir, 'NodesExpanded_Comparison.jpg'));
-    print(fullfile(output_dir, 'NodesExpanded_Comparison.jpg'), '-djpeg', '-r300');
-
-    %% Tree Size (Original Code)
-    data = [kgmtTreeSize; kgmtStateGridTreeSize; rrtParallelTreeSize; estParallelTreeSize; pdstParallelTreeSize];
-    group = [ones(length(kgmtTreeSize), 1); 2 * ones(length(kgmtStateGridTreeSize), 1); 3 * ones(length(rrtParallelTreeSize), 1); 4 * ones(length(estParallelTreeSize), 1); 5 * ones(length(pdstParallelTreeSize), 1)];
-
-    figure;
-    b = boxchart(group, data);
-    b.JitterOutliers = 'on';
-    b.MarkerStyle = '.';
-
-    title(sprintf('Tree Size (%s)', dynamics), 'FontSize', titleSize, 'FontWeight', 'Bold');
-    ylabel('Number Of Nodes In Tree', 'FontSize', 14, 'FontWeight', 'Bold');
-    xticks([1, 2, 3, 4, 5]);
-    xticklabels({'KGMT', 'KGMT State Grid', 'RRT (CPU Parallelization)', 'EST (CPU Parallelization)', 'PDST (CPU Parallelization)'});
-    set(gca, 'FontSize', algorithmSize);
-    set(gcf, 'Position', figureSize);
-
-    saveas(gcf, fullfile(output_dir, 'TreeSize_Comparison.jpg'));
-    print(fullfile(output_dir, 'TreeSize_Comparison.jpg'), '-djpeg', '-r300');
+    % %% Nodes Expanded (Original Code)
+    % data = [kgmtExpandedNodes; kgmtStateGridExpandedNodes; rrtParallelExpandedNodes; estParallelExpandedNodes; pdstParallelExpandedNodes];
+    % group = [ones(length(kgmtExpandedNodes), 1); 2 * ones(length(kgmtStateGridExpandedNodes), 1); 3 * ones(length(rrtParallelExpandedNodes), 1); 4 * ones(length(estParallelExpandedNodes), 1); 5 * ones(length(pdstParallelExpandedNodes), 1)];
+    % 
+    % figure;
+    % b = boxchart(group, data);
+    % b.JitterOutliers = 'on';
+    % b.MarkerStyle = '.';
+    % 
+    % title(sprintf('Number Of Nodes Expanded (%s)', dynamics), 'FontSize', titleSize, 'FontWeight', 'Bold');
+    % ylabel('Number Of Expanded Nodes', 'FontSize', 14, 'FontWeight', 'Bold');
+    % xticks([1, 2, 3, 4, 5]);
+    % xticklabels({'KGMT', 'KGMT State Grid', 'RRT (CPU Parallelization)', 'EST (CPU Parallelization)', 'PDST (CPU Parallelization)'});
+    % set(gca, 'FontSize', algorithmSize);
+    % set(gcf, 'Position', figureSize);
+    % 
+    % saveas(gcf, fullfile(output_dir, 'NodesExpanded_Comparison.jpg'));
+    % print(fullfile(output_dir, 'NodesExpanded_Comparison.jpg'), '-djpeg', '-r300');
+    % 
+    % %% Tree Size (Original Code)
+    % data = [kgmtTreeSize; kgmtStateGridTreeSize; rrtParallelTreeSize; estParallelTreeSize; pdstParallelTreeSize];
+    % group = [ones(length(kgmtTreeSize), 1); 2 * ones(length(kgmtStateGridTreeSize), 1); 3 * ones(length(rrtParallelTreeSize), 1); 4 * ones(length(estParallelTreeSize), 1); 5 * ones(length(pdstParallelTreeSize), 1)];
+    % 
+    % figure;
+    % b = boxchart(group, data);
+    % b.JitterOutliers = 'on';
+    % b.MarkerStyle = '.';
+    % 
+    % title(sprintf('Tree Size (%s)', dynamics), 'FontSize', titleSize, 'FontWeight', 'Bold');
+    % ylabel('Number Of Nodes In Tree', 'FontSize', 14, 'FontWeight', 'Bold');
+    % xticks([1, 2, 3, 4, 5]);
+    % xticklabels({'KGMT', 'KGMT State Grid', 'RRT (CPU Parallelization)', 'EST (CPU Parallelization)', 'PDST (CPU Parallelization)'});
+    % set(gca, 'FontSize', algorithmSize);
+    % set(gcf, 'Position', figureSize);
+    % 
+    % saveas(gcf, fullfile(output_dir, 'TreeSize_Comparison.jpg'));
+    % print(fullfile(output_dir, 'TreeSize_Comparison.jpg'), '-djpeg', '-r300');
 end
 
