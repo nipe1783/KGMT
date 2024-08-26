@@ -4,18 +4,18 @@ clear all
 
 % Parameters
 numFiles = 1;
-radius = .05;
+radius = 5;
 N = 8;
 n = 4;
 sampleSize = 10;
 stateSize = 6;
 controlSize = 3;
-xGoal = [.80, .95, .90];
+xGoal = [80, 95, 90];
 alphaValue = 0.7;
 STEP_SIZE = .1;
 
 % Obstacle file path
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/house/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/quadNarrowPassage/obstacles.csv';
 obstacles = readmatrix(obstacleFilePath);
 
 for i = 1:numFiles

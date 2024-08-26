@@ -480,7 +480,7 @@ void OMPL_Planner::planRRT(const float* initial, const float* goal, float* obsta
     // --- Solving Problem ---
     auto start = std::chrono::high_resolution_clock::now();
 
-    ob::PlannerStatus solved = ss->solve(700.0);
+    ob::PlannerStatus solved = ss->solve(100.0);
 
     auto end                              = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -523,7 +523,7 @@ void OMPL_Planner::planPDST(const float* initial, const float* goal, float* obst
     // --- Solving Problem ---
     auto start = std::chrono::high_resolution_clock::now();
 
-    ob::PlannerStatus solved = ss->solve(700.0);
+    ob::PlannerStatus solved = ss->solve(100.0);
 
     auto end                              = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -539,6 +539,7 @@ void OMPL_Planner::planPDST(const float* initial, const float* goal, float* obst
             ompl::base::PlannerData data(ss->getSpaceInformation());
             planner->getPlannerData(data);
             writeNumVerticesToCSV(data.numVertices());
+            planner->clear();
         }
     else
         {
@@ -566,7 +567,7 @@ void OMPL_Planner::planEST(const float* initial, const float* goal, float* obsta
     // --- Solving Problem ---
     auto start = std::chrono::high_resolution_clock::now();
 
-    ob::PlannerStatus solved = ss->solve(700.0);
+    ob::PlannerStatus solved = ss->solve(100.0);
 
     auto end                              = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -626,7 +627,7 @@ void OMPL_Planner::planParallelRRT(const float* initial, const float* goal, floa
             // --- Solving Problem ---
             auto start = std::chrono::high_resolution_clock::now();
 
-            ompl::base::PlannerStatus solved = pp.solve(700.0, false);
+            ompl::base::PlannerStatus solved = pp.solve(100.0, false);
 
             auto end                              = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> elapsed = end - start;
@@ -645,6 +646,7 @@ void OMPL_Planner::planParallelRRT(const float* initial, const float* goal, floa
                             planners[i]->getPlannerData(data);
                             totalIterations += planners[i]->iterations_;
                             numVertices += data.numVertices();
+                            planners[i]->clear();
                         }
                     writeIterationsToCSV(totalIterations);
                     writeNumVerticesToCSV(numVertices);
@@ -692,13 +694,13 @@ void OMPL_Planner::planParallelEST(const float* initial, const float* goal, floa
                     pp.addPlanner(planner);
                     planners.push_back(planner);
                 }
-            ss->getSpaceInformation()->setStateValidityCheckingResolution(0.005);
+            ss->getSpaceInformation()->setStateValidityCheckingResolution(0.0005);
             ss->setup();
 
             // --- Solving Problem ---
             auto start = std::chrono::high_resolution_clock::now();
 
-            ompl::base::PlannerStatus solved = pp.solve(700.0, false);
+            ompl::base::PlannerStatus solved = pp.solve(100.0, false);
 
             auto end                              = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> elapsed = end - start;
@@ -717,6 +719,7 @@ void OMPL_Planner::planParallelEST(const float* initial, const float* goal, floa
                             planners[i]->getPlannerData(data);
                             totalIterations += planners[i]->iterations_;
                             numVertices += data.numVertices();
+                            planners[i]->clear();
                         }
                     writeIterationsToCSV(totalIterations);
                     writeNumVerticesToCSV(numVertices);
@@ -770,7 +773,7 @@ void OMPL_Planner::planParallelPDST(const float* initial, const float* goal, flo
             // --- Solving Problem ---
             auto start = std::chrono::high_resolution_clock::now();
 
-            ompl::base::PlannerStatus solved = pp.solve(700.0, false);
+            ompl::base::PlannerStatus solved = pp.solve(100.0, false);
 
             auto end                              = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> elapsed = end - start;
@@ -789,6 +792,7 @@ void OMPL_Planner::planParallelPDST(const float* initial, const float* goal, flo
                             planners[i]->getPlannerData(data);
                             totalIterations += planners[i]->iterations_;
                             numVertices += data.numVertices();
+                            planners[i]->clear();
                         }
                     writeIterationsToCSV(totalIterations);
                     writeNumVerticesToCSV(numVertices);
