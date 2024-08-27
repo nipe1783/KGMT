@@ -34,15 +34,18 @@ int main(void)
     // --- Remove Previous Bench Data ---
     system("rm -rf Data/*");
 
-    float h_initial[SAMPLE_DIM] = {0.3, 0.02, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-          h_goal[SAMPLE_DIM]    = {.7, .95, .9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    // float h_initial[SAMPLE_DIM] = {.100, .080, .05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+    //       h_goal[SAMPLE_DIM]    = {.800, .950, .900, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    float h_initial[SAMPLE_DIM] = {10.0, 8, 5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+          h_goal[SAMPLE_DIM]    = {80, 95.0, 90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     int numObstacles = 1;
     float* d_obstacles;
-    std::vector<float> obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/pillars/obstacles.csv", numObstacles, DIM);
+    std::vector<float> obstacles =
+      readObstaclesFromCSV_CPU("../include/config/obstacles/quadNarrowPassage/obstacles.csv", numObstacles, W_DIM);
 
     OMPL_Planner rrt;
-    rrt.planParallelRRT(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
+    rrt.planParallelEST(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
 
     return 0;
 }

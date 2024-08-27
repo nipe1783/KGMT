@@ -3,20 +3,20 @@ clc
 clear all
 
 % Parameters
-numFiles = 1;
+numFiles = 9;
 radius = .05;
 N = 8;
 n = 4;
 sampleSize = 10;
 stateSize = 6;
 controlSize = 3;
-xGoal = [.80, .95, .90];
+xGoal = [.70, .95, .90];
 alpha = .7;
-STEP_SIZE = .2;
-model = 3;
+STEP_SIZE = .1;
+model = 2;
 
 % Obstacle file path
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/house/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/trees/obstacles.csv';
 obstacles = gpuArray(readmatrix(obstacleFilePath));
 
 treeSizePath = "/home/nicolas/dev/research/KGMT/build/Data/TreeSize/TreeSize0/treeSize.csv";
@@ -40,7 +40,7 @@ samples = gpuArray(readmatrix(sampleFilePath));
 
 controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathToGoal/ControlPathToGoal0/controlPathToGoal.csv';
 controls = gpuArray(flipud(readmatrix(controlPath)));
-controls = [samples(1,1), samples(1,2), samples(1,3), samples(1,4), samples(1,5), samples(1,6), 0, 0, 0, 0; controls];
+% controls = [samples(1,1), samples(1,2), samples(1,3), samples(1,4), samples(1,5), samples(1,6), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0; controls];
 
 plot3(gather(samples(1,1)), gather(samples(1,2)), gather(samples(1,3)), 'ko', 'MarkerFaceColor', 'b', 'MarkerSize', 10);
 
@@ -110,48 +110,14 @@ for i = 1:numFiles
     fig = figure('Position', [100, 100, 1000, 1000]); 
     hold on;
     axis equal;
-    axis off;
     % title(sprintf('Iteration %d', i));
 
     plot3(gather(samples(1,1)), gather(samples(1,2)), gather(samples(1,3)), 'ko', 'MarkerFaceColor', 'b', 'MarkerSize', 10);
-    
-    cubeVertices = [
-        0, 0, 0;
-        1, 0, 0;
-        1, 1, 0;
-        0, 1, 0;
-        0, 0, 1;
-        1, 0, 1;
-        1, 1, 1;
-        0, 1, 1
-    ];
-    
-    cubeEdges = [
-        1, 2;
-        2, 3;
-        3, 4;
-        4, 1;
-        5, 6;
-        6, 7;
-        7, 8;
-        8, 5;
-        1, 5;
-        2, 6;
-        3, 7;
-        4, 8
-    ];
-    
-    for k = 1:size(cubeEdges, 1)
-        plot3([cubeVertices(cubeEdges(k, 1), 1), cubeVertices(cubeEdges(k, 2), 1)], ...
-              [cubeVertices(cubeEdges(k, 1), 2), cubeVertices(cubeEdges(k, 2), 2)], ...
-              [cubeVertices(cubeEdges(k, 1), 3), cubeVertices(cubeEdges(k, 2), 3)], ...
-              'k-', 'LineWidth', .05);
-    end
 
     [X, Y, Z] = sphere(20);
     surf(radius * gather(X) + xGoal(1), radius * gather(Y) + xGoal(2), radius * gather(Z) + xGoal(3), ...
          'FaceColor', 'g', 'FaceAlpha', 0.5, 'EdgeColor', 'none');
-    
+
     for j = 1:size(obstacles, 1)
         x_min = obstacles(j, 1);
         y_min = obstacles(j, 2);
@@ -183,28 +149,28 @@ for i = 1:numFiles
     lighting phong;
 
     colorIndex = 1;
-    % for j = 2:size(parentRelations, 1)
-    %     if j > treeSizes(iteration)
-    %         colorIndex = 3;
-    %     else
-    %         colorIndex = 1;
-    %     end
-    %     if parentRelations(j) == -1
-    %         iteration = iteration + 1;
-    %         break;
-    %     end
-    %     x0 = samples((parentRelations(j) + 1), 1:stateSize);
-    %     sample = samples(j, :);
-    %     if model == 1
-    %         [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
-    %     elseif model == 2
-    %         [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
-    %     elseif model == 3
-    %         [segmentX, segmentY, segmentZ] = propQuad(x0, sample, STEP_SIZE, stateSize, sampleSize);
-    %     end
-    %     plot3(gather(segmentX), gather(segmentY), gather(segmentZ), '-.', 'Color', 'k', 'LineWidth', 0.01);
-    %     plot3(gather(samples(j, 1)), gather(samples(j, 2)), gather(samples(j, 3)), 'o', 'Color', gather(colors(colorIndex, :)), 'MarkerFaceColor', gather(colors(colorIndex, :)), 'MarkerSize', 2);
-    % end
+    for j = 2:size(parentRelations, 1)
+        if j > treeSizes(iteration)
+            colorIndex = 3;
+        else
+            colorIndex = 1;
+        end
+        if parentRelations(j) == -1
+            iteration = iteration + 1;
+            break;
+        end
+        x0 = samples((parentRelations(j) + 1), 1:stateSize);
+        sample = samples(j, :);
+        if model == 1
+            [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
+        elseif model == 2
+            [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
+        elseif model == 3
+            [segmentX, segmentY, segmentZ] = propQuad(x0, sample, STEP_SIZE, stateSize, sampleSize);
+        end
+        plot3(gather(segmentX), gather(segmentY), gather(segmentZ), '-.', 'Color', 'k', 'LineWidth', 0.01);
+        plot3(gather(samples(j, 1)), gather(samples(j, 2)), gather(samples(j, 3)), 'o', 'Color', gather(colors(colorIndex, :)), 'MarkerFaceColor', gather(colors(colorIndex, :)), 'MarkerSize', 2);
+    end
 
     % Define the filename for the GIF
     gifFilename = sprintf('figs/KGMT_Iteration_%d.gif', i);
@@ -221,55 +187,55 @@ for i = 1:numFiles
             elseif model == 3
                 [segmentX, segmentY, segmentZ] = propQuad(x0, sample, STEP_SIZE, stateSize, sampleSize);
             end
-
+            
             plot3(gather(segmentX), gather(segmentY), gather(segmentZ), 'Color', 'g', 'LineWidth', 1);
-            % plot3(gather(controls(j, 1)), gather(controls(j, 2)), gather(controls(j, 3)), 'o', 'Color', gather(colors(colorIndex, :)), 'MarkerFaceColor', gather(colors(colorIndex, :)), 'MarkerSize', 2);
+            plot3(gather(controls(j, 1)), gather(controls(j, 2)), gather(controls(j, 3)), 'o', 'Color', gather(colors(colorIndex, :)), 'MarkerFaceColor', gather(colors(colorIndex, :)), 'MarkerSize', 2);
         end
     end
 
     % Set up the initial view
-    % view(3);
-    % axis vis3d; % Maintain aspect ratio during rotation
+    view(3);
+    axis vis3d; % Maintain aspect ratio during rotation
     
     % Rotate and capture frames for 360-degree view
-    % for angle = 0:1:360  % Adjust step size for smoother or faster rotation
-    %     view(angle, 30);
-    %     % Capture the plot as a frame
-    %     frame = getframe(gcf);
-    %     im = frame2im(frame);
-    %     [imind, cm] = rgb2ind(im, 256);
+    for angle = 0:2:360  % Adjust step size for smoother or faster rotation
+        view(angle, 30);
+        % Capture the plot as a frame
+        frame = getframe(gcf);
+        im = frame2im(frame);
+        [imind, cm] = rgb2ind(im, 256);
+        
+        % Write to the GIF file
+        if angle == 0
+            % Create the GIF file on the first iteration
+            imwrite(imind, cm, gifFilename, 'gif', 'Loopcount', inf, 'DelayTime', 0.1);
+        else
+            % Append to the GIF file on subsequent iterations
+            imwrite(imind, cm, gifFilename, 'gif', 'WriteMode', 'append', 'DelayTime', 0.1);
+        end
+    end
+
+    % view(3);
+    % drawnow;
+    % saveas(gcf, sprintf('figs/KGMT_Iteration_%d.jpg', i));
+    % print(sprintf('figs/KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
     % 
-    %     % Write to the GIF file
-    %     if angle == 0
-    %         % Create the GIF file on the first iteration
-    %         imwrite(imind, cm, gifFilename, 'gif', 'Loopcount', inf, 'DelayTime', 0.1);
-    %     else
-    %         % Append to the GIF file on subsequent iterations
-    %         imwrite(imind, cm, gifFilename, 'gif', 'WriteMode', 'append', 'DelayTime', 0.1);
-    %     end
-    % end
+    % view(2);
+    % drawnow;
+    % saveas(gcf, sprintf('figs/top_KGMT_Iteration_%d.jpg', i));
+    % print(sprintf('figs/top_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
+    % 
+    % midY = (min(gather(samples(:,2))) + max(gather(samples(:,2)))) / 2;
+    % midZ = (min(gather(samples(:,3))) + max(gather(samples(:,3)))) / 2;
+    % campos([0, midY, max(gather(samples(:,3))) + 1]);
+    % camtarget([0, midY, midZ]);
+    % view([-.4, -.2, 0.5]);
+    % drawnow;
+    % 
+    % saveas(gcf, sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i));
+    % print(sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
 
-    view(3);
-    drawnow;
-    saveas(gcf, sprintf('figs/KGMT_Iteration_%d.jpg', i));
-    print(sprintf('figs/KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
-
-    view(2);
-    drawnow;
-    saveas(gcf, sprintf('figs/top_KGMT_Iteration_%d.jpg', i));
-    print(sprintf('figs/top_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
-
-    midY = (min(gather(samples(:,2))) + max(gather(samples(:,2)))) / 2;
-    midZ = (min(gather(samples(:,3))) + max(gather(samples(:,3)))) / 2;
-    campos([0, midY, max(gather(samples(:,3))) + 1]);
-    camtarget([0, midY, midZ]);
-    view([-.4, -.2, 0.5]);
-    drawnow;
-
-    saveas(gcf, sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i));
-    print(sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
-
-    % close(gcf);
+    close(gcf);
 end
 
 function [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize)
@@ -299,9 +265,9 @@ function [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_
         segmentY = [segmentY, y];
         segmentZ = [segmentZ, z];
     end
-    segmentX = [segmentX, gpuArray(sample(1))];
-    segmentY = [segmentY, gpuArray(sample(2))];
-    segmentZ = [segmentZ, gpuArray(sample(3))];
+    % segmentX = [segmentX, gpuArray(sample(1))];
+    % segmentY = [segmentY, gpuArray(sample(2))];
+    % segmentZ = [segmentZ, gpuArray(sample(3))];
 end
 
 function [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize)

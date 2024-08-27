@@ -3,6 +3,7 @@
 #include "cpu/planners/ModRRT.h"
 #include "cpu/planners/ModPDST.h"
 #include "cpu/planners/ModEST.h"
+#include "cpu/planners/ModSyclop.h"
 #include <ompl/control/SimpleSetup.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <ompl/control/spaces/RealVectorControlSpace.h>

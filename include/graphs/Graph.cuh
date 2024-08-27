@@ -37,14 +37,6 @@ private:
 };
 
 /**************************** DEVICE FUNCTIONS ****************************/
-// --- Given an x, y, z point. Returns the vertex on the graph the point belongs to ---
-__host__ __device__ int getVertex(float x, float y);
-__host__ __device__ int getVertex(float x, float y, float z);
-
-// --- Given an x, y, z point. Returns the sub vertex that the point belongs to. ---
-__host__ __device__ int getSubVertex(float x, float y, int r1);
-__host__ __device__ int getSubVertex(float x, float y, float z, int r1);
-
 __host__ __device__ int getRegion(float* coord);
 __device__ int getSubRegion(float* coord, int r1, float* minRegion);
 

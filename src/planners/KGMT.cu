@@ -3,7 +3,7 @@
 
 KGMT::KGMT()
 {
-    graph_ = Graph(WS_SIZE);
+    graph_ = Graph(W_SIZE);
 
     d_frontier_                    = thrust::device_vector<bool>(MAX_TREE_SIZE);
     d_frontierNext_                = thrust::device_vector<bool>(MAX_TREE_SIZE);
@@ -40,7 +40,11 @@ KGMT::KGMT()
 
 void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount)
 {
-    double t_kgmtStart = std::clock();
+    cudaEvent_t start, stop;
+    float milliseconds = 0;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
 
     // --- INITIALIZE KGMT ---
     thrust::fill(d_frontier_.begin(), d_frontier_.end(), false);
@@ -90,10 +94,14 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
                 }
         }
 
-    double executionTime = (std::clock() - t_kgmtStart) / (double)CLOCKS_PER_SEC;
-    writeExecutionTimeToCSV(executionTime);
-    std::cout << "KGMT execution time: " << executionTime << " seconds. Iterations: " << h_itr_ << ". Tree Size: " << h_treeSize_
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    writeExecutionTimeToCSV(milliseconds / 1000.0);
+    std::cout << "KGMT execution time: " << milliseconds / 1000.0 << " seconds. Iterations: " << h_itr_ << ". Tree Size: " << h_treeSize_
               << std::endl;
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
 }
 
 void KGMT::planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr)
@@ -214,6 +222,7 @@ __global__ void propagateFrontier_kernel1(bool* frontier, uint* activeFrontierId
 {
     if(blockIdx.x >= frontierSize) return;
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if(tid >= MAX_TREE_SIZE) return;
 
     // --- Load Frontier Sample Idx into shared memory.  ---
     __shared__ int s_x0Idx;
@@ -261,6 +270,7 @@ __global__ void propagateFrontier_kernel2(bool* frontier, uint* activeFrontierId
     int tid       = blockIdx.x * blockDim.x + threadIdx.x;
     frontier[tid] = false;
     if(tid >= frontierSize * iterations) return;
+    if(tid >= MAX_TREE_SIZE) return;
 
     int activeFrontierIdx = tid / iterations;
     int x0Idx             = activeFrontierIdxs[activeFrontierIdx];
