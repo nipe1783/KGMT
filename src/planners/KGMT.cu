@@ -40,7 +40,11 @@ KGMT::KGMT()
 
 void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount)
 {
-    double t_kgmtStart = std::clock();
+    cudaEvent_t start, stop;
+    float milliseconds = 0;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
 
     // --- INITIALIZE KGMT ---
     thrust::fill(d_frontier_.begin(), d_frontier_.end(), false);
@@ -90,10 +94,14 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
                 }
         }
 
-    double executionTime = (std::clock() - t_kgmtStart) / (double)CLOCKS_PER_SEC;
-    // writeExecutionTimeToCSV(executionTime);
-    std::cout << "KGMT execution time: " << executionTime << " seconds. Iterations: " << h_itr_ << ". Tree Size: " << h_treeSize_
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    writeExecutionTimeToCSV(milliseconds / 1000.0);
+    std::cout << "KGMT execution time: " << milliseconds / 1000.0 << " seconds. Iterations: " << h_itr_ << ". Tree Size: " << h_treeSize_
               << std::endl;
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
 }
 
 void KGMT::planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr)
