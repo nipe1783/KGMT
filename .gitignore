@@ -18,6 +18,5 @@ NSight/*
 
 
 # Benchmarking
-benchmarking/*
 !benchmarking/bench.m
 !benchmarking/benchmarking.py
