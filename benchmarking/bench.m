@@ -10,25 +10,25 @@ figureSize = [100, 100, 1000, 1000];
 %% 12DQuad:
 
 % -- File Paths --
-kgmtExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmt/DubinsAirplane/executionTime.csv';
+kgmtExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtJetson/FlyingUni/house/executionTime.csv';
 kgmtExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmt/DubinsAirplane/Data/ExpandedNodes/';
 kgmtTreeSizePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmt/DubinsAirplane/Data/TreeSize/';
 
-kgmtStateGridExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtStateGrid/12DQuad/house/executionTime.csv';
-kgmtStateGridExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtStateGrid/12DQuad/Data/ExpandedNodes/';
-kgmtStateGridTreeSizePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtStateGrid/12DQuad/Data/TreeSize/';
+kgmtStateGridExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtStateGrid/FlyingUni/house/executionTime.csv';
+kgmtStateGridExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtStateGrid/FlyingUni/Data/ExpandedNodes/';
+kgmtStateGridTreeSizePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtStateGrid/FlyingUni/Data/TreeSize/';
 
-rrtParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/12DQuad/house/Data/ExecutionTime/executionTime.csv';
-rrtParallelTreeSize = '/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/12DQuad/Data/Vertices/vertices.csv';
-rrtParallelExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/12DQuad/Data/Iterations/iterations.csv';
+rrtParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/FlyingUni/house/Data/ExecutionTime/executionTime.csv';
+rrtParallelTreeSize = '/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/FlyingUni/Data/Vertices/vertices.csv';
+rrtParallelExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/FlyingUni/Data/Iterations/iterations.csv';
 
-estParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/estParallel/12DQuad/house/Data/ExecutionTime/executionTime.csv';
-estParallelExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/estParallel/12DQuad/Data/Iterations/iterations.csv';
-estParallelTreeSize = '/home/nicolas/dev/research/KGMT/benchmarking/estParallel/12DQuad/Data/Vertices/vertices.csv';
+estParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/estParallel/FlyingUni/house/Data/ExecutionTime/executionTime.csv';
+estParallelExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/estParallel/FlyingUni/Data/Iterations/iterations.csv';
+estParallelTreeSize = '/home/nicolas/dev/research/KGMT/benchmarking/estParallel/FlyingUni/Data/Vertices/vertices.csv';
 
-pdstParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/12DQuad/house/Data/ExecutionTime/executionTime.csv';
-pdstParallelExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/12DQuad/Data/Iterations/iterations.csv';
-pdstParallelTreeSize = '/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/12DQuad/Data/Vertices/vertices.csv';
+pdstParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/FlyingUni/house/Data/ExecutionTime/executionTime.csv';
+pdstParallelExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/FlyingUni/Data/Iterations/iterations.csv';
+pdstParallelTreeSize = '/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/FlyingUni/Data/Vertices/vertices.csv';
 
 % -- Execution Time Data --
 kgmtExecutionTime = readmatrix(kgmtExecutionTimePath) * 1000;
@@ -74,46 +74,51 @@ plotBenchmarkResultsDA(kgmtExecutionTime, kgmtStateGridExecutionTime, rrtParalle
 function plotBenchmarkResultsDA(kgmtExecutionTime, kgmtStateGridExecutionTime, rrtParallelExecutionTime, estParallelExecutionTime, pdstParallelExecutionTime)
     
     %% Execution Time
-    kgmt_mean = mean(kgmtExecutionTime);
-    kgmt_std = std(kgmtExecutionTime);
-    kgmt_min = min(kgmtExecutionTime);
-    kgmt_max = max(kgmtExecutionTime);
-    kgmt_success = sum(kgmtExecutionTime < 30000) / length(kgmtExecutionTime) * 100;
     
     kgmtStateGrid_mean = mean(kgmtStateGridExecutionTime);
     kgmtStateGrid_std = std(kgmtStateGridExecutionTime);
     kgmtStateGrid_min = min(kgmtStateGridExecutionTime);
     kgmtStateGrid_max = max(kgmtStateGridExecutionTime);
-    kgmtStateGrid_success = sum(kgmtStateGridExecutionTime < 30000) / length(kgmtStateGridExecutionTime) * 100;
+    kgmtStateGrid_success = sum(kgmtStateGridExecutionTime < 60000) / length(kgmtStateGridExecutionTime) * 100;
+
+    kgmt_mean = mean(kgmtExecutionTime);
+    kgmt_std = std(kgmtExecutionTime);
+    kgmt_min = min(kgmtExecutionTime);
+    kgmt_max = max(kgmtExecutionTime);
+    kgmt_success = sum(kgmtExecutionTime < 60000) / length(kgmtExecutionTime) * 100;
+    kgmtJetson_ratio = kgmt_mean / kgmtStateGrid_mean;
     
     rrtParallel_mean = mean(rrtParallelExecutionTime);
     rrtParallel_std = std(rrtParallelExecutionTime);
     rrtParallel_min = min(rrtParallelExecutionTime);
     rrtParallel_max = max(rrtParallelExecutionTime);
-    rrtParallel_success = sum(rrtParallelExecutionTime < 30000) / length(rrtParallelExecutionTime) * 100;
+    rrtParallel_success = sum(rrtParallelExecutionTime < 60000) / length(rrtParallelExecutionTime) * 100;
     rrtParallel_ratio = rrtParallel_mean / kgmtStateGrid_mean;
     
     estParallel_mean = mean(estParallelExecutionTime);
     estParallel_std = std(estParallelExecutionTime);
     estParallel_min = min(estParallelExecutionTime);
     estParallel_max = max(estParallelExecutionTime);
-    estParallel_success = sum(estParallelExecutionTime < 30000) / length(estParallelExecutionTime) * 100;
+    estParallel_success = sum(estParallelExecutionTime < 60000) / length(estParallelExecutionTime) * 100;
     estParallel_ratio = estParallel_mean / kgmtStateGrid_mean;
     
     pdstParallel_mean = mean(pdstParallelExecutionTime);
     pdstParallel_std = std(pdstParallelExecutionTime);
     pdstParallel_min = min(pdstParallelExecutionTime);
     pdstParallel_max = max(pdstParallelExecutionTime);
-    pdstParallel_success = sum(pdstParallelExecutionTime < 100000) / length(pdstParallelExecutionTime) * 100;
+    pdstParallel_success = sum(pdstParallelExecutionTime < 60000) / length(pdstParallelExecutionTime) * 100;
     pdstParallel_ratio = pdstParallel_mean / kgmtStateGrid_mean;
+
+
     
     %% Print Execution Times, Success Percentages, and Ratios
-    fprintf('/* KGMT Execution Time */\n');
+    fprintf('/* KGMT Jetson Execution Time */\n');
     fprintf('Mean: %.2f ms\n', kgmt_mean);
     fprintf('Standard Deviation: %.2f ms\n', kgmt_std);
     fprintf('Minimum: %.2f ms\n', kgmt_min);
     fprintf('Maximum: %.2f ms\n', kgmt_max);
     fprintf('Success Percentage: %.2f%%\n', kgmt_success);
+    fprintf('Ratio (Mean Time / KGMT State Grid Mean Time): %.2f\n', kgmtJetson_ratio);
     fprintf('/***************************/\n\n');
     
     fprintf('/* KGMT State Grid Execution Time */\n');
