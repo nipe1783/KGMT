@@ -91,7 +91,7 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
         }
 
     double executionTime = (std::clock() - t_kgmtStart) / (double)CLOCKS_PER_SEC;
-    writeExecutionTimeToCSV(executionTime);
+    // writeExecutionTimeToCSV(executionTime);
     std::cout << "KGMT execution time: " << executionTime << " seconds. Iterations: " << h_itr_ << ". Tree Size: " << h_treeSize_
               << std::endl;
 }
