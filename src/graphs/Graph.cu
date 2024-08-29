@@ -53,7 +53,7 @@ void Graph::initializeRegions()
 __global__ void initializeRegions_kernel(float* minValueInRegion)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
-    if(tid >= NUM_R1_REGIONS) return;
+    if(tid >= NUM_R1_REGIONS - 1) return;
 
     int wRegion = tid % (W_R1_LENGTH * W_R1_LENGTH * W_R1_LENGTH);
     int wIndex[W_DIM];
@@ -149,7 +149,9 @@ __host__ __device__ int getRegion(float* coord)
                 }
         }
 
-    return wRegion * pow(C_R1_LENGTH, C_DIM) * pow(V_R1_LENGTH, V_DIM) + aRegion * pow(V_R1_LENGTH, V_DIM) + vRegion;
+    int region = wRegion * pow(C_R1_LENGTH, C_DIM) * pow(V_R1_LENGTH, V_DIM) + aRegion * pow(V_R1_LENGTH, V_DIM) + vRegion;
+    if(region >= NUM_R1_REGIONS) region = NUM_R1_REGIONS - 1;
+    return region;
 }
 
 __device__ int getSubRegion(float* coord, int r1, float* minRegion)

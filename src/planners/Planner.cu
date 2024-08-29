@@ -1,21 +1,24 @@
 #include "planners/Planner.cuh"
 #include "config/config.h"
 
-Planner::Planner()
+Planner::Planner(int h_desiredTreeSize)
 {
-    d_treeSamples_           = thrust::device_vector<float>(MAX_TREE_SIZE * SAMPLE_DIM);
-    d_treeSamplesParentIdxs_ = thrust::device_vector<int>(MAX_TREE_SIZE);
-    d_treeSampleCosts_       = thrust::device_vector<float>(MAX_TREE_SIZE);
+    h_desiredTreeSize_ = h_desiredTreeSize;
+    h_maxTreeSize_     = h_desiredTreeSize;
+    h_gridSize_        = iDivUp(h_maxTreeSize_, h_blockSize_);
+
+    d_treeSamples_           = thrust::device_vector<float>(h_maxTreeSize_ * SAMPLE_DIM);
+    d_treeSamplesParentIdxs_ = thrust::device_vector<int>(h_maxTreeSize_);
+    d_treeSampleCosts_       = thrust::device_vector<float>(h_maxTreeSize_);
     d_controlPathToGoal_     = thrust::device_vector<float>(MAX_ITER * SAMPLE_DIM);
+    d_randomSeeds_           = thrust::device_vector<curandState>(h_maxTreeSize_);
 
     d_treeSamples_ptr_           = thrust::raw_pointer_cast(d_treeSamples_.data());
     d_treeSamplesParentIdxs_ptr_ = thrust::raw_pointer_cast(d_treeSamplesParentIdxs_.data());
     d_treeSampleCosts_ptr_       = thrust::raw_pointer_cast(d_treeSampleCosts_.data());
     d_controlPathToGoal_ptr_     = thrust::raw_pointer_cast(d_controlPathToGoal_.data());
+    d_randomSeeds_ptr_           = thrust::raw_pointer_cast(d_randomSeeds_.data());
 
-    h_gridSize_ = iDivUp(MAX_TREE_SIZE, h_blockSize_);
-
-    cudaMalloc(&d_randomSeeds_ptr_, MAX_TREE_SIZE * sizeof(curandState));
     cudaMalloc(&d_costToGoal_ptr_, sizeof(float));
     cudaMalloc(&d_pathToGoal_ptr_, sizeof(int));
 
@@ -28,7 +31,7 @@ Planner::Planner()
             printf("/* Workspace Size: %f */\n", W_SIZE);
             printf("/* Maximum discretization steps in propagation: %d */\n", MAX_PROPAGATION_DURATION);
             printf("/* Propagation step Size: %f */\n", STEP_SIZE);
-            printf("/* Max Tree Size: %d */\n", MAX_TREE_SIZE);
+            printf("/* Max Tree Size: %d */\n", h_maxTreeSize_);
             printf("/* Goal Distance Threshold: %f */\n", GOAL_THRESH);
             printf("/* Max Planning Iterations: %d */\n", MAX_ITER);
         }
@@ -46,7 +49,7 @@ __global__ void initializeRandomSeeds_kernel(curandState* randomSeeds, int numSe
 void Planner::initializeRandomSeeds(int seed)
 {
     int blockSize = 32;
-    initializeRandomSeeds_kernel<<<iDivUp(MAX_TREE_SIZE, blockSize), blockSize>>>(d_randomSeeds_ptr_, MAX_TREE_SIZE, seed);
+    initializeRandomSeeds_kernel<<<iDivUp(h_maxTreeSize_, blockSize), blockSize>>>(d_randomSeeds_ptr_, h_maxTreeSize_, seed);
 }
 
 __global__ void findInd(uint numSamples, bool* S, uint* scanIdx, uint* activeS)
@@ -75,6 +78,7 @@ __global__ void repeatInd(uint numSamples, uint* activeS, uint* C, uint* prefixS
     uint startPos = prefixSum[index];
     for(uint i = 0; i < count; ++i)
         {
+            if(startPos + i >= numSamples) return;
             repeatedInd[startPos + i] = index;
         }
 }

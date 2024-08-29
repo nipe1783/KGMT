@@ -12,11 +12,11 @@ stateSize = 6;
 controlSize = 3;
 xGoal = [.80, .95, .90];
 alpha = .7;
-STEP_SIZE = .2;
-model = 3;
+STEP_SIZE = .1;
+model = 2;
 
 % Obstacle file path
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/house/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/trees/obstacles.csv';
 obstacles = gpuArray(readmatrix(obstacleFilePath));
 
 treeSizePath = "/home/nicolas/dev/research/KGMT/build/Data/TreeSize/TreeSize0/treeSize.csv";
@@ -183,28 +183,28 @@ for i = 1:numFiles
     lighting phong;
 
     colorIndex = 1;
-    % for j = 2:size(parentRelations, 1)
-    %     if j > treeSizes(iteration)
-    %         colorIndex = 3;
-    %     else
-    %         colorIndex = 1;
-    %     end
-    %     if parentRelations(j) == -1
-    %         iteration = iteration + 1;
-    %         break;
-    %     end
-    %     x0 = samples((parentRelations(j) + 1), 1:stateSize);
-    %     sample = samples(j, :);
-    %     if model == 1
-    %         [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
-    %     elseif model == 2
-    %         [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
-    %     elseif model == 3
-    %         [segmentX, segmentY, segmentZ] = propQuad(x0, sample, STEP_SIZE, stateSize, sampleSize);
-    %     end
-    %     plot3(gather(segmentX), gather(segmentY), gather(segmentZ), '-.', 'Color', 'k', 'LineWidth', 0.01);
-    %     plot3(gather(samples(j, 1)), gather(samples(j, 2)), gather(samples(j, 3)), 'o', 'Color', gather(colors(colorIndex, :)), 'MarkerFaceColor', gather(colors(colorIndex, :)), 'MarkerSize', 2);
-    % end
+    for j = 2:size(parentRelations, 1)
+        if j > treeSizes(iteration)
+            colorIndex = 3;
+        else
+            colorIndex = 1;
+        end
+        if parentRelations(j) == -1
+            iteration = iteration + 1;
+            break;
+        end
+        x0 = samples((parentRelations(j) + 1), 1:stateSize);
+        sample = samples(j, :);
+        if model == 1
+            [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
+        elseif model == 2
+            [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
+        elseif model == 3
+            [segmentX, segmentY, segmentZ] = propQuad(x0, sample, STEP_SIZE, stateSize, sampleSize);
+        end
+        plot3(gather(segmentX), gather(segmentY), gather(segmentZ), '-.', 'Color', 'k', 'LineWidth', 0.01);
+        plot3(gather(samples(j, 1)), gather(samples(j, 2)), gather(samples(j, 3)), 'o', 'Color', gather(colors(colorIndex, :)), 'MarkerFaceColor', gather(colors(colorIndex, :)), 'MarkerSize', 2);
+    end
 
     % Define the filename for the GIF
     gifFilename = sprintf('figs/KGMT_Iteration_%d.gif', i);

@@ -9,13 +9,13 @@ int main(void)
     //       h_goal[SAMPLE_DIM]    = {80, 95.0, 90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     float h_initial[SAMPLE_DIM] = {.100, .80, .05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
           h_goal[SAMPLE_DIM]    = {.800, .950, .900, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    KGMT kgmt;
+    KGMT kgmt(100000);
 
     int numObstacles;
     float* d_obstacles;
 
     // --- Load Workspace Obstacles ---
-    std::vector<float> obstacles = readObstaclesFromCSV("../include/config/obstacles/house/obstacles.csv", numObstacles, W_DIM);
+    std::vector<float> obstacles = readObstaclesFromCSV("../include/config/obstacles/trees/obstacles.csv", numObstacles, W_DIM);
 
     // --- Transfer Obstacles to device ---
     cudaMalloc(&d_obstacles, numObstacles * 2 * W_DIM * sizeof(float));

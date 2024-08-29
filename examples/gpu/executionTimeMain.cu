@@ -11,13 +11,11 @@ int main(void)
     // float h_initial[SAMPLE_DIM] = {.100, .08, .05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
     //       h_goal[SAMPLE_DIM]    = {.80, .95, .90, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
-    KGMT kgmt;
-
     int numObstacles;
     float* d_obstacles;
 
     // --- Load Workspace Obstacles ---
-    std::vector<float> obstacles = readObstaclesFromCSV("../include/config/obstacles/quadTrees/obstacles.csv", numObstacles, W_DIM);
+    std::vector<float> obstacles = readObstaclesFromCSV("../include/config/obstacles/quadHouse/obstacles.csv", numObstacles, W_DIM);
 
     // --- Transfer Obstacles to device ---
     cudaMalloc(&d_obstacles, numObstacles * 2 * W_DIM * sizeof(float));
@@ -27,7 +25,8 @@ int main(void)
     int N = 50;
     for(int i = 0; i < N; i++)
         {
-            // --- Execute planner ---
+            // --- Execute planner --
+            KGMT kgmt(10000);
             kgmt.plan(h_initial, h_goal, d_obstacles, numObstacles);
         }
 
