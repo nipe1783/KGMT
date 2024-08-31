@@ -43,31 +43,31 @@ kgmtExpandedNodes = zeros(N, 1);
 kgmtTreeSize = zeros(N, 1);
 kgmtFrontierSize = zeros(N, 1);
 
-% kgmtStateGridExpandedNodes = zeros(N, 1);
-% kgmtStateGridTreeSize = zeros(N, 1);
-% kgmtStateGridFrontierSize = zeros(N, 1);
-% for i = 1:N
-%     expandedNodesPath = append(kgmtExpandedNodesPath, 'ExpandedNodes', num2str(i-1), '/expandedNodes.csv');
-%     treeSizePath = append(kgmtTreeSizePath, 'TreeSize', num2str(i-1), '/treeSize.csv');
-%     kgmtExpandedNodes(i) = sum(readmatrix(expandedNodesPath));
-%     treeSize = readmatrix(treeSizePath);
-%     kgmtTreeSize(i) = treeSize(end);
-% 
-%     expandedNodesStateGridPath = append(kgmtStateGridExpandedNodesPath, 'ExpandedNodes', num2str(i-1), '/expandedNodes.csv');
-%     treeSizeStateGridPath = append(kgmtStateGridTreeSizePath, 'TreeSize', num2str(i-1), '/treeSize.csv');
-%     kgmtStateGridExpandedNodes(i) = sum(readmatrix(expandedNodesStateGridPath));
-%     treeSizeStateGrid = readmatrix(treeSizeStateGridPath);
-%     kgmtStateGridTreeSize(i) = treeSizeStateGrid(end);
-% end
+kgmtStateGridExpandedNodes = zeros(N, 1);
+kgmtStateGridTreeSize = zeros(N, 1);
+kgmtStateGridFrontierSize = zeros(N, 1);
+for i = 1:N
+    expandedNodesPath = append(kgmtExpandedNodesPath, 'ExpandedNodes', num2str(i-1), '/expandedNodes.csv');
+    treeSizePath = append(kgmtTreeSizePath, 'TreeSize', num2str(i-1), '/treeSize.csv');
+    kgmtExpandedNodes(i) = sum(readmatrix(expandedNodesPath));
+    treeSize = readmatrix(treeSizePath);
+    kgmtTreeSize(i) = treeSize(end);
 
-% rrtParallelExpandedNodes = readmatrix(rrtParallelExpandedNodesPath);
-% rrtParallelTreeSize = readmatrix(rrtParallelTreeSize);
-% 
-% estParallelExpandedNodes = readmatrix(estParallelExpandedNodesPath);
-% estParallelTreeSize = readmatrix(estParallelTreeSize);
-% 
-% pdstParallelExpandedNodes = readmatrix(pdstParallelExpandedNodesPath);
-% pdstParallelTreeSize = readmatrix(pdstParallelTreeSize);
+    expandedNodesStateGridPath = append(kgmtStateGridExpandedNodesPath, 'ExpandedNodes', num2str(i-1), '/expandedNodes.csv');
+    treeSizeStateGridPath = append(kgmtStateGridTreeSizePath, 'TreeSize', num2str(i-1), '/treeSize.csv');
+    kgmtStateGridExpandedNodes(i) = sum(readmatrix(expandedNodesStateGridPath));
+    treeSizeStateGrid = readmatrix(treeSizeStateGridPath);
+    kgmtStateGridTreeSize(i) = treeSizeStateGrid(end);
+end
+
+rrtParallelExpandedNodes = readmatrix(rrtParallelExpandedNodesPath);
+rrtParallelTreeSize = readmatrix(rrtParallelTreeSize);
+
+estParallelExpandedNodes = readmatrix(estParallelExpandedNodesPath);
+estParallelTreeSize = readmatrix(estParallelTreeSize);
+
+pdstParallelExpandedNodes = readmatrix(pdstParallelExpandedNodesPath);
+pdstParallelTreeSize = readmatrix(pdstParallelTreeSize);
 
 plotBenchmarkResultsDA(kgmtExecutionTime, kgmtStateGridExecutionTime, rrtParallelExecutionTime, estParallelExecutionTime, pdstParallelExecutionTime);
 

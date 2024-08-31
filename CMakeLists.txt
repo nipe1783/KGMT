@@ -80,10 +80,23 @@ target_link_libraries(executionTimeMain
     Python3::NumPy
 )
 
+add_executable(pcBenchMain examples/gpu/pcBenchMain.cu)
+target_link_libraries(pcBenchMain
+    PUBLIC KGMT_lib
+    ${CUDA_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${EIGEN3_LIBRARIES}
+    yaml-cpp
+    Python3::Python
+    Python3::NumPy
+)
+
 set_target_properties(KGMT_lib PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 set_target_properties(main PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 set_target_properties(benchMain PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 set_target_properties(executionTimeMain PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set_target_properties(pcBenchMain PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
 
 # -- CPU EXECUTABLES --
 add_executable(est_cpu examples/cpu/est_cpu.cpp)

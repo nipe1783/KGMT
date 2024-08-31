@@ -11,10 +11,11 @@ public:
     /****************************    METHODS    ****************************/
     void plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount) override;
     void planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr);
+    void planBenchPC(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr);
     void propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount);
     void updateFrontier();
     void writeDeviceVectorsToCSV(int itr);
-    void writeExecutionTimeToCSV(double time);
+    void writeExecutionTimeToCSV(double time, int itr);
 
     /****************************    FIELDS    ****************************/
     // --- host fields ---
