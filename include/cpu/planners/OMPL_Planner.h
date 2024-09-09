@@ -3,11 +3,12 @@
 #include "cpu/planners/ModRRT.h"
 #include "cpu/planners/ModPDST.h"
 #include "cpu/planners/ModEST.h"
-#include "cpu/planners/ModSyclop.h"
+#include <ompl/control/planners/syclop/SyclopEST.h>
 #include <ompl/control/SimpleSetup.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <ompl/control/spaces/RealVectorControlSpace.h>
 #include "ompl/control/ODESolver.h"
+#include "cpu/decomposition/ModGridDecomposition.h"
 #include <ompl/base/Goal.h>
 #include <stdio.h>
 #include "config/config.h"
@@ -46,9 +47,11 @@ public:
     void planParallelPDST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     void planParallelRRT(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     void planParallelEST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
+    void planParallelSyclop(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     void planRRT(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     void planEST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     void planPDST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
+    void planSyclop(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     oc::SimpleSetupPtr kinodynamicSimpleSetUp(const float* initial, const float* goal);
 
     ob::StateSpacePtr createStateSpace();

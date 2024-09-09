@@ -51,19 +51,41 @@ void writeNumVerticesToCSV(int numVertices)
     writeValueToCSV(numVertices, filename.str());
 }
 
-class GoalRegionWithinSphere : public ob::GoalRegion
+class GoalRegionWithinSphere : public ob::GoalSampleableRegion
 {
 public:
     GoalRegionWithinSphere(const ob::SpaceInformationPtr& si, const std::vector<double>& goal, double radius)
-        : ob::GoalRegion(si), goal_(goal), radius_(radius)
+        : ob::GoalSampleableRegion(si), goal_(goal), radius_(radius)
     {
         threshold_ = radius_;
     }
 
-    virtual bool isSatisfied(const ob::State* st) const override
+    // Sample a goal within the spherical goal region
+    void sampleGoal(ob::State* st) const override
     {
-        const ob::CompoundState* state                 = st->as<ob::CompoundState>();
-        const ob::RealVectorStateSpace::StateType* pos = state->as<ob::RealVectorStateSpace::StateType>(0);
+        // Ensure that the state is properly allocated as a CompoundState
+        auto* compoundState = st->as<ob::CompoundState>();
+        auto* pos           = compoundState->as<ob::RealVectorStateSpace::StateType>(0);
+
+        // Sample random points around the goal within the radius
+        for(size_t i = 0; i < goal_.size(); ++i)
+            {
+                pos->values[i] = rng_.uniformReal(goal_[i] - radius_, goal_[i] + radius_);
+            }
+    }
+
+    // Return the maximum number of goal samples that can be generated
+    unsigned int maxSampleCount() const override
+    {
+        // Infinite sampling, but you can adjust this based on your region
+        return std::numeric_limits<unsigned int>::max();
+    }
+
+    // Check if a given state is in the goal region
+    bool isSatisfied(const ob::State* st) const override
+    {
+        const auto* compoundState = st->as<ob::CompoundState>();
+        const auto* pos           = compoundState->as<ob::RealVectorStateSpace::StateType>(0);
 
         double dist = 0.0;
         for(size_t i = 0; i < goal_.size(); ++i)
@@ -76,17 +98,18 @@ public:
         return dist <= radius_;
     }
 
-    virtual double distanceGoal(const ob::State* st) const override
+    // Calculate the distance between a state and the goal region
+    double distanceGoal(const ob::State* st) const override
     {
-        float x = st->as<ob::CompoundState>()->as<ob::RealVectorStateSpace::StateType>(0)->values[0];
-        float y = st->as<ob::CompoundState>()->as<ob::RealVectorStateSpace::StateType>(0)->values[1];
-        float z = st->as<ob::CompoundState>()->as<ob::RealVectorStateSpace::StateType>(0)->values[2];
-        return sqrt(pow(x - goal_[0], 2) + pow(y - goal_[1], 2) + pow(z - goal_[2], 2));
+        const auto* pos = st->as<ob::CompoundState>()->as<ob::RealVectorStateSpace::StateType>(0);
+        return std::sqrt(std::pow(pos->values[0] - goal_[0], 2) + std::pow(pos->values[1] - goal_[1], 2) +
+                         std::pow(pos->values[2] - goal_[2], 2));
     }
 
 private:
     std::vector<double> goal_;
     double radius_;
+    mutable ompl::RNG rng_;
 };
 
 /***************************/
@@ -590,6 +613,49 @@ void OMPL_Planner::planEST(const float* initial, const float* goal, float* obsta
         }
 }
 
+void OMPL_Planner::planSyclop(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin)
+{
+    safetyMargin_   = safetyMargin;
+    obstacles_      = obstacles;
+    obstaclesCount_ = numObstacles;
+    OMPL_INFORM("numObstacles: %d", obstaclesCount_);
+
+    oc::SimpleSetupPtr ss = kinodynamicSimpleSetUp(initial, goal);
+    oc::PathControl pathOmpl(ss->getSpaceInformation());
+
+    // --- Setting Planner ---
+    auto decomposition = std::make_shared<ompl::control::ModGridDecomposition>(W_R1_LENGTH, W_DIM, W_MAX);
+    auto planner       = std::make_shared<oc::SyclopEST>(ss->getSpaceInformation(), decomposition);
+    ss->setPlanner(planner);
+    ss->getSpaceInformation()->setStateValidityCheckingResolution(0.005);
+    ss->setup();
+    ss->print();
+
+    // --- Solving Problem ---
+    auto start = std::chrono::high_resolution_clock::now();
+
+    ob::PlannerStatus solved = ss->solve(100.0);
+
+    auto end                              = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    double elapsedTime                    = elapsed.count();
+
+    if(solved)
+        {
+            std::cout << "Found solution:" << std::endl;
+            pathOmpl = ss->getSolutionPath();
+            write2sys(ss);
+            writeExecutionTimeToCSV(elapsedTime);
+            ompl::base::PlannerData data(ss->getSpaceInformation());
+            planner->getPlannerData(data);
+            writeNumVerticesToCSV(data.numVertices());
+        }
+    else
+        {
+            std::cout << "No solution found" << std::endl;
+        }
+}
+
 void OMPL_Planner::planParallelRRT(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin)
 {
     try
@@ -645,6 +711,82 @@ void OMPL_Planner::planParallelRRT(const float* initial, const float* goal, floa
                             ompl::base::PlannerData data(ss->getSpaceInformation());
                             planners[i]->getPlannerData(data);
                             totalIterations += planners[i]->iterations_;
+                            numVertices += data.numVertices();
+                            planners[i]->clear();
+                        }
+                    writeIterationsToCSV(totalIterations);
+                    writeNumVerticesToCSV(numVertices);
+                    write2sys(ss);
+                }
+            else
+                {
+                    std::cout << "No solution found" << std::endl;
+                }
+        }
+    catch(const std::exception& e)
+        {
+            std::cerr << "Exception caught: " << e.what() << std::endl;
+        }
+}
+
+void OMPL_Planner::planParallelSyclop(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin)
+{
+    try
+        {
+            ompl::msg::setLogLevel(ompl::msg::LOG_ERROR);
+
+            // --- Setting thread number to maximum available ---
+            unsigned int numThreads = std::thread::hardware_concurrency();
+            if(numThreads == 0) numThreads = 1;
+
+            // Set the number of threads to use
+            setNumberOfThreads(numThreads);
+
+            safetyMargin_   = safetyMargin;
+            obstacles_      = obstacles;
+            obstaclesCount_ = numObstacles;
+            OMPL_INFORM("numObstacles: %d", obstaclesCount_);
+
+            // Create simple setup object
+            oc::SimpleSetupPtr ss = kinodynamicSimpleSetUp(initial, goal);
+            oc::PathControl pathOmpl(ss->getSpaceInformation());
+            ompl::tools::ParallelPlan pp(ss->getProblemDefinition());
+
+            // Create the grid decomposition for Syclop
+            auto decomposition = std::make_shared<ompl::control::ModGridDecomposition>(W_R1_LENGTH, W_DIM, W_MAX);
+
+            // --- Creating numThread planners ---
+            std::vector<std::shared_ptr<oc::SyclopEST>> planners;
+            for(unsigned int i = 0; i < numThreads; ++i)
+                {
+                    auto planner = std::make_shared<oc::SyclopEST>(ss->getSpaceInformation(), decomposition);
+                    pp.addPlanner(planner);
+                    planners.push_back(planner);
+                }
+
+            ss->getSpaceInformation()->setStateValidityCheckingResolution(0.005);
+            ss->setup();
+
+            // --- Solving Problem ---
+            auto start = std::chrono::high_resolution_clock::now();
+
+            ompl::base::PlannerStatus solved = pp.solve(100.0, false);
+
+            auto end                              = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> elapsed = end - start;
+            double elapsedTime                    = elapsed.count();
+
+            if(solved)
+                {
+                    std::cout << "Found solution in " << elapsedTime << " seconds." << std::endl;
+                    writeExecutionTimeToCSV(elapsedTime);
+
+                    int totalIterations = 0;
+                    int numVertices     = 0;
+                    for(size_t i = 0; i < planners.size(); ++i)
+                        {
+                            ompl::base::PlannerData data(ss->getSpaceInformation());
+                            planners[i]->getPlannerData(data);
                             numVertices += data.numVertices();
                             planners[i]->clear();
                         }

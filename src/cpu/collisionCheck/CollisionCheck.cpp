@@ -18,7 +18,7 @@ bool CollisionCheck::isValid(const ob::State *state) const
     const double x = xyState->values[0];
     const double y = xyState->values[1];
     const double z = xyState->values[2];
-
+    // OMPL_INFORM("Checking state: (%f, %f, %f)", x, y, z);
     if(!si_->satisfiesBounds(state)) return false;
 
     for(int obsIdx = 0; obsIdx < obstaclesCount_; ++obsIdx)

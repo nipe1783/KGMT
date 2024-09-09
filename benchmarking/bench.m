@@ -7,28 +7,28 @@ titleSize = 10;
 algorithmSize = 9;
 figureSize = [100, 100, 1000, 1000];
 
-%% 12DQuad:
+%% FlyingUni:
 
 % -- File Paths --
-kgmtExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtJetson/FlyingUni/house/executionTime.csv';
-kgmtExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmt/DubinsAirplane/Data/ExpandedNodes/';
-kgmtTreeSizePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmt/DubinsAirplane/Data/TreeSize/';
+kgmtExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmt/FlyingUni/narrowPassage/executionTime0.csv';
+% kgmtExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmt/DubinsAirplane/Data/ExpandedNodes/';
+% kgmtTreeSizePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmt/DubinsAirplane/Data/TreeSize/';
 
-kgmtStateGridExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtStateGrid/FlyingUni/house/executionTime.csv';
-kgmtStateGridExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtStateGrid/FlyingUni/Data/ExpandedNodes/';
-kgmtStateGridTreeSizePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtStateGrid/FlyingUni/Data/TreeSize/';
+kgmtStateGridExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtStateGrid/FlyingUni/narrowPassage/executionTime.csv';
+% kgmtStateGridExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtStateGrid/FlyingUni/Data/ExpandedNodes/';
+% kgmtStateGridTreeSizePath = '/home/nicolas/dev/research/KGMT/benchmarking/kgmtStateGrid/FlyingUni/Data/TreeSize/';
 
-rrtParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/FlyingUni/house/Data/ExecutionTime/executionTime.csv';
-rrtParallelTreeSize = '/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/FlyingUni/Data/Vertices/vertices.csv';
-rrtParallelExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/FlyingUni/Data/Iterations/iterations.csv';
+rrtParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/FlyingUni/narrowPassage/Data/ExecutionTime/executionTime.csv';
+% rrtParallelTreeSize = '/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/FlyingUni/Data/Vertices/vertices.csv';
+% rrtParallelExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/FlyingUni/Data/Iterations/iterations.csv';
 
-estParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/estParallel/FlyingUni/house/Data/ExecutionTime/executionTime.csv';
-estParallelExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/estParallel/FlyingUni/Data/Iterations/iterations.csv';
-estParallelTreeSize = '/home/nicolas/dev/research/KGMT/benchmarking/estParallel/FlyingUni/Data/Vertices/vertices.csv';
+estParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/estParallel/FlyingUni/narrowPassage/Data/ExecutionTime/executionTime.csv';
+% estParallelExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/estParallel/FlyingUni/Data/Iterations/iterations.csv';
+% estParallelTreeSize = '/home/nicolas/dev/research/KGMT/benchmarking/estParallel/FlyingUni/Data/Vertices/vertices.csv';
 
-pdstParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/FlyingUni/house/Data/ExecutionTime/executionTime.csv';
-pdstParallelExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/FlyingUni/Data/Iterations/iterations.csv';
-pdstParallelTreeSize = '/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/FlyingUni/Data/Vertices/vertices.csv';
+pdstParallelExecutionTimePath = '/home/nicolas/dev/research/KGMT/benchmarking/syclopParallel/FlyingUni/narrowPassage/Data/ExecutionTime/executionTime.csv';
+% pdstParallelExpandedNodesPath = '/home/nicolas/dev/research/KGMT/benchmarking/syclopParallel/FlyingUni/Data/Iterations/iterations.csv';
+% pdstParallelTreeSize = '/home/nicolas/dev/research/KGMT/benchmarking/syclopParallel/FlyingUni/Data/Vertices/vertices.csv';
 
 % -- Execution Time Data --
 kgmtExecutionTime = readmatrix(kgmtExecutionTimePath) * 1000;
@@ -38,36 +38,36 @@ estParallelExecutionTime = readmatrix(estParallelExecutionTimePath) * 1000;
 pdstParallelExecutionTime = readmatrix(pdstParallelExecutionTimePath) * 1000;
 
 % -- Node Expansion / Tree Size Data --
-N = length(dir(kgmtExpandedNodesPath))-2;
-kgmtExpandedNodes = zeros(N, 1);
-kgmtTreeSize = zeros(N, 1);
-kgmtFrontierSize = zeros(N, 1);
-
-kgmtStateGridExpandedNodes = zeros(N, 1);
-kgmtStateGridTreeSize = zeros(N, 1);
-kgmtStateGridFrontierSize = zeros(N, 1);
-for i = 1:N
-    expandedNodesPath = append(kgmtExpandedNodesPath, 'ExpandedNodes', num2str(i-1), '/expandedNodes.csv');
-    treeSizePath = append(kgmtTreeSizePath, 'TreeSize', num2str(i-1), '/treeSize.csv');
-    kgmtExpandedNodes(i) = sum(readmatrix(expandedNodesPath));
-    treeSize = readmatrix(treeSizePath);
-    kgmtTreeSize(i) = treeSize(end);
-
-    expandedNodesStateGridPath = append(kgmtStateGridExpandedNodesPath, 'ExpandedNodes', num2str(i-1), '/expandedNodes.csv');
-    treeSizeStateGridPath = append(kgmtStateGridTreeSizePath, 'TreeSize', num2str(i-1), '/treeSize.csv');
-    kgmtStateGridExpandedNodes(i) = sum(readmatrix(expandedNodesStateGridPath));
-    treeSizeStateGrid = readmatrix(treeSizeStateGridPath);
-    kgmtStateGridTreeSize(i) = treeSizeStateGrid(end);
-end
-
-rrtParallelExpandedNodes = readmatrix(rrtParallelExpandedNodesPath);
-rrtParallelTreeSize = readmatrix(rrtParallelTreeSize);
-
-estParallelExpandedNodes = readmatrix(estParallelExpandedNodesPath);
-estParallelTreeSize = readmatrix(estParallelTreeSize);
-
-pdstParallelExpandedNodes = readmatrix(pdstParallelExpandedNodesPath);
-pdstParallelTreeSize = readmatrix(pdstParallelTreeSize);
+% N = length(dir(kgmtExpandedNodesPath))-2;
+% kgmtExpandedNodes = zeros(N, 1);
+% kgmtTreeSize = zeros(N, 1);
+% kgmtFrontierSize = zeros(N, 1);
+% 
+% kgmtStateGridExpandedNodes = zeros(N, 1);
+% kgmtStateGridTreeSize = zeros(N, 1);
+% kgmtStateGridFrontierSize = zeros(N, 1);
+% for i = 1:N
+%     expandedNodesPath = append(kgmtExpandedNodesPath, 'ExpandedNodes', num2str(i-1), '/expandedNodes.csv');
+%     treeSizePath = append(kgmtTreeSizePath, 'TreeSize', num2str(i-1), '/treeSize.csv');
+%     kgmtExpandedNodes(i) = sum(readmatrix(expandedNodesPath));
+%     treeSize = readmatrix(treeSizePath);
+%     kgmtTreeSize(i) = treeSize(end);
+% 
+%     expandedNodesStateGridPath = append(kgmtStateGridExpandedNodesPath, 'ExpandedNodes', num2str(i-1), '/expandedNodes.csv');
+%     treeSizeStateGridPath = append(kgmtStateGridTreeSizePath, 'TreeSize', num2str(i-1), '/treeSize.csv');
+%     kgmtStateGridExpandedNodes(i) = sum(readmatrix(expandedNodesStateGridPath));
+%     treeSizeStateGrid = readmatrix(treeSizeStateGridPath);
+%     kgmtStateGridTreeSize(i) = treeSizeStateGrid(end);
+% end
+% 
+% rrtParallelExpandedNodes = readmatrix(rrtParallelExpandedNodesPath);
+% rrtParallelTreeSize = readmatrix(rrtParallelTreeSize);
+% 
+% estParallelExpandedNodes = readmatrix(estParallelExpandedNodesPath);
+% estParallelTreeSize = readmatrix(estParallelTreeSize);
+% 
+% pdstParallelExpandedNodes = readmatrix(pdstParallelExpandedNodesPath);
+% pdstParallelTreeSize = readmatrix(pdstParallelTreeSize);
 
 plotBenchmarkResultsDA(kgmtExecutionTime, kgmtStateGridExecutionTime, rrtParallelExecutionTime, estParallelExecutionTime, pdstParallelExecutionTime);
 

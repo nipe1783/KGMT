@@ -166,8 +166,7 @@ void KGMT::planBenchPC(float* h_initial, float* h_goal, float* d_obstacles_ptr, 
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&milliseconds, start, stop);
     writeExecutionTimeToCSV(milliseconds / 1000.0, benchItr);
-    std::cout << "KGMT execution time: " << milliseconds / 1000.0 << " seconds. Iterations: " << h_itr_ << ". Tree Size: " << h_treeSize_
-              << std::endl;
+    std::cout << h_treeSize_ << std::endl;
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
 }

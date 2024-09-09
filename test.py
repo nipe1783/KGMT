@@ -1,21 +1,18 @@
-import csv
+import pandas as pd
 
-def multiply_csv_values(input_csv, output_csv):
-    # Read the input CSV file
-    with open(input_csv, 'r') as infile:
-        reader = csv.reader(infile)
-        data = []
-        for row in reader:
-            # Multiply each value by 100 and convert to float
-            new_row = [float(value) * 100 for value in row]
-            data.append(new_row)
+def calculate_mean_from_csv(file_path):
+    # Read the CSV file into a pandas DataFrame
+    df = pd.read_csv(file_path)
     
-    # Write the modified data to the output CSV file
-    with open(output_csv, 'w', newline='') as outfile:
-        writer = csv.writer(outfile)
-        writer.writerows(data)
+    # Select only numerical columns
+    numerical_df = df.select_dtypes(include='number')
+    
+    # Calculate the mean of all numerical values
+    overall_mean = numerical_df.mean().mean()
+    
+    return overall_mean
 
 # Example usage
-input_csv = '/home/nicolas/dev/research/KGMT/include/config/obstacles/trees/obstacles.csv'  # Replace with your input CSV file path
-output_csv = 'obstacles.csv'  # Replace with your desired output CSV file path
-multiply_csv_values(input_csv, output_csv)
+file_path = '/home/nicolas/dev/research/KGMT/treeSize.csv'  # Replace with your CSV file path
+mean_value = calculate_mean_from_csv(file_path)
+print(f'The mean value of all numbers in the CSV file is: {mean_value}')

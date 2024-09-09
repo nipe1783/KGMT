@@ -57,11 +57,11 @@ int main(void)
     // --- RRT ---
     for(int i = 0; i < N; i++)
         {
-            rrt.planParallelRRT(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
+            rrt.planParallelSyclop(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
         }
 
     sourceDir = "/home/nicolas/dev/research/KGMT/build/Data";
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/12DQuad/trees/Data";
+    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/syclopParallel/12DQuad/trees/Data";
 
     if(!std::filesystem::exists(targetDir))
         {
@@ -71,37 +71,37 @@ int main(void)
     system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
     std::filesystem::create_directories(sourceDir);
 
-    // --- EST ---
-    for(int i = 0; i < N; i++)
-        {
-            rrt.planParallelEST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
-        }
+    // // --- EST ---
+    // for(int i = 0; i < N; i++)
+    //     {
+    //         rrt.planParallelEST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
+    //     }
 
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/estParallel/12DQuad/trees/Data";
+    // targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/estParallel/12DQuad/trees/Data";
 
-    if(!std::filesystem::exists(targetDir))
-        {
-            std::filesystem::create_directories(targetDir);
-        }
+    // if(!std::filesystem::exists(targetDir))
+    //     {
+    //         std::filesystem::create_directories(targetDir);
+    //     }
 
-    system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
-    std::filesystem::create_directories(sourceDir);
+    // system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
+    // std::filesystem::create_directories(sourceDir);
 
-    // --- PDST ---
-    for(int i = 0; i < N; i++)
-        {
-            rrt.planParallelPDST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
-        }
+    // // --- PDST ---
+    // for(int i = 0; i < N; i++)
+    //     {
+    //         rrt.planParallelPDST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
+    //     }
 
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/12DQuad/trees/Data";
+    // targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/12DQuad/trees/Data";
 
-    if(!std::filesystem::exists(targetDir))
-        {
-            std::filesystem::create_directories(targetDir);
-        }
+    // if(!std::filesystem::exists(targetDir))
+    //     {
+    //         std::filesystem::create_directories(targetDir);
+    //     }
 
-    system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
-    std::filesystem::create_directories(sourceDir);
+    // system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
+    // std::filesystem::create_directories(sourceDir);
 
     /***************************/
     /* 12DQuad NARROW PASSAGE */
@@ -115,11 +115,11 @@ int main(void)
     // --- RRT ---
     for(int i = 0; i < N; i++)
         {
-            rrt.planParallelRRT(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
+            rrt.planParallelSyclop(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
         }
 
     sourceDir = "/home/nicolas/dev/research/KGMT/build/Data";
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/12DQuad/narrowPassage/Data";
+    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/syclopParallel/12DQuad/narrowPassage/Data";
 
     if(!std::filesystem::exists(targetDir))
         {
@@ -129,37 +129,37 @@ int main(void)
     system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
     std::filesystem::create_directories(sourceDir);
 
-    // --- EST ---
-    for(int i = 0; i < N; i++)
-        {
-            rrt.planParallelEST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
-        }
+    // // --- EST ---
+    // for(int i = 0; i < N; i++)
+    //     {
+    //         rrt.planParallelEST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
+    //     }
 
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/estParallel/12DQuad/narrowPassage/Data";
+    // targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/estParallel/12DQuad/narrowPassage/Data";
 
-    if(!std::filesystem::exists(targetDir))
-        {
-            std::filesystem::create_directories(targetDir);
-        }
+    // if(!std::filesystem::exists(targetDir))
+    //     {
+    //         std::filesystem::create_directories(targetDir);
+    //     }
 
-    system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
-    std::filesystem::create_directories(sourceDir);
+    // system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
+    // std::filesystem::create_directories(sourceDir);
 
-    // --- PDST ---
-    for(int i = 0; i < N; i++)
-        {
-            rrt.planParallelPDST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
-        }
+    // // --- PDST ---
+    // for(int i = 0; i < N; i++)
+    //     {
+    //         rrt.planParallelPDST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
+    //     }
 
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/12DQuad/narrowPassage/Data";
+    // targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/12DQuad/narrowPassage/Data";
 
-    if(!std::filesystem::exists(targetDir))
-        {
-            std::filesystem::create_directories(targetDir);
-        }
+    // if(!std::filesystem::exists(targetDir))
+    //     {
+    //         std::filesystem::create_directories(targetDir);
+    //     }
 
-    system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
-    std::filesystem::create_directories(sourceDir);
+    // system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
+    // std::filesystem::create_directories(sourceDir);
 
     /***************************/
     /* HOUSE */
@@ -168,14 +168,16 @@ int main(void)
     // --- Remove Previous Bench Data ---
     system("rm -rf Data/*");
 
+    obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/quadHouse/obstacles.csv", numObstacles, W_DIM);
+
     // --- RRT ---
     for(int i = 0; i < N; i++)
         {
-            rrt.planParallelRRT(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
+            rrt.planParallelSyclop(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
         }
 
     sourceDir = "/home/nicolas/dev/research/KGMT/build/Data";
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/12DQuad/house/Data";
+    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/syclopParallel/12DQuad/house/Data";
 
     if(!std::filesystem::exists(targetDir))
         {
@@ -185,37 +187,37 @@ int main(void)
     system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
     std::filesystem::create_directories(sourceDir);
 
-    // --- EST ---
-    for(int i = 0; i < N; i++)
-        {
-            rrt.planParallelEST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
-        }
+    // // --- EST ---
+    // for(int i = 0; i < N; i++)
+    //     {
+    //         rrt.planParallelEST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
+    //     }
 
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/estParallel/12DQuad/house/Data";
+    // targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/estParallel/12DQuad/house/Data";
 
-    if(!std::filesystem::exists(targetDir))
-        {
-            std::filesystem::create_directories(targetDir);
-        }
+    // if(!std::filesystem::exists(targetDir))
+    //     {
+    //         std::filesystem::create_directories(targetDir);
+    //     }
 
-    system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
-    std::filesystem::create_directories(sourceDir);
+    // system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
+    // std::filesystem::create_directories(sourceDir);
 
-    // --- PDST ---
-    for(int i = 0; i < N; i++)
-        {
-            rrt.planParallelPDST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
-        }
+    // // --- PDST ---
+    // for(int i = 0; i < N; i++)
+    //     {
+    //         rrt.planParallelPDST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
+    //     }
 
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/12DQuad/house/Data";
+    // targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/12DQuad/house/Data";
 
-    if(!std::filesystem::exists(targetDir))
-        {
-            std::filesystem::create_directories(targetDir);
-        }
+    // if(!std::filesystem::exists(targetDir))
+    //     {
+    //         std::filesystem::create_directories(targetDir);
+    //     }
 
-    system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
-    std::filesystem::create_directories(sourceDir);
+    // system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
+    // std::filesystem::create_directories(sourceDir);
 
     return 0;
 }

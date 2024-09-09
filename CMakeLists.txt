@@ -36,7 +36,8 @@ set(SOURCE_FILES
     src/cpu/planners/ModRRT.cpp;
     src/cpu/planners/ModPDST.cpp;
     src/cpu/planners/ModEST.cpp;
-    src/cpu/planners/ModSyclop.cpp;
+    src/cpu/planners/ModSyclopEST.cpp;
+    src/cpu/decomposition/ModGridDecomposition.cpp;
 )
 add_library(KGMT_lib ${SOURCE_FILES})
 
