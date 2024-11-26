@@ -158,6 +158,10 @@ __device__ bool propagateAndCheckDubinsAirplaneRungeKutta(float* x0, float* x1, 
     float pitch = x0[4];
     float v     = x0[5];
 
+    float xTemp = x;
+    float yTemp = y;
+    float zTemp = z;
+
     bool motionValid = true;
     float bbMin[W_DIM], bbMax[W_DIM];
 
@@ -226,16 +230,17 @@ __device__ bool propagateAndCheckDubinsAirplaneRungeKutta(float* x0, float* x1, 
             if(!motionValid) break;
         }
 
-    x1[0] = x;
-    x1[1] = y;
-    x1[2] = z;
-    x1[3] = yaw;
-    x1[4] = pitch;
-    x1[5] = v;
-    x1[6] = yawRate;
-    x1[7] = pitchRate;
-    x1[8] = a;
-    x1[9] = STEP_SIZE * propagationDuration;
+    x1[0]  = x;
+    x1[1]  = y;
+    x1[2]  = z;
+    x1[3]  = yaw;
+    x1[4]  = pitch;
+    x1[5]  = v;
+    x1[6]  = yawRate;
+    x1[7]  = pitchRate;
+    x1[8]  = a;
+    x1[9]  = STEP_SIZE * propagationDuration;
+    x1[10] = sqrt(pow(xTemp - x, 2) + pow(yTemp - y, 2) + pow(zTemp - z, 2));
 
     return motionValid;
 }

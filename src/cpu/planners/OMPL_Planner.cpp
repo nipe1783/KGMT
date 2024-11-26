@@ -1,4 +1,5 @@
 #include "cpu/planners/OMPL_Planner.h"
+#include <ompl/base/spaces/SE3StateSpace.h>
 
 void setNumberOfThreads(unsigned int numThreads)
 {
@@ -590,6 +591,58 @@ void OMPL_Planner::planEST(const float* initial, const float* goal, float* obsta
         }
 }
 
+double computeEuclideanPathLength(oc::PathControl& path)
+{
+    double length                                 = 0.0;
+    const std::vector<ompl::base::State*>& states = path.getStates();
+
+    std::cout << "Number of states in path: " << states.size() << std::endl;
+
+    for(size_t i = 1; i < states.size(); ++i)
+        {
+            const ompl::base::State* s1 = states[i - 1];
+            const ompl::base::State* s2 = states[i];
+
+            // Cast to CompoundStateSpace::StateType
+            const ompl::base::CompoundState* s1_compound = s1->as<ompl::base::CompoundState>();
+            const ompl::base::CompoundState* s2_compound = s2->as<ompl::base::CompoundState>();
+
+            if(!s1_compound || !s2_compound)
+                {
+                    std::cerr << "State casting failed at index " << i << std::endl;
+                    continue;
+                }
+
+            // Assuming the first subspace is the position (RealVectorStateSpace of dimension 3)
+            const ompl::base::RealVectorStateSpace::StateType* s1_pos = s1_compound->as<ompl::base::RealVectorStateSpace::StateType>(0);
+            const ompl::base::RealVectorStateSpace::StateType* s2_pos = s2_compound->as<ompl::base::RealVectorStateSpace::StateType>(0);
+
+            if(!s1_pos || !s2_pos)
+                {
+                    std::cerr << "Position component casting failed at index " << i << std::endl;
+                    continue;
+                }
+
+            double x1 = s1_pos->values[0];
+            double y1 = s1_pos->values[1];
+            double z1 = s1_pos->values[2];
+
+            double x2 = s2_pos->values[0];
+            double y2 = s2_pos->values[1];
+            double z2 = s2_pos->values[2];
+
+            // std::cout << "State " << i - 1 << ": (" << x1 << ", " << y1 << ", " << z1 << ")" << std::endl;
+            // std::cout << "State " << i << ": (" << x2 << ", " << y2 << ", " << z2 << ")" << std::endl;
+
+            double dist = std::sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1) + (z2 - z1) * (z2 - z1));
+
+            // std::cout << "Distance between state " << i - 1 << " and " << i << ": " << dist << std::endl;
+
+            length += dist;
+        }
+    return length;
+}
+
 void OMPL_Planner::planParallelRRT(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin)
 {
     try
@@ -650,6 +703,15 @@ void OMPL_Planner::planParallelRRT(const float* initial, const float* goal, floa
                         }
                     writeIterationsToCSV(totalIterations);
                     writeNumVerticesToCSV(numVertices);
+
+                    // Retrieve the solution path
+                    oc::PathControl& path = ss->getSolutionPath();
+
+                    // Compute the path length using the built-in method
+                    double length = computeEuclideanPathLength(path);
+
+                    std::cout << "" << length << std::endl;
+
                     write2sys(ss);
                 }
             else
@@ -723,6 +785,15 @@ void OMPL_Planner::planParallelEST(const float* initial, const float* goal, floa
                         }
                     writeIterationsToCSV(totalIterations);
                     writeNumVerticesToCSV(numVertices);
+
+                    // Retrieve the solution path
+                    oc::PathControl& path = ss->getSolutionPath();
+
+                    // Compute the path length using the built-in method
+                    double length = computeEuclideanPathLength(path);
+
+                    std::cout << "" << length << std::endl;
+
                     write2sys(ss);
                 }
             else
@@ -796,6 +867,15 @@ void OMPL_Planner::planParallelPDST(const float* initial, const float* goal, flo
                         }
                     writeIterationsToCSV(totalIterations);
                     writeNumVerticesToCSV(numVertices);
+
+                    // Retrieve the solution path
+                    oc::PathControl& path = ss->getSolutionPath();
+
+                    // Compute the path length using the built-in method
+                    double length = computeEuclideanPathLength(path);
+
+                    std::cout << "" << length << std::endl;
+
                     write2sys(ss);
                 }
             else

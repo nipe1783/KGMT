@@ -326,7 +326,7 @@ updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNe
             treeSamplesParentIdxs[x1TreeIdx] = x0Idx;  // --- Transfer parent of unexplored sample to tree ---
             for(int i = 0; i < SAMPLE_DIM; i++)
                 treeSamples[x1TreeIdx * SAMPLE_DIM + i] = x1[i];  // --- Transfer unexplored sample to tree ---
-            treeSampleCosts[x1TreeIdx] = distance(x1, s_xGoal);   // --- Update cost of new sample ---
+            treeSampleCosts[x1TreeIdx] = treeSampleCosts[x0Idx] + x1[STATE_DIM + CONTROL_DIM];  // --- Update cost of new sample ---
 
             // --- Update Frontier ---
             frontier[x1TreeIdx] = true;
@@ -341,6 +341,7 @@ updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNe
             // --- Goal Criteria Check ---
             if(distance(x1, s_xGoal) < GOAL_THRESH)
                 {
+                    printf("%f\n", treeSampleCosts[x1TreeIdx]);
                     // --- Extract Path To Goal ---
                     pathToGoal[0] = x1TreeIdx;
                     int i         = 0;
@@ -420,11 +421,17 @@ void KGMT::writeDeviceVectorsToCSV(int itr)
     std::filesystem::create_directories("Data/TreeSize/TreeSize" + std::to_string(itr));
     std::filesystem::create_directories("Data/ExpandedNodes/ExpandedNodes" + std::to_string(itr));
     std::filesystem::create_directories("Data/ControlPathToGoal/ControlPathToGoal" + std::to_string(itr));
+    std::filesystem::create_directories("Data/TreeSampleCost/TreeSampleCost" + std::to_string(itr));
 
     // Write Samples
     filename.str("");
     filename << "Data/Samples/Samples" << itr << "/samples" << h_itr_ << ".csv";
     copyAndWriteVectorToCSV(d_treeSamples_, filename.str(), MAX_TREE_SIZE, SAMPLE_DIM, append);
+
+    // Write Tree Sample Cost
+    filename.str("");
+    filename << "Data/TreeSampleCost/TreeSampleCost" << itr << "/treeSampleCost.csv";
+    copyAndWriteVectorToCSV(d_treeSampleCosts_, filename.str(), MAX_TREE_SIZE, 1, append);
 
     // Write Parents
     filename.str("");

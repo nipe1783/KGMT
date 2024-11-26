@@ -32,10 +32,10 @@ std::vector<float> readObstaclesFromCSV_CPU(const std::string& filename, int& nu
 
 int main(void)
 {
-    // float h_initial[SAMPLE_DIM] = {.100, .080, .05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-    //       h_goal[SAMPLE_DIM]    = {.800, .950, .900, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    float h_initial[SAMPLE_DIM] = {10.0, 8, 5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-          h_goal[SAMPLE_DIM]    = {80, 95.0, 90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    float h_initial[SAMPLE_DIM] = {.100, .080, .05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+          h_goal[SAMPLE_DIM]    = {.800, .950, .900, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    // float h_initial[SAMPLE_DIM] = {10.0, 8, 5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+    //       h_goal[SAMPLE_DIM]    = {80, 95.0, 90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     int numObstacles;
     std::vector<float> obstacles;
@@ -46,22 +46,23 @@ int main(void)
     std::string sourceDir, targetDir;
 
     /***************************/
-    /* 12DQuad TREES */
+    /* FlyingUni trees */
     /***************************/
 
     // --- Remove Previous Bench Data ---
     system("rm -rf Data/*");
 
-    obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/quadTrees/obstacles.csv", numObstacles, W_DIM);
+    obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/narrowPassage/obstacles.csv", numObstacles, W_DIM);
 
     // --- RRT ---
+    printf("RRT\n");
     for(int i = 0; i < N; i++)
         {
             rrt.planParallelRRT(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
         }
 
     sourceDir = "/home/nicolas/dev/research/KGMT/build/Data";
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/12DQuad/trees/Data";
+    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/FlyingUni/trees/Data";
 
     if(!std::filesystem::exists(targetDir))
         {
@@ -71,13 +72,14 @@ int main(void)
     system(("mv " + sourceDir + "/* " + targetDir + "/").c_str());
     std::filesystem::create_directories(sourceDir);
 
+    printf("EST\n");
     // --- EST ---
     for(int i = 0; i < N; i++)
         {
             rrt.planParallelEST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
         }
 
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/estParallel/12DQuad/trees/Data";
+    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/estParallel/FlyingUni/trees/Data";
 
     if(!std::filesystem::exists(targetDir))
         {
@@ -88,12 +90,13 @@ int main(void)
     std::filesystem::create_directories(sourceDir);
 
     // --- PDST ---
+    printf("PDST\n");
     for(int i = 0; i < N; i++)
         {
             rrt.planParallelPDST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
         }
 
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/12DQuad/trees/Data";
+    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/FlyingUni/trees/Data";
 
     if(!std::filesystem::exists(targetDir))
         {
@@ -104,7 +107,7 @@ int main(void)
     std::filesystem::create_directories(sourceDir);
 
     /***************************/
-    /* 12DQuad NARROW PASSAGE */
+    /* FlyingUni NARROW PASSAGE */
     /***************************/
 
     // --- Remove Previous Bench Data ---
@@ -113,13 +116,14 @@ int main(void)
     obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/quadNarrowPassage/obstacles.csv", numObstacles, W_DIM);
 
     // --- RRT ---
+    printf("RRT\n");
     for(int i = 0; i < N; i++)
         {
             rrt.planParallelRRT(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
         }
 
     sourceDir = "/home/nicolas/dev/research/KGMT/build/Data";
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/12DQuad/narrowPassage/Data";
+    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/FlyingUni/narrowPassage/Data";
 
     if(!std::filesystem::exists(targetDir))
         {
@@ -135,7 +139,7 @@ int main(void)
             rrt.planParallelEST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
         }
 
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/estParallel/12DQuad/narrowPassage/Data";
+    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/estParallel/FlyingUni/narrowPassage/Data";
 
     if(!std::filesystem::exists(targetDir))
         {
@@ -151,7 +155,7 @@ int main(void)
             rrt.planParallelPDST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
         }
 
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/12DQuad/narrowPassage/Data";
+    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/FlyingUni/narrowPassage/Data";
 
     if(!std::filesystem::exists(targetDir))
         {
@@ -162,7 +166,7 @@ int main(void)
     std::filesystem::create_directories(sourceDir);
 
     /***************************/
-    /* HOUSE */
+    /* trees */
     /***************************/
 
     // --- Remove Previous Bench Data ---
@@ -175,7 +179,7 @@ int main(void)
         }
 
     sourceDir = "/home/nicolas/dev/research/KGMT/build/Data";
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/12DQuad/house/Data";
+    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/rrtParallel/FlyingUni/trees/Data";
 
     if(!std::filesystem::exists(targetDir))
         {
@@ -191,7 +195,7 @@ int main(void)
             rrt.planParallelEST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
         }
 
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/estParallel/12DQuad/house/Data";
+    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/estParallel/FlyingUni/trees/Data";
 
     if(!std::filesystem::exists(targetDir))
         {
@@ -207,7 +211,7 @@ int main(void)
             rrt.planParallelPDST(h_initial, h_goal, obstacles.data(), numObstacles, 0.00);
         }
 
-    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/12DQuad/house/Data";
+    targetDir = "/home/nicolas/dev/research/KGMT/benchmarking/pdstParallel/FlyingUni/trees/Data";
 
     if(!std::filesystem::exists(targetDir))
         {
