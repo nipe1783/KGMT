@@ -1,12 +1,14 @@
 #pragma once
 
 #include "cpu/planners/ModRRT.h"
+#include "cpu/planners/ModSST.h"
 #include "cpu/planners/ModPDST.h"
 #include "cpu/planners/ModEST.h"
 #include "cpu/planners/ModSyclop.h"
 #include <ompl/control/SimpleSetup.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <ompl/control/spaces/RealVectorControlSpace.h>
+#include <ompl/base/objectives/PathLengthOptimizationObjective.h>
 #include "ompl/control/ODESolver.h"
 #include <ompl/base/Goal.h>
 #include <stdio.h>
@@ -47,6 +49,7 @@ public:
     void planParallelRRT(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     void planParallelEST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     void planRRT(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
+    void planSST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     void planEST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     void planPDST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     oc::SimpleSetupPtr kinodynamicSimpleSetUp(const float* initial, const float* goal);

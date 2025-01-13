@@ -503,6 +503,67 @@ void OMPL_Planner::planRRT(const float* initial, const float* goal, float* obsta
         }
 }
 
+void OMPL_Planner::planSST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin)
+{
+    ompl::msg::setLogLevel(ompl::msg::LOG_ERROR);
+
+    safetyMargin_   = safetyMargin;
+    obstacles_      = obstacles;
+    obstaclesCount_ = numObstacles;
+    OMPL_INFORM("numObstacles: %d", obstaclesCount_);
+
+    oc::SimpleSetupPtr ss = kinodynamicSimpleSetUp(initial, goal);
+
+    // --- Setting Planner ---
+    auto planner = std::make_shared<oc::ModSST>(ss->getSpaceInformation());
+    ss->setPlanner(planner);
+    ss->getSpaceInformation()->setStateValidityCheckingResolution(0.005);
+
+    // Create and set the optimization objective
+    ob::OptimizationObjectivePtr obj = std::make_shared<ob::PathLengthOptimizationObjective>(ss->getSpaceInformation());
+    ss->setOptimizationObjective(obj);
+
+    ss->setup();
+
+    // --- Solving Problem ---
+    auto start                            = std::chrono::high_resolution_clock::now();
+    ob::PlannerStatus solved              = ss->solve(100.0);
+    auto end                              = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    double elapsedTime                    = elapsed.count();
+
+    if(solved == ob::PlannerStatus::EXACT_SOLUTION)
+        {
+            std::cout << "Found solution:" << std::endl;
+
+            // Retrieve the solution path
+            const oc::PathControl& pathOmpl = ss->getSolutionPath();
+
+            // Compute the cost of the solution path
+            ob::Cost solutionCost = ob::Cost(0.0);  // Initialize cost
+            for(std::size_t i = 1; i < pathOmpl.getStateCount(); ++i)
+                {
+                    const ob::State* s1 = pathOmpl.getState(i - 1);
+                    const ob::State* s2 = pathOmpl.getState(i);
+                    solutionCost        = obj->combineCosts(solutionCost, obj->motionCost(s1, s2));  // Use combineCosts
+                }
+
+            // Print the cost
+            std::cout << "Cost of the solution: " << solutionCost.value() << std::endl;
+
+            // Perform other actions like logging
+            write2sys(ss);
+            writeExecutionTimeToCSV(elapsedTime);
+            ompl::base::PlannerData data(ss->getSpaceInformation());
+            planner->getPlannerData(data);
+            writeNumVerticesToCSV(data.numVertices());
+        }
+    else
+        {
+            std::cout << "No solution found" << std::endl;
+        }
+}
+
 void OMPL_Planner::planPDST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin)
 {
     safetyMargin_   = safetyMargin;
