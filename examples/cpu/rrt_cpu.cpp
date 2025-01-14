@@ -42,7 +42,8 @@ int main(void)
     std::vector<float> obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/house/obstacles.csv", numObstacles, W_DIM);
 
     OMPL_Planner rrt;
-    rrt.planSST(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
+    // rrt.planSST(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
+    rrt.computePathCost(h_initial, h_goal, obstacles.data(), numObstacles, 0.0, "/home/nicolas/dev/research/KGMT/controlPathToGoal.csv");
 
     return 0;
 }

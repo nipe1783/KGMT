@@ -52,6 +52,8 @@ public:
     void planSST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     void planEST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
     void planPDST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin);
+    void computePathCost(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin,
+                         const std::string& path);
     oc::SimpleSetupPtr kinodynamicSimpleSetUp(const float* initial, const float* goal);
 
     ob::StateSpacePtr createStateSpace();

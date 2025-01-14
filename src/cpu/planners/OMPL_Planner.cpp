@@ -459,6 +459,207 @@ oc::SimpleSetupPtr OMPL_Planner::kinodynamicSimpleSetUp(const float* initial, co
     return ss;
 }
 
+void OMPL_Planner::computePathCost(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin,
+                                   const std::string& csvPath)
+{
+    ompl::msg::setLogLevel(ompl::msg::LOG_ERROR);
+
+    safetyMargin_   = safetyMargin;
+    obstacles_      = obstacles;
+    obstaclesCount_ = numObstacles;
+    OMPL_INFORM("numObstacles: %d", obstaclesCount_);
+
+    // 1) Create the SimpleSetup (kinodynamic)
+    oc::SimpleSetupPtr ss = kinodynamicSimpleSetUp(initial, goal);
+    auto si               = ss->getSpaceInformation();
+
+    // 2) crete compound state space
+    auto compoundSpace = std::dynamic_pointer_cast<ob::CompoundStateSpace>(si->getStateSpace());
+    if(!compoundSpace)
+        {
+            std::cerr << "Error: The state space is not a CompoundStateSpace.\n"
+                      << "Check createStateSpace()." << std::endl;
+            return;
+        }
+
+    // 3) Create & set the optimization objective
+    auto obj = std::make_shared<ompl::base::PathLengthOptimizationObjective>(si);
+    ss->setOptimizationObjective(obj);
+    ss->setup();
+
+    // 4) Load CSV: only first 6 columns = [x, y, z, vx, vy, vz]
+    std::vector<std::vector<double>> states;
+    {
+        std::ifstream infile(csvPath);
+        if(!infile.is_open())
+            {
+                std::cerr << "Error: Cannot open CSV file: " << csvPath << std::endl;
+                return;
+            }
+
+        std::string line;
+        while(std::getline(infile, line))
+            {
+                std::stringstream linestream(line);
+                std::vector<double> row;
+                double value;
+                int colCount = 0;
+
+                // Read each column
+                while(linestream >> value)
+                    {
+                        if(colCount < STATE_DIM) row.push_back(value);
+
+                        // Skip extra columns
+                        if(linestream.peek() == ',') linestream.ignore();
+                        ++colCount;
+                    }
+
+                if(row.size() == 6) states.push_back(row);
+            }
+        infile.close();
+    }
+
+    if(states.empty())
+        {
+            std::cout << "No valid states found in the CSV file: " << csvPath << std::endl;
+            return;
+        }
+
+    // 5) Compute path cost from consecutive states
+    ompl::base::Cost solutionCost(0.0);
+
+    for(size_t i = 1; i < states.size(); ++i)
+        {
+            // Allocate s1, s2
+            ob::State* s1 = si->allocState();
+            ob::State* s2 = si->allocState();
+
+            auto* cstate1 = s1->as<ob::CompoundState>();
+            auto* cstate2 = s2->as<ob::CompoundState>();
+
+            // Fill each subspace according to MODEL
+            if(MODEL == 1)
+                {
+                    // Subspace 0 (position): 3D
+                    auto* pos1 = cstate1->as<ob::RealVectorStateSpace::StateType>(0);
+                    auto* pos2 = cstate2->as<ob::RealVectorStateSpace::StateType>(0);
+
+                    // Subspace 1 (velocity): 3D
+                    auto* vel1 = cstate1->as<ob::RealVectorStateSpace::StateType>(1);
+                    auto* vel2 = cstate2->as<ob::RealVectorStateSpace::StateType>(1);
+
+                    // CSV: [x, y, z, vx, vy, vz]
+                    // Fill s1
+                    pos1->values[0] = states[i - 1][0];
+                    pos1->values[1] = states[i - 1][1];
+                    pos1->values[2] = states[i - 1][2];
+
+                    vel1->values[0] = states[i - 1][3];
+                    vel1->values[1] = states[i - 1][4];
+                    vel1->values[2] = states[i - 1][5];
+
+                    // Fill s2
+                    pos2->values[0] = states[i][0];
+                    pos2->values[1] = states[i][1];
+                    pos2->values[2] = states[i][2];
+
+                    vel2->values[0] = states[i][3];
+                    vel2->values[1] = states[i][4];
+                    vel2->values[2] = states[i][5];
+                }
+            else if(MODEL == 2)
+                {
+                    // Subspace 0: position(3D)
+                    auto* pos1 = cstate1->as<ob::RealVectorStateSpace::StateType>(0);
+                    auto* pos2 = cstate2->as<ob::RealVectorStateSpace::StateType>(0);
+
+                    // Subspace 1: orientation(2D) [yaw, pitch]
+                    auto* orient1 = cstate1->as<ob::RealVectorStateSpace::StateType>(1);
+                    auto* orient2 = cstate2->as<ob::RealVectorStateSpace::StateType>(1);
+
+                    // Subspace 2: velocity(1D)
+                    auto* vel1 = cstate1->as<ob::RealVectorStateSpace::StateType>(2);
+                    auto* vel2 = cstate2->as<ob::RealVectorStateSpace::StateType>(2);
+
+                    // CSV: [x, y, z, yaw, pitch, v]
+                    // Fill s1
+                    pos1->values[0]    = states[i - 1][0];
+                    pos1->values[1]    = states[i - 1][1];
+                    pos1->values[2]    = states[i - 1][2];
+                    orient1->values[0] = states[i - 1][3];
+                    orient1->values[1] = states[i - 1][4];
+                    vel1->values[0]    = states[i - 1][5];
+
+                    // Fill s2
+                    pos2->values[0]    = states[i][0];
+                    pos2->values[1]    = states[i][1];
+                    pos2->values[2]    = states[i][2];
+                    orient2->values[0] = states[i][3];
+                    orient2->values[1] = states[i][4];
+                    vel2->values[0]    = states[i][5];
+                }
+            else if(MODEL == 3)
+                {
+                    // Subspace 0: position(3D)
+                    auto* pos1 = cstate1->as<ob::RealVectorStateSpace::StateType>(0);
+                    auto* pos2 = cstate2->as<ob::RealVectorStateSpace::StateType>(0);
+
+                    // Subspace 1: orientation(3D) [phi, theta, psi]
+                    auto* ori1 = cstate1->as<ob::RealVectorStateSpace::StateType>(1);
+                    auto* ori2 = cstate2->as<ob::RealVectorStateSpace::StateType>(1);
+
+                    // Subspace 2: linear velocity(3D) [vx, vy, vz]
+                    auto* vel1 = cstate1->as<ob::RealVectorStateSpace::StateType>(2);
+                    auto* vel2 = cstate2->as<ob::RealVectorStateSpace::StateType>(2);
+
+                    // Subspace 3: angular velocity(3D) [p, q, r]
+                    auto* angVel1 = cstate1->as<ob::RealVectorStateSpace::StateType>(3);
+                    auto* angVel2 = cstate2->as<ob::RealVectorStateSpace::StateType>(3);
+
+                    // CSV layout for 12D (example assumption):
+                    // [ x, y, z, phi, theta, psi, vx, vy, vz, p, q, r ]
+                    // Fill s1
+                    pos1->values[0]    = states[i - 1][0];
+                    pos1->values[1]    = states[i - 1][1];
+                    pos1->values[2]    = states[i - 1][2];
+                    ori1->values[0]    = states[i - 1][3];
+                    ori1->values[1]    = states[i - 1][4];
+                    ori1->values[2]    = states[i - 1][5];
+                    vel1->values[0]    = states[i - 1][6];
+                    vel1->values[1]    = states[i - 1][7];
+                    vel1->values[2]    = states[i - 1][8];
+                    angVel1->values[0] = states[i - 1][9];
+                    angVel1->values[1] = states[i - 1][10];
+                    angVel1->values[2] = states[i - 1][11];
+
+                    // Fill s2
+                    pos2->values[0]    = states[i][0];
+                    pos2->values[1]    = states[i][1];
+                    pos2->values[2]    = states[i][2];
+                    ori2->values[0]    = states[i][3];
+                    ori2->values[1]    = states[i][4];
+                    ori2->values[2]    = states[i][5];
+                    vel2->values[0]    = states[i][6];
+                    vel2->values[1]    = states[i][7];
+                    vel2->values[2]    = states[i][8];
+                    angVel2->values[0] = states[i][9];
+                    angVel2->values[1] = states[i][10];
+                    angVel2->values[2] = states[i][11];
+                }
+            // Compute motion cost
+            ompl::base::Cost motionCost = obj->motionCost(s1, s2);
+            solutionCost                = obj->combineCosts(solutionCost, motionCost);
+
+            // Free states
+            si->freeState(s1);
+            si->freeState(s2);
+        }
+
+    // 6) Print total path cost
+    std::cout << "Cost of the solution path: " << solutionCost.value() << std::endl;
+}
+
 void OMPL_Planner::planRRT(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin)
 {
     ompl::msg::setLogLevel(ompl::msg::LOG_ERROR);

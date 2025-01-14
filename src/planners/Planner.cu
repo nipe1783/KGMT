@@ -6,11 +6,13 @@ Planner::Planner()
     d_treeSamples_           = thrust::device_vector<float>(MAX_TREE_SIZE * SAMPLE_DIM);
     d_treeSamplesParentIdxs_ = thrust::device_vector<int>(MAX_TREE_SIZE);
     d_treeSampleCosts_       = thrust::device_vector<float>(MAX_TREE_SIZE);
-    d_controlPathToGoal_     = thrust::device_vector<float>(MAX_ITER * SAMPLE_DIM);
+    d_goalSet_               = thrust::device_vector<int>(MAX_TREE_SIZE);
+    d_controlPathToGoal_     = thrust::device_vector<float>(MAX_SOL_SET_SIZE * MAX_ITER * SAMPLE_DIM);
 
     d_treeSamples_ptr_           = thrust::raw_pointer_cast(d_treeSamples_.data());
     d_treeSamplesParentIdxs_ptr_ = thrust::raw_pointer_cast(d_treeSamplesParentIdxs_.data());
     d_treeSampleCosts_ptr_       = thrust::raw_pointer_cast(d_treeSampleCosts_.data());
+    d_goalSet_ptr_               = thrust::raw_pointer_cast(d_goalSet_.data());
     d_controlPathToGoal_ptr_     = thrust::raw_pointer_cast(d_controlPathToGoal_.data());
 
     h_gridSize_ = iDivUp(MAX_TREE_SIZE, h_blockSize_);

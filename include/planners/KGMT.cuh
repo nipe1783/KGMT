@@ -10,7 +10,8 @@ public:
 
     /****************************    METHODS    ****************************/
     void plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount) override;
-    void planBench(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr);
+    void planDataCollect(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr);
+    void planPathCost(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr);
     void propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount);
     void updateFrontier();
     void writeDeviceVectorsToCSV(int itr);
@@ -23,13 +24,13 @@ public:
     float h_fAccept_;
 
     // --- device fields ---
-    thrust::device_vector<bool> d_frontier_, d_frontierNext_;
+    thrust::device_vector<bool> d_frontier_, d_frontierNext_, d_goalSet_;
     thrust::device_vector<uint> d_activeFrontierIdxs_, d_frontierScanIdx_, d_activeFrontierRepeatCount_, d_frontierRepeatScanIdx_,
       d_activeFrontierRepeatIdxs_;
     thrust::device_vector<int> d_unexploredSamplesParentIdxs_;
     thrust::device_vector<float> d_unexploredSamples_, d_goalSample_;
     float *d_unexploredSamples_ptr_, *d_goalSample_ptr_;
-    bool *d_frontier_ptr_, *d_frontierNext_ptr_;
+    bool *d_frontier_ptr_, *d_frontierNext_ptr_, *d_goalSet_ptr_;
     uint *d_activeFrontierIdxs_ptr_, *d_frontierScanIdx_ptr_, *d_activeFrontierRepeatCount_ptr_, *d_frontierRepeatScanIdx_ptr_,
       *d_activeFrontierRepeatIdxs_ptr_;
     int* d_unexploredSamplesParentIdxs_ptr_;
@@ -55,5 +56,5 @@ __global__ void propagateFrontier_kernel2(bool* frontier, uint* activeFrontierId
 __global__ void
 updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNextIdxs, uint frontierNextSize, float* xGoal, int treeSize,
                       float* unexploredSamples, float* treeSamples, int* unexploredSamplesParentIdxs, int* treeSamplesParentIdxs,
-                      float* treeSampleCosts, int* pathToGoal, uint* activeFrontierRepeatCount, int* validVertexCounter,
-                      curandState* randomSeeds, float* vertexScores, float* controlPathToGoal, float fAccept);
+                      float* treeSampleCosts, uint* activeFrontierRepeatCount, int* validVertexCounter, curandState* randomSeeds,
+                      float* vertexScores, float* controlPathToGoal, float fAccept, bool* goalSet);
