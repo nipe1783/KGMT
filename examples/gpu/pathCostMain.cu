@@ -30,7 +30,7 @@ int main(void)
     int N = 1;
     for(int i = 0; i < N; i++)
         {
-            kgmt.planPathCost(h_initial, h_goal, d_obstacles, numObstacles, i);
+            kgmt.planDataCollect(h_initial, h_goal, d_obstacles, numObstacles, i);
 
             std::string path = "/home/nicolas/dev/research/KGMT/build/Data/ControlPathToGoal/ControlPathToGoal" + std::to_string(i) +
                                "/controlPathToGoal.csv";

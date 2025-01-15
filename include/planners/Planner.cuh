@@ -31,13 +31,13 @@ public:
     uint h_treeSize_ = 0, h_itr_ = 0, h_blockSize_ = 128, h_gridSize_, h_solSetSize_ = 0;
     float h_costToGoal_ = 0.0;
     int h_pathToGoal_;
-    float* h_controlPathToGoal_;
+    float* h_controlPathsToGoal_;
 
     // --- device fields ---
-    thrust::device_vector<float> d_treeSamples_, d_treeSampleCosts_, d_controlPathToGoal_;
+    thrust::device_vector<float> d_treeSamples_, d_treeSampleCosts_, d_controlPathsToGoal_;
     thrust::device_vector<int> d_treeSamplesParentIdxs_, d_goalSet_;
 
-    float *d_treeSamples_ptr_, *d_treeSampleCosts_ptr_, *d_costToGoal_ptr_, *d_controlPathToGoal_ptr_;
+    float *d_treeSamples_ptr_, *d_treeSampleCosts_ptr_, *d_costToGoal_ptr_, *d_controlPathsToGoal_ptr_;
     int *d_treeSamplesParentIdxs_ptr_, *d_pathToGoal_ptr_, *d_goalSet_ptr_;
 
     curandState* d_randomSeeds_ptr_;
