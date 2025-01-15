@@ -6,7 +6,7 @@
 
 #define MODEL 1
 
-#define MAX_TREE_SIZE 300000
+#define MAX_TREE_SIZE 1000000
 #define MAX_SOL_SET_SIZE 1000
 #define MAX_ITER 25
 #define STEP_SIZE 0.1f

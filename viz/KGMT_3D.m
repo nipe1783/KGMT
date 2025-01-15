@@ -11,7 +11,7 @@ catch
 end
 
 % Parameters
-numFiles = 9;
+numFiles = 1;
 radius = 0.05;
 N = 8;
 n = 4;
@@ -26,7 +26,7 @@ STEP_SIZE = .1;
 obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/house/obstacles.csv';
 obstacles = readmatrix(obstacleFilePath);
 
-controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathToGoal/ControlPathToGoal0/controlPathToGoal.csv';
+controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathsToGoal/ControlPathsToGoal0/controlPathsToGoal.csv';
 controls = readmatrix(controlPath);
 controls = flipud(controls);
 

@@ -17,7 +17,7 @@ int main(void)
     float* d_obstacles;
 
     // --- Load Workspace Obstacles ---
-    std::vector<float> obstacles = readObstaclesFromCSV("../include/config/obstacles/house/obstacles.csv", numObstacles, W_DIM);
+    std::vector<float> obstacles = readObstaclesFromCSV("../include/config/obstacles/narrowPassage/obstacles.csv", numObstacles, W_DIM);
 
     // --- Transfer Obstacles to device ---
     cudaMalloc(&d_obstacles, numObstacles * 2 * W_DIM * sizeof(float));
@@ -32,8 +32,8 @@ int main(void)
         {
             kgmt.planDataCollect(h_initial, h_goal, d_obstacles, numObstacles, i);
 
-            std::string path = "/home/nicolas/dev/research/KGMT/build/Data/ControlPathToGoal/ControlPathToGoal" + std::to_string(i) +
-                               "/controlPathToGoal.csv";
+            std::string path = "/home/nicolas/dev/research/KGMT/build/Data/ControlPathsToGoal/ControlPathsToGoal" + std::to_string(i) +
+                               "/controlPathsToGoal.csv";
             omplCost.computePathCost(h_initial, h_goal, obstacles.data(), numObstacles, 0.0, path);
         }
 

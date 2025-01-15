@@ -3,7 +3,7 @@ clc
 clear all
 
 % Parameters
-numFiles = 9;
+numFiles = 1;
 radius = .05;
 N = 8;
 n = 4;
@@ -13,10 +13,10 @@ controlSize = 2;
 xGoal = [.70, .95, .90];
 alpha = .7;
 STEP_SIZE = .1;
-model = 2;
+model = 1;
 
 % Obstacle file path
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/pillars/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/house/obstacles.csv';
 obstacles = gpuArray(readmatrix(obstacleFilePath));
 
 treeSizePath = "/home/nicolas/dev/research/KGMT/build/Data/TreeSize/TreeSize0/treeSize.csv";
@@ -39,7 +39,7 @@ title('Iteration 0');
 sampleFilePath = "/home/nicolas/dev/research/KGMT/build/Data/Samples/Samples0/samples1.csv";
 samples = gpuArray(readmatrix(sampleFilePath));
 
-controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathToGoal/ControlPathToGoal0/controlPathToGoal.csv';
+controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathsToGoal/ControlPathsToGoal0/controlPathsToGoal.csv';
 controls = gpuArray(flipud(readmatrix(controlPath)));
 % controls = [samples(1,1), samples(1,2), samples(1,3), samples(1,4), samples(1,5), samples(1,6), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0; controls];
 
