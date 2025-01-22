@@ -5,14 +5,14 @@ clear all;
 % Parameters
 radius = 0.05;
 alpha = 0.7;
-xGoal = [0.80, 0.95, 0.90];
+xGoal = [1.0, 0.5, 0.10];
 STEP_SIZE = 0.1;
 stateSize = 6;
 sampleSize = 10;
 model = 1; % Choose model (1: Double Integrator, 2: Dubins Airplane, 3: Quadcopter)
 
 % File paths
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/narrowPassage/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/shortestPath/obstacles.csv';
 controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathsToGoal/ControlPathsToGoal0/controlPathsToGoal.csv';
 
 % Read and flip control data
@@ -106,23 +106,23 @@ camlight('right');
 lighting phong;
 
 % Define views
-views = {...
-    [0, 90], 'top'; ...     % Top view
-    [90, 0], 'side'; ...    % Side view
-    [45, 30], 'isometric'; ... % Isometric view
-    [180, 0], 'reverse'; ...   % Reverse side view
-};
-
-% Save different views
-for v = 1:size(views, 1)
-    view(views{v, 1});
-    drawnow;
-    saveas(fig, sprintf('figs/trajectory_visualization_%s.jpg', views{v, 2}));
-    print(sprintf('figs/trajectory_visualization_%s.jpg', views{v, 2}), '-djpeg', '-r300');
-end
+% views = {...
+%     [0, 90], 'top'; ...     % Top view
+%     % [90, 0], 'side'; ...    % Side view
+%     % [45, 30], 'isometric'; ... % Isometric view
+%     % [180, 0], 'reverse'; ...   % Reverse side view
+% };
+% 
+% % Save different views
+% for v = 1:size(views, 1)
+%     view(views{v, 1});
+%     drawnow;
+%     saveas(fig, sprintf('figs/trajectory_visualization_%s.jpg', views{v, 2}));
+%     print(sprintf('figs/trajectory_visualization_%s.jpg', views{v, 2}), '-djpeg', '-r300');
+% end
 
 % Close figure
-close(fig);
+% close(fig);
 
 
 function [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize)

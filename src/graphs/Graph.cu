@@ -21,6 +21,7 @@ Graph::Graph(const float ws)
     d_minValueInRegion_      = thrust::device_vector<float>(NUM_R1_REGIONS * STATE_DIM);
     d_partialSums_           = thrust::device_vector<float>(h_numPartialSums_);
     d_totalScore_            = thrust::device_vector<float>(1, 0.0);
+    d_minCosts_              = thrust::device_vector<float>(NUM_R1_REGIONS);
 
     d_validCounterArray_ptr_ = thrust::raw_pointer_cast(d_validCounterArray_.data());
     d_counterArray_ptr_      = thrust::raw_pointer_cast(d_counterArray_.data());
@@ -29,6 +30,7 @@ Graph::Graph(const float ws)
     d_minValueInRegion_ptr_  = thrust::raw_pointer_cast(d_minValueInRegion_.data());
     d_partialSums_ptr_       = thrust::raw_pointer_cast(d_partialSums_.data());
     d_totalScore_ptr_        = thrust::raw_pointer_cast(d_totalScore_.data());
+    d_minCosts_ptr_          = thrust::raw_pointer_cast(d_minCosts_.data());
 
     initializeRegions();
 
