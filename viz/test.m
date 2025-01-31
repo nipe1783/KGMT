@@ -7,13 +7,13 @@ radius = 0.05;
 alpha = 0.7;
 xGoal = [1.0, 0.5, 0.10];
 STEP_SIZE = 0.1;
-stateSize = 6;
-sampleSize = 10;
-model = 1; % Choose model (1: Double Integrator, 2: Dubins Airplane, 3: Quadcopter)
-
 % File paths
 obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/shortestPath/obstacles.csv';
 controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathsToGoal/ControlPathsToGoal0/controlPathsToGoal.csv';
+
+stateSize = 6;
+sampleSize = 10;
+model = 1; % Choose model (1: Double Integrator, 2: Dubins Airplane, 3: Quadcopter)
 
 % Read and flip control data
 controls = flipud(readmatrix(controlPath));

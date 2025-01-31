@@ -15,7 +15,7 @@ alphaValue = 0.7;
 STEP_SIZE = .1;
 
 % Obstacle file path
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/house/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/trees/obstacles.csv';
 obstacles = readmatrix(obstacleFilePath);
 
 for i = 1:numFiles

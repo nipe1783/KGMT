@@ -7,8 +7,8 @@ int main(void)
     // --- Remove Previous Bench Data ---
     system("rm -rf Data/*");
 
-    float h_initial[SAMPLE_DIM] = {.05, .5, .05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-          h_goal[SAMPLE_DIM]    = {1.0, 0.5, 0.10, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    float h_initial[SAMPLE_DIM] = {.100, .80, .05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+          h_goal[SAMPLE_DIM]    = {.800, .950, .900, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     // float h_initial[SAMPLE_DIM] = {10.0, 8, 5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
     //       h_goal[SAMPLE_DIM]    = {80, 95.0, 90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     KGMT kgmt;
@@ -17,7 +17,7 @@ int main(void)
     float* d_obstacles;
 
     // --- Load Workspace Obstacles ---
-    std::vector<float> obstacles = readObstaclesFromCSV("../include/config/obstacles/shortestPath/obstacles.csv", numObstacles, W_DIM);
+    std::vector<float> obstacles = readObstaclesFromCSV("../include/config/obstacles/trees/obstacles.csv", numObstacles, W_DIM);
 
     // --- Transfer Obstacles to device ---
     cudaMalloc(&d_obstacles, numObstacles * 2 * W_DIM * sizeof(float));
@@ -31,10 +31,6 @@ int main(void)
     for(int i = 0; i < N; i++)
         {
             kgmt.planDataCollect(h_initial, h_goal, d_obstacles, numObstacles, i);
-
-            // std::string path = "/home/nicolas/dev/research/KGMT/build/Data/ControlPathsToGoal/ControlPathsToGoal" + std::to_string(i) +
-            //                    "/controlPathsToGoal.csv";
-            // omplCost.computePathCost(h_initial, h_goal, obstacles.data(), numObstacles, 0.0, path);
         }
 
     // --- Free memory ---

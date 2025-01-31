@@ -160,6 +160,17 @@ target_link_libraries(pdst_cpu
     OpenMP::OpenMP_CXX
 )
 
+add_executable(sst examples/cpu/sst.cpp)
+target_link_libraries(sst
+    PUBLIC KGMT_lib
+    ${Boost_LIBRARIES}
+    ${EIGEN3_LIBRARIES}
+    yaml-cpp
+    Python3::Python
+    Python3::NumPy
+    ${OMPL_LIBRARIES}
+    OpenMP::OpenMP_CXX
+)
 
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -diag-suppress=20012,20013,20014,20015 --expt-relaxed-constexpr --ptxas-options=-v")
 set_property(TARGET main PROPERTY CUDA_ARCHITECTURES 86)

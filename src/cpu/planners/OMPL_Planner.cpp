@@ -738,21 +738,24 @@ private:
 
 void OMPL_Planner::planSST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin)
 {
-    ompl::msg::setLogLevel(ompl::msg::LOG_ERROR);
+    // ompl::msg::setLogLevel(ompl::msg::LOG_ERROR);
 
     safetyMargin_   = safetyMargin;
     obstacles_      = obstacles;
     obstaclesCount_ = numObstacles;
     OMPL_INFORM("numObstacles: %d", obstaclesCount_);
 
-    // Create the SimpleSetup and planner as before
     oc::SimpleSetupPtr ss = kinodynamicSimpleSetUp(initial, goal);
 
+    // 2. Create planner
     auto planner = std::make_shared<oc::ModSST>(ss->getSpaceInformation());
     ss->setPlanner(planner);
     ss->getSpaceInformation()->setStateValidityCheckingResolution(0.005);
+    planner->setSelectionRadius(0.2);
+    planner->setPruningRadius(0.1);
+    planner->setGoalBias(.05);
 
-    // Create and set the optimization objective (position-only)
+    // 3. Create the optimization objective (position-only)
     auto si               = ss->getSpaceInformation();
     auto compoundSpace    = si->getStateSpace()->as<ob::CompoundStateSpace>();
     auto positionSubSpace = compoundSpace->getSubspace(0);
@@ -760,76 +763,30 @@ void OMPL_Planner::planSST(const float* initial, const float* goal, float* obsta
     ob::OptimizationObjectivePtr obj(new PositionOnlyPathLengthObjective(si, positionSubSpace));
     ss->setOptimizationObjective(obj);
     ss->setup();
+    ob::PlannerStatus solved = ss->solve(360.0);
 
-    // We'll solve in small time increments and track the best cost found
-    double maxTime     = 100.0;  // total desired solve time
-    double stepTime    = 1.0;    // increment each iteration
-    double elapsedTime = 0.0;    // total elapsed time so far
-
-    // We'll store the best cost we have so far
-    ob::Cost bestCost(std::numeric_limits<double>::infinity());
-    bool foundAnySolution = false;
-
-    // Start measuring wall-clock time
-    auto startClock = std::chrono::high_resolution_clock::now();
-
-    // Loop in increments until we reach our max time
-    while(elapsedTime < maxTime)
+    if(solved)
         {
-            // Call solve for stepTime seconds
-            ob::PlannerStatus solved = ss->solve(stepTime);
-
-            // Update how much wall-clock time has actually passed
-            auto now                                  = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> iterElapsed = now - startClock;
-            elapsedTime                               = iterElapsed.count();
-
-            // Check if we have any solution at all (exact)
-            if(ss->haveSolutionPath())
-                {
-                    foundAnySolution = true;
-
-                    // Retrieve the path
-                    const oc::PathControl& pathOmpl = ss->getSolutionPath();
-
-                    // Compute the path's cost
-                    ob::Cost currentCost(0.0);
-                    for(std::size_t i = 1; i < pathOmpl.getStateCount(); ++i)
-                        {
-                            const ob::State* s1 = pathOmpl.getState(i - 1);
-                            const ob::State* s2 = pathOmpl.getState(i);
-                            currentCost         = obj->combineCosts(currentCost, obj->motionCost(s1, s2));
-                        }
-
-                    // If it's strictly better than our previous best, print an update
-                    if(currentCost.value() < bestCost.value())
-                        {
-                            bestCost = currentCost;
-                            std::cout << "[Partial Solve] Found a new/better solution " << "with cost = " << bestCost.value()
-                                      << " at time = " << elapsedTime << " seconds\n";
-                        }
-                }
-
-            // If you want to exit as soon as you find an EXACT solution,
-            // you can also check: if (solved == ob::PlannerStatus::EXACT_SOLUTION) ...
-            // but often for optimizing planners, you'd keep searching for better solutions.
-        }
-
-    // After the loop, check whether we found any solution
-    if(foundAnySolution)
-        {
-            std::cout << "Final best solution cost: " << bestCost.value() << " after " << elapsedTime << " seconds total.\n";
-
-            // You can still retrieve the final best path, log it, etc.
+            std::cout << "Found solution:" << std::endl;
+            oc::PathControl pathOmpl(ss->getSpaceInformation());
+            pathOmpl = ss->getSolutionPath();
             write2sys(ss);
-            writeExecutionTimeToCSV(elapsedTime);
             ompl::base::PlannerData data(ss->getSpaceInformation());
             planner->getPlannerData(data);
             writeNumVerticesToCSV(data.numVertices());
+
+            ob::Cost currentCost(0.0);
+            for(std::size_t i = 1; i < pathOmpl.getStateCount(); ++i)
+                {
+                    const ob::State* s1 = pathOmpl.getState(i - 1);
+                    const ob::State* s2 = pathOmpl.getState(i);
+                    currentCost         = obj->combineCosts(currentCost, obj->motionCost(s1, s2));
+                }
+            std::cout << "[Partial Solve] Found a new/better solution " << "with cost = " << currentCost.value() << "\n";
         }
     else
         {
-            std::cout << "No solution found after " << elapsedTime << " seconds" << std::endl;
+            std::cout << "No solution found" << std::endl;
         }
 }
 

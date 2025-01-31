@@ -75,6 +75,8 @@ void KGMT::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.begin() + 1, 5);  // TODO make this not hard coded to 5.
     thrust::fill(d_goalSet_.begin(), d_goalSet_.end(), false);
+    thrust::fill(d_pathCosts_.begin(), d_pathCosts_.end(), 0.0f);
+    thrust::fill(d_iterations_.begin(), d_iterations_.end(), 0);
 
     h_treeSize_     = 1;
     h_itr_          = 0;
@@ -140,6 +142,8 @@ void KGMT::planDataCollect(float* h_initial, float* h_goal, float* d_obstacles_p
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.begin() + 1, 5);
     thrust::fill(d_goalSet_.begin(), d_goalSet_.end(), false);
+    thrust::fill(d_pathCosts_.begin(), d_pathCosts_.end(), 0.0f);
+    thrust::fill(d_iterations_.begin(), d_iterations_.end(), 0);
 
     h_treeSize_     = 1;
     h_itr_          = 0;
@@ -202,6 +206,8 @@ void KGMT::planPathCost(float* h_initial, float* h_goal, float* d_obstacles_ptr,
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.begin() + 1, 5);
     thrust::fill(d_goalSet_.begin(), d_goalSet_.end(), false);
+    thrust::fill(d_pathCosts_.begin(), d_pathCosts_.end(), 0.0f);
+    thrust::fill(d_iterations_.begin(), d_iterations_.end(), 0);
 
     h_treeSize_     = 1;
     h_itr_          = 0;
@@ -408,11 +414,11 @@ propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float* treeS
 /* FRONTIER UPDATE KERNEL */
 /***************************/
 // --- Adds previous frontier to the tree and builds new frontier. ---
-__global__ void
-updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNextIdxs, uint frontierNextSize, float* xGoal, int treeSize,
-                      float* unexploredSamples, float* treeSamples, int* unexploredSamplesParentIdxs, int* treeSamplesParentIdxs,
-                      float* treeSampleCosts, uint* activeFrontierRepeatCount, int* validVertexCounter, curandState* randomSeeds,
-                      float* vertexScores, float* controlPathToGoal, float fAccept, bool* goalSet, float* minCosts)
+__global__ void updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNextIdxs, uint frontierNextSize, float* xGoal,
+                                      int treeSize, float* unexploredSamples, float* treeSamples, int* unexploredSamplesParentIdxs,
+                                      int* treeSamplesParentIdxs, float* treeSampleCosts, uint* activeFrontierRepeatCount,
+                                      int* validVertexCounter, curandState* randomSeeds, float* vertexScores, float* controlPathToGoal,
+                                      float fAccept, bool* goalSet, float* minCosts, int* iterations, int iteration)
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -447,8 +453,9 @@ updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNe
             // --- Goal Criteria Check ---
             if(distance(x1, s_xGoal) < GOAL_THRESH)
                 {
-                    goalSet[x1TreeIdx]  = true;
-                    frontier[x1TreeIdx] = false;
+                    goalSet[x1TreeIdx]    = true;
+                    frontier[x1TreeIdx]   = false;
+                    iterations[x1TreeIdx] = iteration;  // TODO: Remove this.
                     printf("cost: %f\n", treeSampleCosts[x1TreeIdx]);
                 }
         }
@@ -496,7 +503,8 @@ void KGMT::updateFrontier()
       d_frontier_ptr_, d_frontierNext_ptr_, d_activeFrontierIdxs_ptr_, h_frontierNextSize_, d_goalSample_ptr_, h_treeSize_,
       d_unexploredSamples_ptr_, d_treeSamples_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_treeSamplesParentIdxs_ptr_,
       d_treeSampleCosts_ptr_, d_activeFrontierRepeatCount_ptr_, graph_.d_validCounterArray_ptr_, d_randomSeeds_ptr_,
-      graph_.d_vertexScoreArray_ptr_, d_controlPathsToGoal_ptr_, h_fAccept_, d_goalSet_ptr_, graph_.d_minCosts_ptr_);
+      graph_.d_vertexScoreArray_ptr_, d_controlPathsToGoal_ptr_, h_fAccept_, d_goalSet_ptr_, graph_.d_minCosts_ptr_, d_iterations_ptr_,
+      h_itr_);
 
     // --- Check for goal criteria ---
     cudaMemcpy(&h_pathToGoal_, d_pathToGoal_ptr_, sizeof(int), cudaMemcpyDeviceToHost);
@@ -513,11 +521,12 @@ void KGMT::getControlPathsToGoal()
     findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_goalSet_ptr_, d_goalSetScanIdx_ptr_, d_goalSetIdxs_ptr_);
 
     getControlPathsToGoal_kernel<<<iDivUp(h_solSetSize_, h_blockSize_), h_blockSize_>>>(
-      d_controlPathsToGoal_ptr_, d_treeSamples_ptr_, d_treeSamplesParentIdxs_ptr_, d_goalSetIdxs_ptr_, h_solSetSize_);
+      d_controlPathsToGoal_ptr_, d_treeSamples_ptr_, d_treeSamplesParentIdxs_ptr_, d_goalSetIdxs_ptr_, h_solSetSize_, d_pathCosts_ptr_,
+      d_treeSampleCosts_ptr_, d_iterations_ptr_);
 }
 
-__global__ void
-getControlPathsToGoal_kernel(float* controlPathsToGoal, float* treeSamples, int* treeSamplesParentIdxs, uint* goalSetIdxs, int goalSetSize)
+__global__ void getControlPathsToGoal_kernel(float* controlPathsToGoal, float* treeSamples, int* treeSamplesParentIdxs, uint* goalSetIdxs,
+                                             int goalSetSize, float* pathCosts, float* treeSampleCosts, int* iterations)
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid >= MAX_TREE_SIZE || tid >= goalSetSize) return;
@@ -535,6 +544,11 @@ getControlPathsToGoal_kernel(float* controlPathsToGoal, float* treeSamples, int*
             i++;
             x0Idx = treeSamplesParentIdxs[x0Idx];
         }
+
+    // TODO: Remove this:
+    int pathCostsIDx            = 2 * tid;
+    pathCosts[pathCostsIDx]     = iterations[goalIdx];
+    pathCosts[pathCostsIDx + 1] = treeSampleCosts[goalIdx];
 }
 
 void KGMT::writeDeviceVectorsToCSV(int itr)
@@ -558,6 +572,7 @@ void KGMT::writeDeviceVectorsToCSV(int itr)
     std::filesystem::create_directories("Data/goalSet/goalSet" + std::to_string(itr));
     std::filesystem::create_directories("Data/treeSampleCosts/treeSampleCosts" + std::to_string(itr));
     std::filesystem::create_directories("Data/minCosts/minCosts" + std::to_string(itr));
+    std::filesystem::create_directories("Data/pathCosts/pathCosts" + std::to_string(itr));
 
     // Write Samples
     filename.str("");
@@ -635,6 +650,11 @@ void KGMT::writeDeviceVectorsToCSV(int itr)
     filename.str("");
     filename << "Data/minCosts/minCosts" << itr << "/minCosts.csv";
     copyAndWriteVectorToCSV(graph_.d_minCosts_, filename.str(), NUM_R1_REGIONS, 1, false);
+
+    // Write Path Costs
+    filename.str("");
+    filename << "Data/pathCosts/pathCosts" << itr << "/pathCosts.csv";
+    copyAndWriteVectorToCSV(d_pathCosts_, filename.str(), 2 * MAX_SOL_SET_SIZE, 1, false);
 }
 
 void KGMT::writeExecutionTimeToCSV(double time)
