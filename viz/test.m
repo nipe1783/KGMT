@@ -5,10 +5,10 @@ clear all;
 % Parameters
 radius = 0.05;
 alpha = 0.7;
-xGoal = [1.0, 0.5, 0.10];
+xGoal = [.5, .5, 1.0];
 STEP_SIZE = 0.1;
 % File paths
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/shortestPath/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/empty/obstacles.csv';
 controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathsToGoal/ControlPathsToGoal0/controlPathsToGoal.csv';
 
 stateSize = 6;
@@ -92,7 +92,7 @@ for i = 1:length(startIndices)
 
         % Plot the propagated segment
         plot3(segmentX, segmentY, segmentZ, 'LineWidth', 1.5, 'Color', color);
-        % plot3(gather(controls(j, 1)), gather(controls(j, 2)), gather(controls(j, 3)), 'o', 'Color', 'k', 'MarkerFaceColor', 'k', 'MarkerSize', 2);
+        % plot3(g/ather(controls(j, 1)), gather(controls(j, 2)), gather(controls(j, 3)), 'o', 'Color', 'k', 'MarkerFaceColor', 'k', 'MarkerSize', 2);
         % scatter3(segmentX, segmentY, segmentZ, 20, color, 'filled');
 
         % Update the initial state for the next segment

@@ -3,17 +3,17 @@ clc
 clear all
 
 % Parameters
-numFiles = 23;
+numFiles = 10;
 radius = 0.05;
 N = 8;
 n = 4;
 sampleSize = 10;
 stateSize = 6;
 controlSize = 3;
-xGoal = [.7, .95, .9];
+xGoal = [.75, .95, .9];
 alpha = .9;
 STEP_SIZE = .1;
-model = 2;
+model = 1;
 
 % Obstacle file path
 obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/pillars/obstacles.csv';
@@ -38,10 +38,10 @@ title('Iteration 0');
 sampleFilePath = "/home/nicolas/dev/research/KGMT/build/Data/Samples/Samples0/samples1.csv";
 samples = readmatrix(sampleFilePath);
 
-controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathToGoal/ControlPathToGoal0/controlPathToGoal.csv';
-controls = readmatrix(controlPath);
-controls = flipud(controls);
-controls = [samples(1,1), samples(1,2), samples(1,3), samples(1,4), samples(1,5), samples(1,6), 0, 0, 0, 0; controls];
+% controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathToGoal/ControlPathToGoal0/controlPathToGoal.csv';
+% controls = readmatrix(controlPath);
+% controls = flipud(controls);
+% controls = [samples(1,1), samples(1,2), samples(1,3), samples(1,4), samples(1,5), samples(1,6), 0, 0, 0, 0; controls];
 
 plot3(samples(1,1), samples(1,2), samples(1,3), 'ko', 'MarkerFaceColor', 'b', 'MarkerSize', 10);
 
@@ -75,30 +75,30 @@ for j = 1:size(obstacles, 1)
     patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', alpha);
 end
 
-camlight('headlight'); 
-camlight('right');
-lighting phong;
-
-view(3);
-drawnow;
-saveas(gcf, 'figs/KGMT_Iteration_0.jpg');
-print('figs/KGMT_Iteration_0.jpg', '-djpeg', '-r300');
-
-view(2);
-drawnow;
-saveas(gcf, 'figs/top_KGMT_Iteration_0.jpg');
-print('figs/top_KGMT_Iteration_0.jpg', '-djpeg', '-r300');
-
-midY = 0.5 * xGoal(2); 
-midZ = 0.5 * xGoal(3); 
-campos([0, midY, xGoal(3) + 1]); 
-camtarget([0, midY, midZ]); 
-view([-.4, -.2, 0.5]);
-drawnow;
-saveas(gcf, 'figs/xAxis_KGMT_Iteration_0.jpg');
-print('figs/xAxis_KGMT_Iteration_0.jpg', '-djpeg', '-r300'); 
-
-close(gcf);
+% camlight('headlight'); 
+% camlight('right');
+% lighting phong;
+% 
+% view(3);
+% drawnow;
+% saveas(gcf, 'figs/KGMT_Iteration_0.jpg');
+% print('figs/KGMT_Iteration_0.jpg', '-djpeg', '-r300');
+% 
+% view(2);
+% drawnow;
+% saveas(gcf, 'figs/top_KGMT_Iteration_0.jpg');
+% print('figs/top_KGMT_Iteration_0.jpg', '-djpeg', '-r300');
+% 
+% midY = 0.5 * xGoal(2); 
+% midZ = 0.5 * xGoal(3); 
+% campos([0, midY, xGoal(3) + 1]); 
+% camtarget([0, midY, midZ]); 
+% view([-.4, -.2, 0.5]);
+% drawnow;
+% saveas(gcf, 'figs/xAxis_KGMT_Iteration_0.jpg');
+% print('figs/xAxis_KGMT_Iteration_0.jpg', '-djpeg', '-r300'); 
+% 
+% close(gcf);
 iteration = 1;
 
 for i = 1:numFiles
@@ -185,25 +185,25 @@ for i = 1:numFiles
         end
     end
 
-    view(3);
-    drawnow;
-    saveas(gcf, sprintf('figs/KGMT_Iteration_%d.jpg', i));
-    print(sprintf('figs/KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
+    % view(3);
+    % drawnow;
+    % saveas(gcf, sprintf('figs/KGMT_Iteration_%d.jpg', i));
+    % print(sprintf('figs/KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
 
     view(2);
     drawnow;
     saveas(gcf, sprintf('figs/top_KGMT_Iteration_%d.jpg', i));
     print(sprintf('figs/top_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
 
-    midY = (min(samples(:,2)) + max(samples(:,2))) / 2;
-    midZ = (min(samples(:,3)) + max(samples(:,3))) / 2;
-    campos([0, midY, max(samples(:,3)) + 1]);
-    camtarget([0, midY, midZ]);
-    view([-.4, -.2, 0.5]);
-    drawnow;
-
-    saveas(gcf, sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i));
-    print(sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
+    % midY = (min(samples(:,2)) + max(samples(:,2))) / 2;
+    % midZ = (min(samples(:,3)) + max(samples(:,3))) / 2;
+    % campos([0, midY, max(samples(:,3)) + 1]);
+    % camtarget([0, midY, midZ]);
+    % view([-.4, -.2, 0.5]);
+    % drawnow;
+    % 
+    % saveas(gcf, sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i));
+    % print(sprintf('figs/xAxis_KGMT_Iteration_%d.jpg', i), '-djpeg', '-r300');
 
     close(gcf);
 end

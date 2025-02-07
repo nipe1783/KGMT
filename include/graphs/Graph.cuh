@@ -23,9 +23,10 @@ public:
 
     // --- device fields ---
     thrust::device_vector<int> d_validCounterArray_, d_counterArray_, d_activeVerticesScanIdx_, d_activeSubVertices_;
-    thrust::device_vector<float> d_vertexScoreArray_, d_minValueInRegion_, d_partialSums_, d_totalScore_, d_minCosts_;
+    thrust::device_vector<float> d_vertexScoreArray_, d_minValueInRegion_, d_partialSums_, d_totalScore_, d_minCostsR1_, d_minCostsR2_;
 
-    float *d_vertexScoreArray_ptr_, *d_minValueInRegion_ptr_, *d_partialSums_ptr_, *d_totalScore_ptr_, *d_minCosts_ptr_;
+    float *d_vertexScoreArray_ptr_, *d_minValueInRegion_ptr_, *d_partialSums_ptr_, *d_totalScore_ptr_, *d_minCostsR1_ptr_,
+      *d_minCostsR2_ptr_;
     int *d_validCounterArray_ptr_, *d_counterArray_ptr_, *d_activeVerticesScanIdx_ptr_, *d_activeSubVertices_ptr_;
 
     /****************************    METHODS    ****************************/

@@ -6,10 +6,10 @@
 
 #define MODEL 1
 
-#define MAX_TREE_SIZE 1000000
-#define MAX_FLOAT 0.0f
+#define MAX_TREE_SIZE 6000000
+#define MAX_FLOAT 1000000.0f
 #define MAX_SOL_SET_SIZE 10000
-#define MAX_ITER 50
+#define MAX_ITER 5000
 #define STEP_SIZE 0.1f
 #define MAX_PROPAGATION_DURATION 10
 

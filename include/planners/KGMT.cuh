@@ -28,13 +28,13 @@ public:
     thrust::device_vector<bool> d_frontier_, d_frontierNext_, d_goalSet_;
     thrust::device_vector<uint> d_activeFrontierIdxs_, d_frontierScanIdx_, d_activeFrontierRepeatCount_, d_frontierRepeatScanIdx_,
       d_activeFrontierRepeatIdxs_, d_goalSetScanIdx_, d_goalSetIdxs_;
-    thrust::device_vector<int> d_unexploredSamplesParentIdxs_;
+    thrust::device_vector<int> d_unexploredSamplesParentIdxs_, d_treeXR1s_, d_treeXR2s_, d_frontierNextXR1s_, d_frontierNextXR2s_;
     thrust::device_vector<float> d_unexploredSamples_, d_goalSample_;
     float *d_unexploredSamples_ptr_, *d_goalSample_ptr_;
     bool *d_frontier_ptr_, *d_frontierNext_ptr_, *d_goalSet_ptr_;
     uint *d_activeFrontierIdxs_ptr_, *d_frontierScanIdx_ptr_, *d_activeFrontierRepeatCount_ptr_, *d_frontierRepeatScanIdx_ptr_,
       *d_activeFrontierRepeatIdxs_ptr_, *d_goalSetScanIdx_ptr_, *d_goalSetIdxs_ptr_;
-    int* d_unexploredSamplesParentIdxs_ptr_;
+    int *d_unexploredSamplesParentIdxs_ptr_, *d_treeXR1s_ptr_, *d_treeXR2s_ptr_, *d_frontierNextXR1s_ptr_, *d_frontierNextXR2s_ptr_;
 };
 
 /**************************** DEVICE FUNCTIONS ****************************/
@@ -44,23 +44,25 @@ public:
 /***************************/
 // --- Propagates current frontier. Builds new frontier. ---
 // --- One Block Per Frontier Sample ---
-__global__ void
-propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
-                          curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
-                          int* activeSubVertices, float* vertexScores, bool* frontierNext, int* vertexCounter, int* validVertexCounter,
-                          float* minValueInRegion, float* treeSampleCosts, float* minCosts);
+__global__ void propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples,
+                                          uint frontierSize, curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles,
+                                          int obstaclesCount, int* activeSubVertices, float* vertexScores, bool* frontierNext,
+                                          int* vertexCounter, int* validVertexCounter, float* minValueInRegion, float* treeSampleCosts,
+                                          float* minCostsR1, float* minCostsR2, int* frontierNextXR1s, int* frontierNextXR2s);
 
 __global__ void
 propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
                           curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
                           int* activeSubVertices, float* vertexScores, bool* frontierNext, int* vertexCounter, int* validVertexCounter,
-                          int iterations, float* minValueInRegion, float* treeSampleCosts, float* minCosts);
+                          int iterations, float* minValueInRegion, float* treeSampleCosts, float* minCostsR1, float* minCostsR2,
+                          int* frontierNextXR1s, int* frontierNextXR2s);
 
-__global__ void updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNextIdxs, uint frontierNextSize, float* xGoal,
-                                      int treeSize, float* unexploredSamples, float* treeSamples, int* unexploredSamplesParentIdxs,
-                                      int* treeSamplesParentIdxs, float* treeSampleCosts, uint* activeFrontierRepeatCount,
-                                      int* validVertexCounter, curandState* randomSeeds, float* vertexScores, float* controlPathToGoal,
-                                      float fAccept, bool* goalSet, float* minCosts, int* iterations, int iteration);
+__global__ void
+updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNextIdxs, uint frontierNextSize, float* xGoal, int treeSize,
+                      float* unexploredSamples, float* treeSamples, int* unexploredSamplesParentIdxs, int* treeSamplesParentIdxs,
+                      float* treeSampleCosts, uint* activeFrontierRepeatCount, int* validVertexCounter, curandState* randomSeeds,
+                      float* vertexScores, float* controlPathToGoal, float fAccept, bool* goalSet, int* iterations, int iteration,
+                      float* minCostsR1, float* minCostsR2, int* treeXR1s, int* treeXR2s, int* frontierNextXR1s, int* frontierNextXR2s);
 
 __global__ void getControlPathsToGoal_kernel(float* controlPathsToGoal, float* treeSamples, int* treeSamplesParentIdxs, uint* goalSetIdxs,
                                              int goalSetSize, float* pathCosts, float* treeSampleCosts, int* iterations);
