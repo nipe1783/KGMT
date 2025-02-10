@@ -1,5 +1,5 @@
 #include <iostream>
-#include "planners/KGMT.cuh"
+#include "planners/KPAX.cuh"
 int main(void)
 {
     // --- Remove Previous Bench Data ---
@@ -9,7 +9,7 @@ int main(void)
     //       h_goal[SAMPLE_DIM]    = {80, 95.0, 90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     float h_initial[SAMPLE_DIM] = {.100, .80, .05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
           h_goal[SAMPLE_DIM]    = {.800, .950, .900, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    KGMT kgmt;
+    KPAX kpax;
 
     int numObstacles;
     float* d_obstacles;
@@ -26,7 +26,7 @@ int main(void)
     for(int i = 0; i < N; i++)
         {
             // --- Execute planner ---
-            kgmt.planDataCollect(h_initial, h_goal, d_obstacles, numObstacles, i);
+            kpax.planDataCollect(h_initial, h_goal, d_obstacles, numObstacles, i);
         }
 
     // --- Free memory ---

@@ -25,7 +25,8 @@ include_directories(
 )
 
 set(SOURCE_FILES
-    src/planners/KGMT.cu
+    src/planners/OKPAX.cu
+    src/planners/KPAX.cu
     src/planners/Planner.cu
     src/collisionCheck/collisionCheck.cu
     src/graphs/Graph.cu

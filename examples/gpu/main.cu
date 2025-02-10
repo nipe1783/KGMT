@@ -1,5 +1,5 @@
 #include <iostream>
-#include "planners/KGMT.cuh"
+#include "planners/KPAX.cuh"
 
 int main(void)
 {
@@ -10,7 +10,7 @@ int main(void)
           h_goal[SAMPLE_DIM]    = {.800, .950, .900, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     // float h_initial[SAMPLE_DIM] = {10.0, 8, 5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
     //       h_goal[SAMPLE_DIM]    = {80, 95.0, 90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    KGMT kgmt;
+    KPAX kpax;
 
     int numObstacles;
     float* d_obstacles;
@@ -23,7 +23,7 @@ int main(void)
     cudaMemcpy(d_obstacles, obstacles.data(), numObstacles * 2 * W_DIM * sizeof(float), cudaMemcpyHostToDevice);
 
     // --- Execute planner ---
-    kgmt.planDataCollect(h_initial, h_goal, d_obstacles, numObstacles, 0);
+    kpax.planDataCollect(h_initial, h_goal, d_obstacles, numObstacles, 0);
 
     // --- Free memory ---
     cudaFree(d_obstacles);

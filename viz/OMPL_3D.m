@@ -10,12 +10,12 @@ n = 4;
 sampleSize = 10;
 stateSize = 6;
 controlSize = 3;
-xGoal = [.80, .95, .90];
+xGoal = [.75, .95, .90];
 alphaValue = 0.7;
 STEP_SIZE = .1;
 
 % Obstacle file path
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/trees/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/pillars/obstacles.csv';
 obstacles = readmatrix(obstacleFilePath);
 
 for i = 1:numFiles

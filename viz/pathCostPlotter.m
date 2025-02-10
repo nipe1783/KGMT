@@ -21,6 +21,6 @@ end
 % Scatter plot
 figure;
 scatter(integers, costs, 'filled'); 
-xlabel('Iteration');
+xlabel('Iterations');
 ylabel('Cost');
 grid on;
