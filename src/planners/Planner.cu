@@ -6,6 +6,7 @@ Planner::Planner()
     d_treeSamples_           = thrust::device_vector<float>(MAX_TREE_SIZE * SAMPLE_DIM);
     d_treeSamplesParentIdxs_ = thrust::device_vector<int>(MAX_TREE_SIZE);
     d_treeSampleCosts_       = thrust::device_vector<float>(MAX_TREE_SIZE);
+    d_unexploredSampleCosts_ = thrust::device_vector<float>(MAX_TREE_SIZE);
     d_goalSet_               = thrust::device_vector<int>(MAX_TREE_SIZE);
     d_controlPathsToGoal_    = thrust::device_vector<float>(MAX_SOL_SET_SIZE * MAX_ITER * SAMPLE_DIM);
     d_pathCosts_             = thrust::device_vector<float>(2 * MAX_SOL_SET_SIZE);
@@ -14,6 +15,7 @@ Planner::Planner()
     d_treeSamples_ptr_           = thrust::raw_pointer_cast(d_treeSamples_.data());
     d_treeSamplesParentIdxs_ptr_ = thrust::raw_pointer_cast(d_treeSamplesParentIdxs_.data());
     d_treeSampleCosts_ptr_       = thrust::raw_pointer_cast(d_treeSampleCosts_.data());
+    d_unexploredSampleCosts_ptr_ = thrust::raw_pointer_cast(d_unexploredSampleCosts_.data());
     d_goalSet_ptr_               = thrust::raw_pointer_cast(d_goalSet_.data());
     d_controlPathsToGoal_ptr_    = thrust::raw_pointer_cast(d_controlPathsToGoal_.data());
     d_pathCosts_ptr_             = thrust::raw_pointer_cast(d_pathCosts_.data());

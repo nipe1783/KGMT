@@ -3,7 +3,7 @@ clc
 clear all
 
 % Parameters
-numFiles = 10;
+numFiles = 50;
 radius = 0.05;
 N = 8;
 n = 4;
@@ -75,19 +75,19 @@ for j = 1:size(obstacles, 1)
     patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', alpha);
 end
 
-% camlight('headlight'); 
-% camlight('right');
-% lighting phong;
+camlight('headlight'); 
+camlight('right');
+lighting phong;
 % 
 % view(3);
 % drawnow;
 % saveas(gcf, 'figs/KGMT_Iteration_0.jpg');
 % print('figs/KGMT_Iteration_0.jpg', '-djpeg', '-r300');
 % 
-% view(2);
-% drawnow;
-% saveas(gcf, 'figs/top_KGMT_Iteration_0.jpg');
-% print('figs/top_KGMT_Iteration_0.jpg', '-djpeg', '-r300');
+view(2);
+drawnow;
+saveas(gcf, 'figs/top_KGMT_Iteration_0.jpg');
+print('figs/top_KGMT_Iteration_0.jpg', '-djpeg', '-r300');
 % 
 % midY = 0.5 * xGoal(2); 
 % midZ = 0.5 * xGoal(3); 
@@ -98,7 +98,7 @@ end
 % saveas(gcf, 'figs/xAxis_KGMT_Iteration_0.jpg');
 % print('figs/xAxis_KGMT_Iteration_0.jpg', '-djpeg', '-r300'); 
 % 
-% close(gcf);
+close(gcf);
 iteration = 1;
 
 for i = 1:numFiles

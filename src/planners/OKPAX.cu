@@ -76,6 +76,7 @@ void OKPAX::resetPlanner(float* h_initial, float* h_goal)
     thrust::fill(d_treeSamples_.begin(), d_treeSamples_.end(), 0.0f);
     thrust::fill(d_treeSamplesParentIdxs_.begin(), d_treeSamplesParentIdxs_.end(), -1);
     thrust::fill(d_treeSampleCosts_.begin(), d_treeSampleCosts_.end(), 0.0f);
+    thrust::fill(d_unexploredSampleCosts_.begin(), d_unexploredSampleCosts_.end(), 0.0f);
     thrust::fill(d_frontier_.begin(), d_frontier_.begin() + 1, true);
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.begin() + 1, 5);  // TODO make this not hard coded to 5.
@@ -154,7 +155,6 @@ float OKPAX::planOptimize(float* h_initial, float* h_goal, float* d_obstacles_pt
             h_itr_++;
             printf("Iteration: %d, Tree Size: %d, Frontier Size: %d\n", h_itr_, h_treeSize_, h_frontierSize_);  // TODO: Remove this.
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
-            graph_.updateVertices();
             updateFrontier();
             if(h_pathToGoal_ != 0)
                 {
@@ -166,9 +166,9 @@ float OKPAX::planOptimize(float* h_initial, float* h_goal, float* d_obstacles_pt
     getControlPathsToGoal();
 
     // TODO: Remove this.
-    // writeSolutionsToCSV();
-    // writeSolutionCostsToCSV();
-    // printf("h_solSetSize_: %d\n", h_solSetSize_);
+    writeSolutionsToCSV();
+    writeSolutionCostsToCSV();
+    printf("h_solSetSize_: %d\n", h_solSetSize_);
     // Until here.
 
     cudaEventRecord(stop);
@@ -195,7 +195,7 @@ void OKPAX::planDataCollect(float* h_initial, float* h_goal, float* d_obstacles_
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
             graph_.updateVertices();
             updateFrontier();
-            writeDeviceVectorsToCSV(benchItr);
+            writeDeviceVectorsToCSV(h_itr_);
             if(h_pathToGoal_ != 0)
                 {
                     printf("Goal Reached\n");
@@ -205,8 +205,10 @@ void OKPAX::planDataCollect(float* h_initial, float* h_goal, float* d_obstacles_
                 }
         }
     getControlPathsToGoal();
+    writeSolutionsToCSV();
+    writeSolutionCostsToCSV();
     printf("h_solSetSize_: %d\n", h_solSetSize_);
-    writeDeviceVectorsToCSV(benchItr);
+    writeDeviceVectorsToCSV(h_itr_);
 }
 
 void OKPAX::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
@@ -243,7 +245,7 @@ void OKPAX::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
               d_randomSeeds_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount, graph_.d_activeSubVertices_ptr_,
               graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, graph_.d_counterArray_ptr_, graph_.d_validCounterArray_ptr_,
               h_propIterations_, graph_.d_minValueInRegion_ptr_, d_treeSampleCosts_ptr_, graph_.d_minCostsR1_ptr_, graph_.d_minCostsR2_ptr_,
-              d_frontierNextXR1s_ptr_, d_frontierNextXR2s_ptr_);
+              d_frontierNextXR1s_ptr_, d_frontierNextXR2s_ptr_, d_unexploredSampleCosts_ptr_);
         }
     else
         {
@@ -257,7 +259,7 @@ void OKPAX::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
                       d_randomSeeds_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount,
                       graph_.d_activeSubVertices_ptr_, graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, graph_.d_counterArray_ptr_,
                       graph_.d_validCounterArray_ptr_, graph_.d_minValueInRegion_ptr_, d_treeSampleCosts_ptr_, graph_.d_minCostsR1_ptr_,
-                      graph_.d_minCostsR2_ptr_, d_frontierNextXR1s_ptr_, d_frontierNextXR2s_ptr_);
+                      graph_.d_minCostsR2_ptr_, d_frontierNextXR1s_ptr_, d_frontierNextXR2s_ptr_, d_unexploredSampleCosts_ptr_);
                 }
         }
 }
@@ -272,7 +274,7 @@ OKPAX_propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float*
                                 curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
                                 int* activeSubVertices, float* vertexScores, bool* frontierNext, int* vertexCounter,
                                 int* validVertexCounter, float* minValueInRegion, float* treeSampleCosts, float* minCostsR1,
-                                float* minCostsR2, int* frontierNextXR1s, int* frontierNextXR2s)
+                                float* minCostsR2, int* frontierNextXR1s, int* frontierNextXR2s, float* unexploredSampleCosts)
 {
     if(blockIdx.x >= frontierSize) return;
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -311,12 +313,13 @@ OKPAX_propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float*
             if(minCostsR1[x1R1] > cost) atomicMinFloat(&minCostsR1[x1R1], cost);
             if(minCostsR2[x1R2] > cost) atomicMinFloat(&minCostsR2[x1R2], cost);
             if(activeSubVertices[x1R2] == 0) atomicExch(&activeSubVertices[x1R2], 1);
+            // printf("Cost: %f, MinCostR2: %f, R2: %d\n", cost, minCostsR2[x1R2], x1R2);
             if(cost <= minCostsR2[x1R2])
                 {
-                    // printf("cost: %f, minCostsR2: %f\n", cost, minCostsR2[x1R2]);
-                    frontierNextXR1s[tid] = x1R1;
-                    frontierNextXR2s[tid] = x1R2;
-                    frontierNext[tid]     = true;
+                    unexploredSampleCosts[tid] = cost;
+                    frontierNextXR1s[tid]      = x1R1;
+                    frontierNextXR2s[tid]      = x1R2;
+                    frontierNext[tid]          = true;
                 }
         }
 
@@ -332,7 +335,7 @@ OKPAX_propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float*
                                 curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
                                 int* activeSubVertices, float* vertexScores, bool* frontierNext, int* vertexCounter,
                                 int* validVertexCounter, int iterations, float* minValueInRegion, float* treeSampleCosts, float* minCostsR1,
-                                float* minCostsR2, int* frontierNextXR1s, int* frontierNextXR2s)
+                                float* minCostsR2, int* frontierNextXR1s, int* frontierNextXR2s, float* unexploredSampleCosts)
 {
     int tid       = blockIdx.x * blockDim.x + threadIdx.x;
     frontier[tid] = false;
@@ -362,11 +365,13 @@ OKPAX_propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float*
             float cost = x0Cost + distance(x0, x1);  // TODO: Currently just distance.
             if(minCostsR1[x1R1] > cost) atomicMinFloat(&minCostsR1[x1R1], cost);
             if(minCostsR2[x1R2] > cost) atomicMinFloat(&minCostsR2[x1R2], cost);
-            if(cost <= minCostsR2[x1R2])  // TODO: Currently just adding best sample. not actually best, w/ parallel reads.
+            // printf("Cost: %f, MinCostR2: %f, R2: %d\n", cost, minCostsR2[x1R2], x1R2);
+            if(cost <= minCostsR2[x1R2])
                 {
-                    frontierNextXR1s[tid] = x1R1;
-                    frontierNextXR2s[tid] = x1R2;
-                    frontierNext[tid]     = true;
+                    unexploredSampleCosts[tid] = cost;
+                    frontierNextXR1s[tid]      = x1R1;
+                    frontierNextXR2s[tid]      = x1R2;
+                    frontierNext[tid]          = true;
                 }
 
             if(activeSubVertices[x1R2] == 0) atomicExch(&activeSubVertices[x1R2], 1);
@@ -382,8 +387,16 @@ void OKPAX::updateFrontier()
     h_frontierNextSize_ = d_frontierScanIdx_[MAX_TREE_SIZE - 1];
     findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_frontierNext_ptr_, d_frontierScanIdx_ptr_, d_activeFrontierIdxs_ptr_);
 
-    float treeAddSize = 1 - (float(h_treeSize_ + h_frontierNextSize_) / (MAX_TREE_SIZE));
-    h_fAccept_        = (h_itr_ * EPSILON) * pow(treeAddSize, 5);
+    // --- Pruning Tree ---
+    OKPAX_pruning_kernel<<<iDivUp(h_frontierNextSize_ + h_treeSize_, h_blockSize_), h_blockSize_>>>(
+      d_activeFrontierIdxs_ptr_, h_frontierNextSize_, h_treeSize_, d_unexploredSamplesParentIdxs_ptr_, d_treeSamplesParentIdxs_ptr_,
+      d_treeSampleCosts_ptr_, d_goalSet_ptr_, graph_.d_minCostsR2_ptr_, d_treeXR2s_ptr_, d_frontierNextXR2s_ptr_, d_frontierNext_ptr_,
+      d_unexploredSampleCosts_ptr_);
+
+    // --- Finding updated new samples with pruned tree ---
+    thrust::exclusive_scan(d_frontierNext_.begin(), d_frontierNext_.end(), d_frontierScanIdx_.begin(), 0, thrust::plus<uint>());
+    h_frontierNextSize_ = d_frontierScanIdx_[MAX_TREE_SIZE - 1];
+    findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_frontierNext_ptr_, d_frontierScanIdx_ptr_, d_activeFrontierIdxs_ptr_);
 
     // --- Update Frontier ---
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
@@ -393,13 +406,60 @@ void OKPAX::updateFrontier()
       d_treeSampleCosts_ptr_, d_activeFrontierRepeatCount_ptr_, graph_.d_validCounterArray_ptr_, d_randomSeeds_ptr_,
       graph_.d_vertexScoreArray_ptr_, d_controlPathsToGoal_ptr_, h_fAccept_, d_goalSet_ptr_, d_iterations_ptr_, h_itr_,
       graph_.d_minCostsR1_ptr_, graph_.d_minCostsR2_ptr_, d_treeXR1s_ptr_, d_treeXR2s_ptr_, d_frontierNextXR1s_ptr_,
-      d_frontierNextXR2s_ptr_, d_minCost_ptr_);
+      d_frontierNextXR2s_ptr_, d_minCost_ptr_, d_unexploredSampleCosts_ptr_);
 
     // --- Check for goal criteria ---
     cudaMemcpy(&h_pathToGoal_, d_pathToGoal_ptr_, sizeof(int), cudaMemcpyDeviceToHost);
 
     // --- Update Tree Size ---
     h_treeSize_ += h_frontierNextSize_;
+}
+
+/***************************/
+/* TREE PRUNING Kernel */
+/***************************/
+__global__ void OKPAX_pruning_kernel(uint* activeFrontierNextIdxs, uint frontierNextSize, int treeSize, int* unexploredSamplesParentIdxs,
+                                     int* treeSamplesParentIdxs, float* treeSampleCosts, bool* goalSet, float* minCostsR2, int* treeXR2s,
+                                     int* frontierNextXR2s, bool* frontierNext, float* unexploredSampleCosts)
+{
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    // --- Checking New Samples: ---
+    if(tid < frontierNextSize)
+        {
+            int treeIdx = activeFrontierNextIdxs[tid];
+            int x0Idx   = unexploredSamplesParentIdxs[treeIdx];
+
+            while(x0Idx != -1)
+                {
+                    int x0R2 = treeXR2s[x0Idx];
+                    if(treeSampleCosts[x0Idx] > minCostsR2[x0R2])
+                        {
+                            frontierNext[treeIdx] = false;
+                            atomicExch(&unexploredSampleCosts[treeIdx], MAX_FLOAT);
+                            return;
+                        }
+                    x0Idx = treeSamplesParentIdxs[x0Idx];
+                }
+        }
+
+    // --- Checking Existing Samples: ---
+    else if(tid < frontierNextSize + treeSize && !goalSet[tid])
+        {
+            int treeIdx = tid - frontierNextSize;
+            int x0Idx   = treeSamplesParentIdxs[treeIdx];
+
+            while(x0Idx != -1)
+                {
+                    int x0R2 = treeXR2s[x0Idx];
+                    if(treeSampleCosts[x0Idx] > minCostsR2[x0R2])
+                        {
+                            atomicExch(&treeSampleCosts[treeIdx], MAX_FLOAT);
+                            return;
+                        }
+                    x0Idx = treeSamplesParentIdxs[x0Idx];
+                }
+        }
 }
 
 /***************************/
@@ -412,7 +472,7 @@ OKPAX_updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFron
                             int* treeSamplesParentIdxs, float* treeSampleCosts, uint* activeFrontierRepeatCount, int* validVertexCounter,
                             curandState* randomSeeds, float* vertexScores, float* controlPathToGoal, float fAccept, bool* goalSet,
                             int* iterations, int iteration, float* minCostsR1, float* minCostsR2, int* treeXR1s, int* treeXR2s,
-                            int* frontierNextXR1s, int* frontierNextXR2s, float* minCost)
+                            int* frontierNextXR1s, int* frontierNextXR2s, float* minCost, float* unexploredSampleCosts)
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -432,7 +492,7 @@ OKPAX_updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFron
             treeSamplesParentIdxs[x1TreeIdx] = x0Idx;  // --- Transfer parent of unexplored sample to tree ---
             for(int i = 0; i < SAMPLE_DIM; i++)
                 treeSamples[x1TreeIdx * SAMPLE_DIM + i] = x1[i];  // --- Transfer unexplored sample to tree ---
-            float cost                 = treeSampleCosts[x0Idx] + distance(x1, &treeSamples[x0Idx * SAMPLE_DIM]);
+            float cost                 = unexploredSampleCosts[x1UnexploredIdx];
             treeSampleCosts[x1TreeIdx] = cost;
 
             // --- Update Frontier ---
@@ -443,7 +503,7 @@ OKPAX_updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFron
             // printf("xR2: %d, cost %f, minCostsR2: %f, minCostsR1: %f\n", xR2, cost, minCostsR2[xR2], minCostsR1[xR1]);
             if(cost <= minCostsR2[xR2])
                 {
-                    activeFrontierRepeatCount[x1TreeIdx] = 3;
+                    activeFrontierRepeatCount[x1TreeIdx] = 1;
                     frontier[x1TreeIdx]                  = true;
                 }
 
@@ -468,22 +528,7 @@ OKPAX_updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFron
             curandState seed = randomSeeds[treeIdx];
             if(!goalSet[treeIdx] && cost <= minCostsR2[xR2])
                 {
-                    // // Removing min costs samples from propagation set whos parents are not the min costs.
-                    // int x0Idx = treeSamplesParentIdxs[treeIdx];
-                    // while(x0Idx != -1)
-                    //     {
-                    //         float x0Cost = treeSampleCosts[x0Idx];
-                    //         int x0R2     = treeXR2s[x0Idx];
-                    //         if(treeSampleCosts[x0Idx] > minCostsR2[x0R2])
-                    //             {
-                    //                 frontier[treeIdx]        = false;
-                    //                 treeSampleCosts[treeIdx] = MAX_FLOAT;
-                    //                 return;
-                    //             }
-                    //         x0Idx = treeSamplesParentIdxs[x0Idx];
-                    //     }
-
-                    activeFrontierRepeatCount[treeIdx] = 3;
+                    activeFrontierRepeatCount[treeIdx] = 1;
                     frontier[treeIdx]                  = true;
                 }
         }
@@ -526,9 +571,9 @@ OKPAX_getControlPathsToGoal_kernel(float* controlPathsToGoal, float* treeSamples
         }
 
     // TODO: Remove this: only for creating cost/iteration plot.
-    int pathCostsIDx            = 2 * tid;
-    pathCosts[pathCostsIDx]     = iterations[goalIdx];
-    pathCosts[pathCostsIDx + 1] = treeSampleCosts[goalIdx];
+    int pathCostsIdx            = 2 * tid;
+    pathCosts[pathCostsIdx]     = iterations[goalIdx];
+    pathCosts[pathCostsIdx + 1] = treeSampleCosts[goalIdx];
 }
 
 void OKPAX::writeSolutionsToCSV(int itr)

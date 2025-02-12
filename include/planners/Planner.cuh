@@ -34,10 +34,11 @@ public:
     float* h_controlPathsToGoal_;
 
     // --- device fields ---
-    thrust::device_vector<float> d_treeSamples_, d_treeSampleCosts_, d_controlPathsToGoal_, d_pathCosts_;
+    thrust::device_vector<float> d_treeSamples_, d_treeSampleCosts_, d_controlPathsToGoal_, d_pathCosts_, d_unexploredSampleCosts_;
     thrust::device_vector<int> d_treeSamplesParentIdxs_, d_goalSet_, d_iterations_;
 
-    float *d_treeSamples_ptr_, *d_treeSampleCosts_ptr_, *d_costToGoal_ptr_, *d_controlPathsToGoal_ptr_, *d_pathCosts_ptr_;
+    float *d_treeSamples_ptr_, *d_treeSampleCosts_ptr_, *d_costToGoal_ptr_, *d_controlPathsToGoal_ptr_, *d_pathCosts_ptr_,
+      *d_unexploredSampleCosts_ptr_;
     int *d_treeSamplesParentIdxs_ptr_, *d_pathToGoal_ptr_, *d_goalSet_ptr_, *d_iterations_ptr_;
 
     curandState* d_randomSeeds_ptr_;

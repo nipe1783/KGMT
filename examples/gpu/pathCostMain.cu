@@ -12,7 +12,6 @@ int main(void)
           h_goal[SAMPLE_DIM]    = {.750, .950, .900, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     // float h_initial[SAMPLE_DIM] = {10.0, 8, 5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
     //       h_goal[SAMPLE_DIM]    = {80, 95.0, 90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    OKPAX kpax;
 
     int numObstacles;
     float* d_obstacles;
@@ -29,6 +28,7 @@ int main(void)
     std::vector<float> pathCosts(N);
     for(int i = 0; i < N; i++)
         {
+            OKPAX kpax;
             pathCosts[i] = kpax.planOptimize(h_initial, h_goal, d_obstacles, numObstacles);
         }
 

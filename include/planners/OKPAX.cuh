@@ -55,14 +55,14 @@ OKPAX_propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float*
                                 curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
                                 int* activeSubVertices, float* vertexScores, bool* frontierNext, int* vertexCounter,
                                 int* validVertexCounter, float* minValueInRegion, float* treeSampleCosts, float* minCostsR1,
-                                float* minCostsR2, int* frontierNextXR1s, int* frontierNextXR2s);
+                                float* minCostsR2, int* frontierNextXR1s, int* frontierNextXR2s, float* unexploredSampleCosts);
 
 __global__ void
 OKPAX_propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
                                 curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
                                 int* activeSubVertices, float* vertexScores, bool* frontierNext, int* vertexCounter,
                                 int* validVertexCounter, int iterations, float* minValueInRegion, float* treeSampleCosts, float* minCostsR1,
-                                float* minCostsR2, int* frontierNextXR1s, int* frontierNextXR2s);
+                                float* minCostsR2, int* frontierNextXR1s, int* frontierNextXR2s, float* unexploredSampleCosts);
 
 __global__ void
 OKPAX_updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNextIdxs, uint frontierNextSize, float* xGoal,
@@ -70,7 +70,11 @@ OKPAX_updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFron
                             int* treeSamplesParentIdxs, float* treeSampleCosts, uint* activeFrontierRepeatCount, int* validVertexCounter,
                             curandState* randomSeeds, float* vertexScores, float* controlPathToGoal, float fAccept, bool* goalSet,
                             int* iterations, int iteration, float* minCostsR1, float* minCostsR2, int* treeXR1s, int* treeXR2s,
-                            int* frontierNextXR1s, int* frontierNextXR2s, float* minCost);
+                            int* frontierNextXR1s, int* frontierNextXR2s, float* minCost, float* unexploredSampleCosts);
+
+__global__ void OKPAX_pruning_kernel(uint* activeFrontierNextIdxs, uint frontierNextSize, int treeSize, int* unexploredSamplesParentIdxs,
+                                     int* treeSamplesParentIdxs, float* treeSampleCosts, bool* goalSet, float* minCostsR2, int* treeXR2s,
+                                     int* frontierNextXR2s, bool* frontierNext, float* unexploredSampleCosts);
 
 __global__ void
 OKPAX_getControlPathsToGoal_kernel(float* controlPathsToGoal, float* treeSamples, int* treeSamplesParentIdxs, uint* goalSetIdxs,
