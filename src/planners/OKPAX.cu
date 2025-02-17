@@ -3,7 +3,7 @@
 
 OKPAX::OKPAX()
 {
-    graph_ = Graph(W_SIZE);
+    graph_ = OKPAXRegions(W_SIZE);
 
     d_frontier_                    = thrust::device_vector<bool>(MAX_TREE_SIZE);
     d_frontierNext_                = thrust::device_vector<bool>(MAX_TREE_SIZE);
@@ -63,11 +63,7 @@ void OKPAX::resetPlanner(float* h_initial, float* h_goal)
     thrust::fill(d_frontierRepeatScanIdx_.begin(), d_frontierRepeatScanIdx_.end(), 0);
     thrust::fill(d_goalSetScanIdx_.begin(), d_goalSetScanIdx_.end(), 0);
     thrust::fill(d_goalSample_.begin(), d_goalSample_.end(), 0.0f);
-    thrust::fill(graph_.d_activeSubVertices_.begin(), graph_.d_activeSubVertices_.end(), false);
-    thrust::fill(graph_.d_vertexScoreArray_.begin(), graph_.d_vertexScoreArray_.end(), 0.0f);
     thrust::fill(graph_.d_minCostsR1_.begin(), graph_.d_minCostsR1_.end(), MAX_FLOAT);
-    thrust::fill(graph_.d_counterArray_.begin(), graph_.d_counterArray_.end(), 0);
-    thrust::fill(graph_.d_validCounterArray_.begin(), graph_.d_validCounterArray_.end(), 0);
     thrust::fill(d_treeSamples_.begin(), d_treeSamples_.end(), 0.0f);
     thrust::fill(d_treeSamplesParentIdxs_.begin(), d_treeSamplesParentIdxs_.end(), -1);
     thrust::fill(d_treeSampleCosts_.begin(), d_treeSampleCosts_.end(), 0.0f);
@@ -113,7 +109,6 @@ void OKPAX::plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h
         {
             h_itr_++;
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
-            graph_.updateVertices();  // TODO: this might not be necessary.
             updateFrontier();
             if(h_pathToGoal_ != 0)
                 {
@@ -188,7 +183,6 @@ void OKPAX::planDataCollect(float* h_initial, float* h_goal, float* d_obstacles_
             h_itr_++;
             printf("Iteration: %d, Tree Size: %d, Frontier Size: %d\n", h_itr_, h_treeSize_, h_frontierSize_);
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
-            graph_.updateVertices();
             updateFrontier();
             writeDeviceVectorsToCSV(h_itr_);
             if(h_pathToGoal_ != 0)
@@ -237,10 +231,8 @@ void OKPAX::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
             // --- Propagate Frontier. iterations new samples per frontier sample---
             OKPAX_propagateFrontier_kernel2<<<iDivUp(h_propIterations_ * h_frontierRepeatSize_, h_activeBlockSize_), h_activeBlockSize_>>>(
               d_frontier_ptr_, d_activeFrontierRepeatIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierRepeatSize_,
-              d_randomSeeds_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount, graph_.d_activeSubVertices_ptr_,
-              graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, graph_.d_counterArray_ptr_, graph_.d_validCounterArray_ptr_,
-              h_propIterations_, graph_.d_minValueInRegion_ptr_, d_treeSampleCosts_ptr_, graph_.d_minCostsR1_ptr_, d_frontierNextXR1s_ptr_,
-              d_unexploredSampleCosts_ptr_);
+              d_randomSeeds_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount, d_frontierNext_ptr_,
+              h_propIterations_, d_treeSampleCosts_ptr_, graph_.d_minCostsR1_ptr_, d_frontierNextXR1s_ptr_, d_unexploredSampleCosts_ptr_);
         }
     else
         {
@@ -251,10 +243,8 @@ void OKPAX::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
                     OKPAX_propagateFrontier_kernel1<<<iDivUp(h_frontierRepeatSize_ * h_activeBlockSize_, h_activeBlockSize_),
                                                       h_activeBlockSize_>>>(
                       d_frontier_ptr_, d_activeFrontierRepeatIdxs_ptr_, d_treeSamples_ptr_, d_unexploredSamples_ptr_, h_frontierRepeatSize_,
-                      d_randomSeeds_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount,
-                      graph_.d_activeSubVertices_ptr_, graph_.d_vertexScoreArray_ptr_, d_frontierNext_ptr_, graph_.d_counterArray_ptr_,
-                      graph_.d_validCounterArray_ptr_, graph_.d_minValueInRegion_ptr_, d_treeSampleCosts_ptr_, graph_.d_minCostsR1_ptr_,
-                      d_frontierNextXR1s_ptr_, d_unexploredSampleCosts_ptr_);
+                      d_randomSeeds_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_obstacles_ptr, h_obstaclesCount, d_frontierNext_ptr_,
+                      d_treeSampleCosts_ptr_, graph_.d_minCostsR1_ptr_, d_frontierNextXR1s_ptr_, d_unexploredSampleCosts_ptr_);
                 }
         }
 }
@@ -264,12 +254,10 @@ void OKPAX::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
 /***************************/
 // --- Propagates current frontier. Builds new frontier. ---
 // --- One Block Per Frontier Sample ---
-__global__ void
-OKPAX_propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
-                                curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
-                                int* activeSubVertices, float* vertexScores, bool* frontierNext, int* vertexCounter,
-                                int* validVertexCounter, float* minValueInRegion, float* treeSampleCosts, float* minCostsR1,
-                                int* frontierNextXR1s, float* unexploredSampleCosts)
+__global__ void OKPAX_propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples,
+                                                uint frontierSize, curandState* randomSeeds, int* unexploredSamplesParentIdxs,
+                                                float* obstacles, int obstaclesCount, bool* frontierNext, float* treeSampleCosts,
+                                                float* minCostsR1, int* frontierNextXR1s, float* unexploredSampleCosts)
 {
     if(blockIdx.x >= frontierSize) return;
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -300,7 +288,7 @@ OKPAX_propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float*
     // --- Update Graph sample count and populate next Frontier ---
     if(valid)
         {
-            int x1R1   = getRegion(x1);
+            int x1R1   = OKPAX_getRegion(x1);
             float cost = s_x0Cost + distance(s_x0, x1);  // TODO: Currently just distance.
             if(minCostsR1[x1R1] > cost) atomicMinFloat(&minCostsR1[x1R1], cost);
             if(cost <= minCostsR1[x1R1])
@@ -321,9 +309,8 @@ OKPAX_propagateFrontier_kernel1(bool* frontier, uint* activeFrontierIdxs, float*
 __global__ void
 OKPAX_propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float* treeSamples, float* unexploredSamples, uint frontierSize,
                                 curandState* randomSeeds, int* unexploredSamplesParentIdxs, float* obstacles, int obstaclesCount,
-                                int* activeSubVertices, float* vertexScores, bool* frontierNext, int* vertexCounter,
-                                int* validVertexCounter, int iterations, float* minValueInRegion, float* treeSampleCosts, float* minCostsR1,
-                                int* frontierNextXR1s, float* unexploredSampleCosts)
+                                bool* frontierNext, int iterations, float* treeSampleCosts, float* minCostsR1, int* frontierNextXR1s,
+                                float* unexploredSampleCosts)
 {
     int tid       = blockIdx.x * blockDim.x + threadIdx.x;
     frontier[tid] = false;
@@ -346,7 +333,7 @@ OKPAX_propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float*
     // --- Update Graph sample count and populate next Frontier ---
     if(valid)
         {
-            int x1R1   = getRegion(x1);
+            int x1R1   = OKPAX_getRegion(x1);
             float cost = x0Cost + distance(x0, x1);  // TODO: Currently just distance.
             if(minCostsR1[x1R1] > cost) atomicMinFloat(&minCostsR1[x1R1], cost);
             if(cost <= minCostsR1[x1R1])
@@ -383,9 +370,9 @@ void OKPAX::updateFrontier()
     OKPAX_updateFrontier_kernel<<<iDivUp(h_frontierNextSize_ + h_treeSize_, h_blockSize_), h_blockSize_>>>(
       d_frontier_ptr_, d_frontierNext_ptr_, d_activeFrontierIdxs_ptr_, h_frontierNextSize_, d_goalSample_ptr_, h_treeSize_,
       d_unexploredSamples_ptr_, d_treeSamples_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_treeSamplesParentIdxs_ptr_,
-      d_treeSampleCosts_ptr_, d_activeFrontierRepeatCount_ptr_, graph_.d_validCounterArray_ptr_, d_randomSeeds_ptr_,
-      graph_.d_vertexScoreArray_ptr_, d_controlPathsToGoal_ptr_, h_fAccept_, d_goalSet_ptr_, d_iterations_ptr_, h_itr_,
-      graph_.d_minCostsR1_ptr_, d_treeXR1s_ptr_, d_frontierNextXR1s_ptr_, d_minCost_ptr_, d_unexploredSampleCosts_ptr_);
+      d_treeSampleCosts_ptr_, d_activeFrontierRepeatCount_ptr_, d_randomSeeds_ptr_, d_controlPathsToGoal_ptr_, d_goalSet_ptr_,
+      d_iterations_ptr_, h_itr_, graph_.d_minCostsR1_ptr_, d_treeXR1s_ptr_, d_frontierNextXR1s_ptr_, d_minCost_ptr_,
+      d_unexploredSampleCosts_ptr_);
 
     // --- Check for goal criteria ---
     cudaMemcpy(&h_pathToGoal_, d_pathToGoal_ptr_, sizeof(int), cudaMemcpyDeviceToHost);
@@ -448,10 +435,9 @@ __global__ void OKPAX_pruning_kernel(uint* activeFrontierNextIdxs, uint frontier
 __global__ void
 OKPAX_updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFrontierNextIdxs, uint frontierNextSize, float* xGoal,
                             int treeSize, float* unexploredSamples, float* treeSamples, int* unexploredSamplesParentIdxs,
-                            int* treeSamplesParentIdxs, float* treeSampleCosts, uint* activeFrontierRepeatCount, int* validVertexCounter,
-                            curandState* randomSeeds, float* vertexScores, float* controlPathToGoal, float fAccept, bool* goalSet,
-                            int* iterations, int iteration, float* minCostsR1, int* treeXR1s, int* frontierNextXR1s, float* minCost,
-                            float* unexploredSampleCosts)
+                            int* treeSamplesParentIdxs, float* treeSampleCosts, uint* activeFrontierRepeatCount, curandState* randomSeeds,
+                            float* controlPathToGoal, bool* goalSet, int* iterations, int iteration, float* minCostsR1, int* treeXR1s,
+                            int* frontierNextXR1s, float* minCost, float* unexploredSampleCosts)
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -497,10 +483,9 @@ OKPAX_updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFron
     // --- Add inactive tree samples back to frontier. ---
     else if(tid < frontierNextSize + treeSize)
         {
-            int treeIdx      = tid - frontierNextSize;
-            int xR1          = treeXR1s[treeIdx];
-            float cost       = treeSampleCosts[treeIdx];
-            curandState seed = randomSeeds[treeIdx];
+            int treeIdx = tid - frontierNextSize;
+            int xR1     = treeXR1s[treeIdx];
+            float cost  = treeSampleCosts[treeIdx];
             if(!goalSet[treeIdx] && cost <= minCostsR1[xR1])
                 {
                     activeFrontierRepeatCount[treeIdx] = 1;
@@ -607,16 +592,6 @@ void OKPAX::writeDeviceVectorsToCSV(int itr)
     filename << "Data/Parents/Parents" << itr << "/parents" << h_itr_ << ".csv";
     copyAndWriteVectorToCSV(d_treeSamplesParentIdxs_, filename.str(), MAX_TREE_SIZE, 1, append);
 
-    // Write Total Count Per Vertex
-    filename.str("");
-    filename << "Data/TotalCountPerVertex/TotalCountPerVertex" << itr << "/totalCountPerVertex.csv";
-    copyAndWriteVectorToCSV(graph_.d_counterArray_, filename.str(), 1, NUM_R1_REGIONS, append);
-
-    // Write Valid Count Per Vertex
-    filename.str("");
-    filename << "Data/ValidCountPerVertex/ValidCountPerVertex" << itr << "/validCountPerVertex.csv";
-    copyAndWriteVectorToCSV(graph_.d_validCounterArray_, filename.str(), 1, NUM_R1_REGIONS, append);
-
     // Write Frontier
     filename.str("");
     filename << "Data/Frontier/Frontier" << itr << "/frontier.csv";
@@ -626,11 +601,6 @@ void OKPAX::writeDeviceVectorsToCSV(int itr)
     filename.str("");
     filename << "Data/FrontierRepeatCount/FrontierRepeatCount" << itr << "/frontierRepeatCount.csv";
     copyAndWriteVectorToCSV(d_activeFrontierRepeatCount_, filename.str(), 1, MAX_TREE_SIZE, append);
-
-    // Write Vertex Scores
-    filename.str("");
-    filename << "Data/VertexScores/VertexScores" << itr << "/vertexScores.csv";
-    copyAndWriteVectorToCSV(graph_.d_vertexScoreArray_, filename.str(), 1, NUM_R1_REGIONS, append);
 
     // Write Frontier Size
     filename.str("");

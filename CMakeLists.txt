@@ -30,6 +30,7 @@ set(SOURCE_FILES
     src/planners/Planner.cu
     src/collisionCheck/collisionCheck.cu
     src/graphs/Graph.cu
+    src/graphs/OKPAXRegions.cu
     src/helper/helper.cu
     src/statePropagator/statePropagator.cu
     src/cpu/collisionCheck/CollisionCheck.cpp
