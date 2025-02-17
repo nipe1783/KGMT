@@ -35,14 +35,6 @@ Graph::Graph(const float ws)
     d_minCostsR2_ptr_        = thrust::raw_pointer_cast(d_minCostsR2_.data());
 
     initializeRegions();
-
-    std::ostringstream filename;
-    std::filesystem::create_directories("Data");
-    std::filesystem::create_directories("Data/RegionMins");
-
-    filename.str("");
-    filename << "Data/RegionMins/RegionMins_" << ws << ".csv";
-    copyAndWriteVectorToCSV(d_minValueInRegion_, filename.str(), NUM_R1_REGIONS, 1, false);
 }
 
 void Graph::initializeRegions()
