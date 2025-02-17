@@ -5,10 +5,10 @@ clear all;
 % Parameterss
 radius = 0.05;
 alpha = 0.7;
-xGoal = [.5, .5, 1.0];
+xGoal = [.75, .95, 0.9];
 STEP_SIZE = 0.1;
 % File paths
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/empty/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/zigZag/obstacles.csv';
 controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathsToGoal/ControlPathsToGoal0/controlPathsToGoal.csv';
 
 stateSize = 6;

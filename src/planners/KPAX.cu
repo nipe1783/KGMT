@@ -166,9 +166,9 @@ float KPAX::planOptimize(float* h_initial, float* h_goal, float* d_obstacles_ptr
     getControlPathsToGoal();
 
     // TODO: Remove this.
-    // writeSolutionsToCSV();
-    // writeSolutionCostsToCSV();
-    // printf("h_solSetSize_: %d\n", h_solSetSize_);
+    writeSolutionsToCSV();
+    writeSolutionCostsToCSV();
+    printf("h_solSetSize_: %d\n", h_solSetSize_);
     // Until here.
 
     cudaEventRecord(stop);

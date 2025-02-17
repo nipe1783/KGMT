@@ -144,6 +144,7 @@ __host__ __device__ int getRegion(float* coord)
             factor = 1;
             for(int i = V_DIM - 1; i >= 0; --i)
                 {
+                    // index = (int)(V_R1_LENGTH * (coord[i + W_DIM] - V_MIN) / (V_MAX - V_MIN));
                     index = (int)(V_R1_LENGTH * (coord[i + W_DIM + C_DIM] - V_MIN) / (V_MAX - V_MIN));
                     if(index >= V_R1_LENGTH) index = V_R1_LENGTH - 1;
                     if(index < 0) index = 0;

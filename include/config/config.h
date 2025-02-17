@@ -9,7 +9,7 @@
 #define MAX_TREE_SIZE 20000000
 #define MAX_FLOAT 1000000.0f
 #define MAX_SOL_SET_SIZE 10000
-#define MAX_ITER 100
+#define MAX_ITER 500
 #define STEP_SIZE 0.1f
 #define MAX_PROPAGATION_DURATION 10
 
@@ -36,11 +36,11 @@
 #define A_MIN -0.2f
 #define A_MAX 0.2f
 
-#define W_R1_LENGTH 16
+#define W_R1_LENGTH 75
 #define C_R1_LENGTH 1
-#define V_R1_LENGTH 1
+#define V_R1_LENGTH 3
 
-#define W_R2_LENGTH 8
+#define W_R2_LENGTH 1
 #define C_R2_LENGTH 1
 #define V_R2_LENGTH 1
 

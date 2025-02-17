@@ -11,10 +11,10 @@ controlSize = 3;
 alpha = 1.0;
 xGoal = [.75, .95, .9];
 radius = 0.05;
-numR1 = 12;
-numR2 = 6;
-R1Size = 1 / numR1;
-R2Size = R1Size / numR2;
+numR1 = 5;
+numR2 = 1;
+regionSize = 1 / numR1;
+subregionSize = regionSize / numR2;
 
 % Load data
 folderPath = '/home/nicolas/dev/research/KGMT/build/Data/Samples';
@@ -23,7 +23,8 @@ dirFlags = [files.isdir];
 subFolders = files(dirFlags);
 subFolders = subFolders(~ismember({subFolders.name}, {'.', '..'}));
 numIterations = numel(subFolders);
-obstaclesPath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/pillars/obstacles.csv';
+numIterations = 100;
+obstaclesPath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/zigZag/obstacles.csv';
 obstacles = readmatrix(obstaclesPath);
 
 % Plot settings
@@ -85,6 +86,62 @@ for i = 1:numIterations
             5, 6, 7, 8];
         patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', alpha);
     end
+
+    % Plot Regions:
+    for rx = 0:numR1-1
+        for ry = 0:numR1-1
+            for rz = 0:numR1-1
+                % Coordinates of the region
+                x_min = rx * regionSize;
+                y_min = ry * regionSize;
+                z_min = rz * regionSize;
+                x_max = x_min + regionSize;
+                y_max = y_min + regionSize;
+                z_max = z_min + regionSize;
+    
+                % Loop through each subregion within the current region
+                for sx = 0:numR2-1
+                    for sy = 0:numR2-1
+                        for sz = 0:numR2-1
+                            % Coordinates of the subregion
+                            x_min_s = x_min + sx * subregionSize;
+                            y_min_s = y_min + sy * subregionSize;
+                            z_min_s = z_min + sz * subregionSize;
+                            x_max_s = x_min_s + subregionSize;
+                            y_max_s = y_min_s + subregionSize;
+                            z_max_s = z_min_s + subregionSize;
+    
+                            % Vertices of the subregion cube
+                            vertices = [
+                                x_min_s, y_min_s, z_min_s;
+                                x_max_s, y_min_s, z_min_s;
+                                x_max_s, y_max_s, z_min_s;
+                                x_min_s, y_max_s, z_min_s;
+                                x_min_s, y_min_s, z_max_s;
+                                x_max_s, y_min_s, z_max_s;
+                                x_max_s, y_max_s, z_max_s;
+                                x_min_s, y_max_s, z_max_s
+                            ];
+    
+                            % Faces index
+                            faces = [
+                                1, 2, 6, 5;
+                                2, 3, 7, 6;
+                                3, 4, 8, 7;
+                                4, 1, 5, 8;
+                                1, 2, 3, 4;
+                                5, 6, 7, 8
+                            ];
+    
+                            % Drawing the subregion wireframe
+                            patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'none', 'EdgeColor', 'k');
+                        end
+                    end
+                end
+            end
+        end
+    end
+
     
     for j = 1:size(frontier,2)
         if frontier(1,j) == 1
