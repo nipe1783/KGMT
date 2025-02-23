@@ -24,7 +24,7 @@ int main(void)
     cudaMemcpy(d_obstacles, obstacles.data(), numObstacles * 2 * W_DIM * sizeof(float), cudaMemcpyHostToDevice);
 
     // --- Execute planner ---
-    int N = 20;
+    int N = 1;
     std::vector<float> pathCosts(N);
     for(int i = 0; i < N; i++)
         {
