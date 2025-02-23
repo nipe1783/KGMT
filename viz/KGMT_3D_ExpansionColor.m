@@ -16,7 +16,7 @@ STEP_SIZE = .1;
 model = 1;
 
 % Obstacle file path
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/pillars/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/zigZag/obstacles.csv';
 obstacles = readmatrix(obstacleFilePath);
 
 treeSizePath = "/home/nicolas/dev/research/KGMT/build/Data/TreeSize/TreeSize0/treeSize.csv";

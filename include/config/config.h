@@ -9,9 +9,10 @@
 #define MAX_TREE_SIZE 20000000
 #define MAX_FLOAT 1000000.0f
 #define MAX_SOL_SET_SIZE 10000
-#define MAX_ITER 500
+#define MAX_ITER 250
 #define STEP_SIZE 0.1f
 #define MAX_PROPAGATION_DURATION 10
+#define ACCEPT 0.99f
 
 #define GOAL_THRESH 0.05f
 

@@ -20,6 +20,7 @@ OKPAX::OKPAX()
     d_goalSet_                     = thrust::device_vector<bool>(MAX_TREE_SIZE);
     d_treeXR1s_                    = thrust::device_vector<int>(MAX_TREE_SIZE);
     d_frontierNextXR1s_            = thrust::device_vector<int>(MAX_TREE_SIZE);
+    d_pruned_                      = thrust::device_vector<bool>(MAX_TREE_SIZE);
 
     d_frontier_ptr_                    = thrust::raw_pointer_cast(d_frontier_.data());
     d_frontierNext_ptr_                = thrust::raw_pointer_cast(d_frontierNext_.data());
@@ -36,6 +37,7 @@ OKPAX::OKPAX()
     d_goalSet_ptr_                     = thrust::raw_pointer_cast(d_goalSet_.data());
     d_treeXR1s_ptr_                    = thrust::raw_pointer_cast(d_treeXR1s_.data());
     d_frontierNextXR1s_ptr_            = thrust::raw_pointer_cast(d_frontierNextXR1s_.data());
+    d_pruned_ptr_                      = thrust::raw_pointer_cast(d_pruned_.data());
 
     cudaMalloc(&d_minCost_ptr_, sizeof(float));
 
@@ -74,6 +76,7 @@ void OKPAX::resetPlanner(float* h_initial, float* h_goal)
     thrust::fill(d_goalSet_.begin(), d_goalSet_.end(), false);
     thrust::fill(d_pathCosts_.begin(), d_pathCosts_.end(), 0.0f);
     thrust::fill(d_iterations_.begin(), d_iterations_.end(), 0);
+    thrust::fill(d_pruned_.begin(), d_pruned_.end(), false);
 
     h_treeSize_     = 1;
     h_itr_          = 0;
@@ -143,7 +146,7 @@ float OKPAX::planOptimize(float* h_initial, float* h_goal, float* d_obstacles_pt
     while(h_itr_ < MAX_ITER)
         {
             h_itr_++;
-            printf("Iteration: %d, Tree Size: %d, Frontier Size: %d\n", h_itr_, h_treeSize_, h_frontierSize_);  // TODO: Remove this.
+            // printf("Iteration: %d, Tree Size: %d, Frontier Size: %d\n", h_itr_, h_treeSize_, h_frontierSize_);  // TODO: Remove this.
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
             updateFrontier();
             if(h_pathToGoal_ != 0)
@@ -358,7 +361,7 @@ void OKPAX::updateFrontier()
     OKPAX_pruning_kernel<<<iDivUp(h_frontierNextSize_ + h_treeSize_, h_blockSize_), h_blockSize_>>>(
       d_activeFrontierIdxs_ptr_, h_frontierNextSize_, h_treeSize_, d_unexploredSamplesParentIdxs_ptr_, d_treeSamplesParentIdxs_ptr_,
       d_treeSampleCosts_ptr_, d_goalSet_ptr_, graph_.d_minCostsR1_ptr_, d_treeXR1s_ptr_, d_frontierNextXR1s_ptr_, d_frontierNext_ptr_,
-      d_unexploredSampleCosts_ptr_);
+      d_unexploredSampleCosts_ptr_, d_pruned_ptr_);
 
     // --- Finding updated new samples with pruned tree ---
     thrust::exclusive_scan(d_frontierNext_.begin(), d_frontierNext_.end(), d_frontierScanIdx_.begin(), 0, thrust::plus<uint>());
@@ -372,7 +375,7 @@ void OKPAX::updateFrontier()
       d_unexploredSamples_ptr_, d_treeSamples_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_treeSamplesParentIdxs_ptr_,
       d_treeSampleCosts_ptr_, d_activeFrontierRepeatCount_ptr_, d_randomSeeds_ptr_, d_controlPathsToGoal_ptr_, d_goalSet_ptr_,
       d_iterations_ptr_, h_itr_, graph_.d_minCostsR1_ptr_, d_treeXR1s_ptr_, d_frontierNextXR1s_ptr_, d_minCost_ptr_,
-      d_unexploredSampleCosts_ptr_);
+      d_unexploredSampleCosts_ptr_, d_pruned_ptr_);
 
     // --- Check for goal criteria ---
     cudaMemcpy(&h_pathToGoal_, d_pathToGoal_ptr_, sizeof(int), cudaMemcpyDeviceToHost);
@@ -386,7 +389,7 @@ void OKPAX::updateFrontier()
 /***************************/
 __global__ void OKPAX_pruning_kernel(uint* activeFrontierNextIdxs, uint frontierNextSize, int treeSize, int* unexploredSamplesParentIdxs,
                                      int* treeSamplesParentIdxs, float* treeSampleCosts, bool* goalSet, float* minCostsR1, int* treeXR1s,
-                                     int* frontierNextXR1s, bool* frontierNext, float* unexploredSampleCosts)
+                                     int* frontierNextXR1s, bool* frontierNext, float* unexploredSampleCosts, bool* pruned)
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -402,7 +405,6 @@ __global__ void OKPAX_pruning_kernel(uint* activeFrontierNextIdxs, uint frontier
                     if(treeSampleCosts[x0Idx] > minCostsR1[x0R1])
                         {
                             frontierNext[treeIdx] = false;
-                            atomicExch(&unexploredSampleCosts[treeIdx], MAX_FLOAT);
                             return;
                         }
                     x0Idx = treeSamplesParentIdxs[x0Idx];
@@ -420,13 +422,57 @@ __global__ void OKPAX_pruning_kernel(uint* activeFrontierNextIdxs, uint frontier
                     int x0R1 = treeXR1s[x0Idx];
                     if(treeSampleCosts[x0Idx] > minCostsR1[x0R1])
                         {
-                            atomicExch(&treeSampleCosts[treeIdx], MAX_FLOAT);
+                            pruned[treeIdx] = true;
                             return;
                         }
                     x0Idx = treeSamplesParentIdxs[x0Idx];
                 }
         }
 }
+
+// __global__ void OKPAX_pruning_kernel(uint* activeFrontierNextIdxs, uint frontierNextSize, int treeSize, int* unexploredSamplesParentIdxs,
+//                                      int* treeSamplesParentIdxs, float* treeSampleCosts, bool* goalSet, float* minCostsR1, int* treeXR1s,
+//                                      int* frontierNextXR1s, bool* frontierNext, float* unexploredSampleCosts, bool* pruned)
+// {
+//     int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+//     // --- Checking New Samples: ---
+//     if(tid < frontierNextSize)
+//         {
+//             int treeIdx = activeFrontierNextIdxs[tid];
+//             int x0Idx   = unexploredSamplesParentIdxs[treeIdx];
+
+//             while(x0Idx != -1)
+//                 {
+//                     int x0R1 = treeXR1s[x0Idx];
+//                     if(minCostsR1[x0R1] / treeSampleCosts[x0Idx] < 0.99)
+//                         {
+//                             frontierNext[treeIdx] = false;
+//                             pruned[treeIdx]       = true;
+//                             return;
+//                         }
+//                     x0Idx = treeSamplesParentIdxs[x0Idx];
+//                 }
+//         }
+
+//     // --- Checking Existing Samples: ---
+//     else if(tid < frontierNextSize + treeSize && !goalSet[tid])
+//         {
+//             int treeIdx = tid - frontierNextSize;
+//             int x0Idx   = treeSamplesParentIdxs[treeIdx];
+
+//             while(x0Idx != -1)
+//                 {
+//                     int x0R1 = treeXR1s[x0Idx];
+//                     if(minCostsR1[x0R1] / treeSampleCosts[x0Idx] < 0.99)
+//                         {
+//                             pruned[treeIdx] = true;
+//                             return;
+//                         }
+//                     x0Idx = treeSamplesParentIdxs[x0Idx];
+//                 }
+//         }
+// }
 
 /***************************/
 /* FRONTIER UPDATE KERNEL */
@@ -437,7 +483,7 @@ OKPAX_updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFron
                             int treeSize, float* unexploredSamples, float* treeSamples, int* unexploredSamplesParentIdxs,
                             int* treeSamplesParentIdxs, float* treeSampleCosts, uint* activeFrontierRepeatCount, curandState* randomSeeds,
                             float* controlPathToGoal, bool* goalSet, int* iterations, int iteration, float* minCostsR1, int* treeXR1s,
-                            int* frontierNextXR1s, float* minCost, float* unexploredSampleCosts)
+                            int* frontierNextXR1s, float* minCost, float* unexploredSampleCosts, bool* pruned)
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -486,7 +532,7 @@ OKPAX_updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFron
             int treeIdx = tid - frontierNextSize;
             int xR1     = treeXR1s[treeIdx];
             float cost  = treeSampleCosts[treeIdx];
-            if(!goalSet[treeIdx] && cost <= minCostsR1[xR1])
+            if(!goalSet[treeIdx] && cost <= minCostsR1[xR1] && !pruned[treeIdx])
                 {
                     activeFrontierRepeatCount[treeIdx] = 1;
                     frontier[treeIdx]                  = true;
