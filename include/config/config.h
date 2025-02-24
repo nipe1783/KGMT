@@ -6,7 +6,7 @@
 
 #define MODEL 1
 
-#define MAX_TREE_SIZE 20000000
+#define MAX_TREE_SIZE 60000000
 #define MAX_FLOAT 1000000.0f
 #define MAX_SOL_SET_SIZE 10000
 #define MAX_ITER 1000
@@ -39,7 +39,7 @@
 
 #define W_R1_LENGTH 75
 #define C_R1_LENGTH 1
-#define V_R1_LENGTH 3
+#define V_R1_LENGTH 4
 
 #define W_R2_LENGTH 1
 #define C_R2_LENGTH 1

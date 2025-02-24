@@ -78,4 +78,4 @@ OKPAX_pruningFrontier_kernel(uint* activeFrontierNextIdxs, uint frontierNextSize
 
 __global__ void
 OKPAX_getControlPathsToGoal_kernel(float* controlPathsToGoal, float* treeSamples, int* treeSamplesParentIdxs, uint* goalSetIdxs,
-                                   int goalSetSize, float* pathCosts, float* treeSampleCosts, int* iterations);
+                                   int goalSetSize, float* pathCosts, float* treeSampleCosts, int* iterations, float* minCost);

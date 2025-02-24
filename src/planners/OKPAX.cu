@@ -80,14 +80,16 @@ void OKPAX::resetPlanner(float* h_initial, float* h_goal)
     thrust::fill(d_iterations_.begin(), d_iterations_.end(), 0);
     thrust::fill(d_pruned_.begin(), d_pruned_.end(), false);
     thrust::fill(d_treeInactiveIterations_.begin(), d_treeInactiveIterations_.end(), 0);
+    thrust::fill(d_controlPathsToGoal_.begin(), d_controlPathsToGoal_.end(), 0.0f);
 
-    h_treeSize_     = 1;
-    h_itr_          = 0;
-    h_costToGoal_   = 0;
-    h_pathToGoal_   = 0;
-    h_frontierSize_ = 0;
-    h_solSetSize_   = 0;
-    h_minCost_      = MAX_FLOAT;
+    h_treeSize_       = 1;
+    h_itr_            = 0;
+    h_costToGoal_     = 0;
+    h_pathToGoal_     = 0;
+    h_frontierSize_   = 0;
+    h_solSetSize_     = 0;
+    h_minCost_        = MAX_FLOAT;
+    h_propIterations_ = 1;
 
     cudaMemcpy(d_treeSamples_ptr_, h_initial, SAMPLE_DIM * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_goalSample_ptr_, h_goal, SAMPLE_DIM * sizeof(float), cudaMemcpyHostToDevice);
@@ -151,6 +153,7 @@ float OKPAX::planOptimize(float* h_initial, float* h_goal, float* d_obstacles_pt
             h_itr_++;
             printf("Iteration: %d, Tree Size: %d, Frontier Size: %d\n", h_itr_, h_treeSize_, h_frontierSize_);  // TODO: Remove this.
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
+            if(h_propIterations_ == 0) break;
             updateFrontier();
             if(h_pathToGoal_ != 0)
                 {
@@ -162,9 +165,8 @@ float OKPAX::planOptimize(float* h_initial, float* h_goal, float* d_obstacles_pt
     getControlPathsToGoal();
 
     // TODO: Remove this.
-    writeSolutionsToCSV();
-    writeSolutionCostsToCSV();
-    printf("h_solSetSize_: %d\n", h_solSetSize_);
+    // writeSolutionsToCSV();
+    // writeSolutionCostsToCSV();
     // Until here.
 
     cudaEventRecord(stop);
@@ -227,7 +229,6 @@ void OKPAX::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
             h_propIterations_ = std::min(int(float(MAX_TREE_SIZE - h_treeSize_) / float(h_frontierRepeatSize_)), int(h_activeBlockSize_));
             if(h_propIterations_ == 0)
                 {
-                    h_propIterations_   = 1;
                     h_frontierNextSize_ = MAX_TREE_SIZE - h_treeSize_;
                     thrust::fill(d_frontierNext_.begin(), d_frontierNext_.end(), false);
                     printf("Tree Full\n");
@@ -355,15 +356,15 @@ OKPAX_propagateFrontier_kernel2(bool* frontier, uint* activeFrontierIdxs, float*
 
 void OKPAX::updateFrontier()
 {
-    // --- Find indices and size of the next frontier ---
-    thrust::exclusive_scan(d_frontierNext_.begin(), d_frontierNext_.end(), d_frontierScanIdx_.begin(), 0, thrust::plus<uint>());
-    h_frontierNextSize_ = d_frontierScanIdx_[MAX_TREE_SIZE - 1];
-    findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_frontierNext_ptr_, d_frontierScanIdx_ptr_, d_activeFrontierIdxs_ptr_);
-
     // --- Pruning Tree ---
     OKPAX_pruningTree_kernel<<<iDivUp(h_treeSize_, h_blockSize_), h_blockSize_>>>(
       h_treeSize_, d_treeSamplesParentIdxs_ptr_, d_treeSampleCosts_ptr_, d_goalSet_ptr_, graph_.d_minCostsR1_ptr_, d_treeXR1s_ptr_,
       d_pruned_ptr_, d_treeInactiveIterations_ptr_);
+
+    // --- Find indices and size of the next frontier ---
+    thrust::exclusive_scan(d_frontierNext_.begin(), d_frontierNext_.end(), d_frontierScanIdx_.begin(), 0, thrust::plus<uint>());
+    h_frontierNextSize_ = d_frontierScanIdx_[MAX_TREE_SIZE - 1];
+    findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_frontierNext_ptr_, d_frontierScanIdx_ptr_, d_activeFrontierIdxs_ptr_);
 
     // --- Pruning Frontier ---
     OKPAX_pruningFrontier_kernel<<<iDivUp(h_frontierNextSize_, h_blockSize_), h_blockSize_>>>(
@@ -403,16 +404,23 @@ __global__ void OKPAX_pruningTree_kernel(int treeSize, int* treeSamplesParentIdx
     // --- Checking Existing Samples: ---
     if(treeIdx < treeSize)
         {
-            int x0Idx      = treeSamplesParentIdxs[treeIdx];
+            int x0Idx      = treeIdx;
             float nodeCost = treeSampleCosts[treeIdx];
             int nodeR1     = treeXR1s[treeIdx];
 
+            // If a node is lowest cost in region, and the cost has not been improved in the region in K iterations, move it to active.
             if(pruned[treeIdx] && nodeCost <= minCostsR1[nodeR1])
                 {
                     inactiveIterations[treeIdx]++;
                     if(inactiveIterations[treeIdx] > 5) pruned[treeIdx] = false;
                     return;
                 }
+            // keep the node in active as long as it is the best in region.
+            if(inactiveIterations[treeIdx] > 5 && nodeCost <= minCostsR1[nodeR1])
+                {
+                    return;
+                }
+            // pruning criteria.
             while(x0Idx != -1)
                 {
                     int x0R1 = treeXR1s[x0Idx];
@@ -541,7 +549,7 @@ void OKPAX::getControlPathsToGoal()
 
     OKPAX_getControlPathsToGoal_kernel<<<iDivUp(h_solSetSize_, h_blockSize_), h_blockSize_>>>(
       d_controlPathsToGoal_ptr_, d_treeSamples_ptr_, d_treeSamplesParentIdxs_ptr_, d_goalSetIdxs_ptr_, h_solSetSize_, d_pathCosts_ptr_,
-      d_treeSampleCosts_ptr_, d_iterations_ptr_);
+      d_treeSampleCosts_ptr_, d_iterations_ptr_, d_minCost_ptr_);
 
     cudaMemcpy(&h_minCost_, d_minCost_ptr_, sizeof(float), cudaMemcpyDeviceToHost);
     printf("Cost to Goal: %f\n", h_minCost_);
@@ -549,24 +557,27 @@ void OKPAX::getControlPathsToGoal()
 
 __global__ void
 OKPAX_getControlPathsToGoal_kernel(float* controlPathsToGoal, float* treeSamples, int* treeSamplesParentIdxs, uint* goalSetIdxs,
-                                   int goalSetSize, float* pathCosts, float* treeSampleCosts, int* iterations)
+                                   int goalSetSize, float* pathCosts, float* treeSampleCosts, int* iterations, float* minCost)
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid >= MAX_TREE_SIZE || tid >= goalSetSize) return;
 
     int goalIdx = goalSetIdxs[tid];
 
-    int x0Idx = goalIdx;
-    int i     = 0;  // --- Iteration counter ---
+    int x0Idx  = goalIdx;
+    float cost = treeSampleCosts[goalIdx];
+    if(cost != *minCost) return;
+    int i = 0;  // --- Iteration counter ---
     while(x0Idx != -1)
         {
             for(int j = 0; j < SAMPLE_DIM; j++)
                 {
-                    controlPathsToGoal[tid * SAMPLE_DIM * MAX_ITER + SAMPLE_DIM * i + j] = treeSamples[x0Idx * SAMPLE_DIM + j];
+                    controlPathsToGoal[SAMPLE_DIM * i + j] = treeSamples[x0Idx * SAMPLE_DIM + j];
                 }
             i++;
             x0Idx = treeSamplesParentIdxs[x0Idx];
         }
+    printf("made it here\n");
 
     // TODO: Remove this: only for creating cost/iteration plot.
     int pathCostsIdx            = 2 * tid;
@@ -580,7 +591,7 @@ void OKPAX::writeSolutionsToCSV(int itr)
     std::filesystem::create_directories("Data/ControlPathsToGoal/ControlPathsToGoal" + std::to_string(itr));
     filename.str("");
     filename << "Data/ControlPathsToGoal/ControlPathsToGoal" << itr << "/controlPathsToGoal.csv";
-    copyAndWriteVectorToCSV(d_controlPathsToGoal_, filename.str(), MAX_SOL_SET_SIZE * MAX_ITER, SAMPLE_DIM, false);
+    copyAndWriteVectorToCSV(d_controlPathsToGoal_, filename.str(), MAX_ITER, SAMPLE_DIM, false);
 }
 
 void OKPAX::writeSolutionCostsToCSV(int itr)
@@ -589,7 +600,7 @@ void OKPAX::writeSolutionCostsToCSV(int itr)
     std::filesystem::create_directories("Data/pathCosts/pathCosts" + std::to_string(itr));
     filename.str("");
     filename << "Data/pathCosts/pathCosts" << itr << "/pathCosts.csv";
-    copyAndWriteVectorToCSV(d_pathCosts_, filename.str(), 2 * MAX_SOL_SET_SIZE, 1, false);
+    copyAndWriteVectorToCSV(d_pathCosts_, filename.str(), 2, 1, false);
 }
 
 void OKPAX::writeDeviceVectorsToCSV(int itr)
@@ -665,7 +676,7 @@ void OKPAX::writeDeviceVectorsToCSV(int itr)
     // Write Control Path to Goal
     filename.str("");
     filename << "Data/ControlPathsToGoal/ControlPathsToGoal" << itr << "/controlPathsToGoal.csv";
-    copyAndWriteVectorToCSV(d_controlPathsToGoal_, filename.str(), MAX_SOL_SET_SIZE * MAX_ITER, SAMPLE_DIM, false);
+    copyAndWriteVectorToCSV(d_controlPathsToGoal_, filename.str(), MAX_ITER, SAMPLE_DIM, false);
 
     // Write Tree Sample Costs
     filename.str("");
@@ -680,7 +691,7 @@ void OKPAX::writeDeviceVectorsToCSV(int itr)
     // Write Path Costs
     filename.str("");
     filename << "Data/pathCosts/pathCosts" << itr << "/pathCosts.csv";
-    copyAndWriteVectorToCSV(d_pathCosts_, filename.str(), 2 * MAX_SOL_SET_SIZE, 1, false);
+    copyAndWriteVectorToCSV(d_pathCosts_, filename.str(), 2, 1, false);
 }
 
 void OKPAX::writeExecutionTimeToCSV(double time)

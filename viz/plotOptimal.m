@@ -23,7 +23,7 @@ dirFlags = [files.isdir];
 subFolders = files(dirFlags);
 subFolders = subFolders(~ismember({subFolders.name}, {'.', '..'}));
 numIterations = numel(subFolders);
-numIterations = 500;
+numIterations = 50;
 obstaclesPath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/zigZag/obstacles.csv';
 obstacles = readmatrix(obstaclesPath);
 

@@ -83,13 +83,14 @@ void KPAX::resetPlanner(float* h_initial, float* h_goal)
     thrust::fill(d_pathCosts_.begin(), d_pathCosts_.end(), 0.0f);
     thrust::fill(d_iterations_.begin(), d_iterations_.end(), 0);
 
-    h_treeSize_     = 1;
-    h_itr_          = 0;
-    h_costToGoal_   = 0;
-    h_pathToGoal_   = 0;
-    h_frontierSize_ = 0;
-    h_solSetSize_   = 0;
-    h_minCost_      = MAX_FLOAT;
+    h_treeSize_       = 1;
+    h_itr_            = 0;
+    h_costToGoal_     = 0;
+    h_pathToGoal_     = 0;
+    h_frontierSize_   = 0;
+    h_solSetSize_     = 0;
+    h_minCost_        = MAX_FLOAT;
+    h_propIterations_ = 1;
 
     cudaMemcpy(d_treeSamples_ptr_, h_initial, SAMPLE_DIM * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_goalSample_ptr_, h_goal, SAMPLE_DIM * sizeof(float), cudaMemcpyHostToDevice);

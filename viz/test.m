@@ -4,7 +4,7 @@ clear all;
 
 % Parameterss
 radius = 0.05;
-alpha = 0.7;
+alpha = 0.3;
 xGoal = [.75, .95, 0.9];
 STEP_SIZE = 0.1;
 % File paths
