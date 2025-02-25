@@ -24,12 +24,12 @@ int main(void)
     cudaMemcpy(d_obstacles, obstacles.data(), numObstacles * 2 * W_DIM * sizeof(float), cudaMemcpyHostToDevice);
 
     // --- Execute planner ---
-    int N = 1;
+    int N = 100;
     std::vector<float> pathCosts(N);
+    OKPAX kpax;
     for(int i = 0; i < N; i++)
         {
-            OKPAX kpax;
-            pathCosts[i] = kpax.planOptimize(h_initial, h_goal, d_obstacles, numObstacles);
+            pathCosts[i] = kpax.planBenchmark(h_initial, h_goal, d_obstacles, numObstacles, i);
         }
 
     float sum  = std::accumulate(pathCosts.begin(), pathCosts.end(), 0.0);

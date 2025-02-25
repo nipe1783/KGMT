@@ -155,6 +155,7 @@ float KPAX::planOptimize(float* h_initial, float* h_goal, float* d_obstacles_ptr
             h_itr_++;
             // printf("Iteration: %d, Tree Size: %d, Frontier Size: %d\n", h_itr_, h_treeSize_, h_frontierSize_);  // TODO: Remove this.
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
+            if(h_propIterations_ == 0) break;
             graph_.updateVertices();
             updateFrontier();
             if(h_pathToGoal_ != 0)
@@ -232,7 +233,7 @@ void KPAX::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
 
             if(h_propIterations_ == 0)
                 {
-                    h_propIterations_   = 1;
+                    h_propIterations_   = 0;
                     h_frontierNextSize_ = MAX_TREE_SIZE - h_treeSize_;
                     thrust::fill(d_frontierNext_.begin(), d_frontierNext_.end(), false);
                     printf("Tree Full\n");

@@ -9,7 +9,7 @@ Planner::Planner()
     d_unexploredSampleCosts_ = thrust::device_vector<float>(MAX_TREE_SIZE);
     d_goalSet_               = thrust::device_vector<int>(MAX_TREE_SIZE);
     d_controlPathsToGoal_    = thrust::device_vector<float>(MAX_ITER * SAMPLE_DIM);
-    d_pathCosts_             = thrust::device_vector<float>(2 * MAX_SOL_SET_SIZE);
+    d_pathCosts_             = thrust::device_vector<float>(3 * MAX_SOL_SET_SIZE);
     d_iterations_            = thrust::device_vector<int>(MAX_TREE_SIZE);
 
     d_treeSamples_ptr_           = thrust::raw_pointer_cast(d_treeSamples_.data());

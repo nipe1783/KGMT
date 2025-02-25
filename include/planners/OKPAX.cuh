@@ -11,6 +11,7 @@ public:
     /****************************    METHODS    ****************************/
     void plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount) override;
     float planOptimize(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount);
+    float planBenchmark(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr);
     void planDataCollect(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr);
     void propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount);
     void updateFrontier();
@@ -22,6 +23,7 @@ public:
     void writeDeviceVectorsToCSV(int itr = 0);
     void writeSolutionsToCSV(int itr = 0);
     void writeSolutionCostsToCSV(int itr = 0);
+    void writeIterationTimeToCSV(const std::vector<float>& iterationTimes, int itr);
 
     /****************************    FIELDS    ****************************/
     // --- host fields ---
@@ -75,6 +77,10 @@ __global__ void
 OKPAX_pruningFrontier_kernel(uint* activeFrontierNextIdxs, uint frontierNextSize, int* unexploredSamplesParentIdxs,
                              int* treeSamplesParentIdxs, float* treeSampleCosts, float* minCostsR1, int* frontierNextXR1s, int* treeXR1s,
                              bool* frontierNext, float* unexploredSampleCosts, bool* pruned, uint* inactiveIterations);
+
+__global__ void OKPAX_pruning_kernel(uint* activeFrontierNextIdxs, uint frontierNextSize, int treeSize, int* unexploredSamplesParentIdxs,
+                                     int* treeSamplesParentIdxs, float* treeSampleCosts, bool* goalSet, float* minCostsR1, int* treeXR1s,
+                                     int* frontierNextXR1s, bool* frontierNext, float* unexploredSampleCosts, bool* pruned);
 
 __global__ void
 OKPAX_getControlPathsToGoal_kernel(float* controlPathsToGoal, float* treeSamples, int* treeSamplesParentIdxs, uint* goalSetIdxs,

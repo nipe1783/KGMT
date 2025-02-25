@@ -43,7 +43,7 @@ OKPAX::OKPAX()
 
     cudaMalloc(&d_minCost_ptr_, sizeof(float));
 
-    h_activeBlockSize_ = 32;
+    h_activeBlockSize_ = 512;
 
     if(VERBOSE)
         {
@@ -58,6 +58,7 @@ void OKPAX::resetPlanner(float* h_initial, float* h_goal)
 {
     // --- Resetting Device Vectors: ---
     thrust::fill(d_frontier_.begin(), d_frontier_.end(), false);
+    thrust::fill(d_frontier_.begin(), d_frontier_.begin() + 1, true);
     thrust::fill(d_frontierNext_.begin(), d_frontierNext_.end(), false);
     thrust::fill(d_activeFrontierIdxs_.begin(), d_activeFrontierIdxs_.end(), 0);
     thrust::fill(d_goalSetIdxs_.begin(), d_goalSetIdxs_.end(), 0);
@@ -72,7 +73,6 @@ void OKPAX::resetPlanner(float* h_initial, float* h_goal)
     thrust::fill(d_treeSamplesParentIdxs_.begin(), d_treeSamplesParentIdxs_.end(), -1);
     thrust::fill(d_treeSampleCosts_.begin(), d_treeSampleCosts_.end(), 0.0f);
     thrust::fill(d_unexploredSampleCosts_.begin(), d_unexploredSampleCosts_.end(), 0.0f);
-    thrust::fill(d_frontier_.begin(), d_frontier_.begin() + 1, true);
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
     thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.begin() + 1, 5);  // TODO make this not hard coded to 5.
     thrust::fill(d_goalSet_.begin(), d_goalSet_.end(), false);
@@ -81,6 +81,8 @@ void OKPAX::resetPlanner(float* h_initial, float* h_goal)
     thrust::fill(d_pruned_.begin(), d_pruned_.end(), false);
     thrust::fill(d_treeInactiveIterations_.begin(), d_treeInactiveIterations_.end(), 0);
     thrust::fill(d_controlPathsToGoal_.begin(), d_controlPathsToGoal_.end(), 0.0f);
+    thrust::fill(d_activeFrontierRepeatIdxs_.begin(), d_activeFrontierRepeatIdxs_.end(),
+                 0);  // TODO: check if this is slowing everything down. If so, remove the repeat stuff.
 
     h_treeSize_       = 1;
     h_itr_            = 0;
@@ -151,7 +153,7 @@ float OKPAX::planOptimize(float* h_initial, float* h_goal, float* d_obstacles_pt
     while(h_itr_ < MAX_ITER)
         {
             h_itr_++;
-            printf("Iteration: %d, Tree Size: %d, Frontier Size: %d\n", h_itr_, h_treeSize_, h_frontierSize_);  // TODO: Remove this.
+            // printf("Iteration: %d, Tree Size: %d, Frontier Size: %d\n", h_itr_, h_treeSize_, h_frontierSize_);  // TODO: Remove this.
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
             if(h_propIterations_ == 0) break;
             updateFrontier();
@@ -164,10 +166,49 @@ float OKPAX::planOptimize(float* h_initial, float* h_goal, float* d_obstacles_pt
         }
     getControlPathsToGoal();
 
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    writeExecutionTimeToCSV(milliseconds / 1000.0);
+    std::cout << "OKPAX execution time: " << milliseconds / 1000.0 << " seconds. Iterations: " << h_itr_ << ". Tree Size: " << h_treeSize_
+              << std::endl;
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+
     // TODO: Remove this.
     // writeSolutionsToCSV();
     // writeSolutionCostsToCSV();
     // Until here.
+    return h_minCost_;
+}
+
+float OKPAX::planBenchmark(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr)
+{
+    std::vector<float> iterationTimes;
+    cudaEvent_t start, stop;
+    float milliseconds = 0;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
+
+    // --- INITIALIZE OKPAX ---
+    resetPlanner(h_initial, h_goal);
+
+    // --- PLANNING ---
+    while(h_itr_ < MAX_ITER)
+        {
+            h_itr_++;
+            // printf("Iteration: %d, Tree Size: %d, Frontier Size: %d\n", h_itr_, h_treeSize_, h_frontierSize_);  // TODO: Remove this.
+            propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
+            if(h_propIterations_ == 0) break;
+            updateFrontier();
+
+            cudaEventRecord(stop);
+            cudaEventSynchronize(stop);
+            cudaEventElapsedTime(&milliseconds, start, stop);
+            iterationTimes.push_back(milliseconds);
+        }
+    getControlPathsToGoal();
 
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
@@ -177,6 +218,12 @@ float OKPAX::planOptimize(float* h_initial, float* h_goal, float* d_obstacles_pt
               << std::endl;
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
+
+    // TODO: Remove this.
+    writeSolutionsToCSV(benchItr);
+    writeSolutionCostsToCSV(benchItr);
+    writeIterationTimeToCSV(iterationTimes, benchItr);
+    // Until here.
     return h_minCost_;
 }
 
@@ -391,6 +438,37 @@ void OKPAX::updateFrontier()
 
     // --- Update Tree Size ---
     h_treeSize_ += h_frontierNextSize_;
+
+    // // --- Find indices and size of the next frontier ---
+    // thrust::exclusive_scan(d_frontierNext_.begin(), d_frontierNext_.end(), d_frontierScanIdx_.begin(), 0, thrust::plus<uint>());
+    // h_frontierNextSize_ = d_frontierScanIdx_[MAX_TREE_SIZE - 1];
+    // findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_frontierNext_ptr_, d_frontierScanIdx_ptr_, d_activeFrontierIdxs_ptr_);
+
+    // // --- Pruning Tree ---
+    // OKPAX_pruning_kernel<<<iDivUp(h_frontierNextSize_ + h_treeSize_, h_blockSize_), h_blockSize_>>>(
+    //   d_activeFrontierIdxs_ptr_, h_frontierNextSize_, h_treeSize_, d_unexploredSamplesParentIdxs_ptr_, d_treeSamplesParentIdxs_ptr_,
+    //   d_treeSampleCosts_ptr_, d_goalSet_ptr_, graph_.d_minCostsR1_ptr_, d_treeXR1s_ptr_, d_frontierNextXR1s_ptr_, d_frontierNext_ptr_,
+    //   d_unexploredSampleCosts_ptr_, d_pruned_ptr_);
+
+    // // --- Finding updated new samples with pruned tree ---
+    // thrust::exclusive_scan(d_frontierNext_.begin(), d_frontierNext_.end(), d_frontierScanIdx_.begin(), 0, thrust::plus<uint>());
+    // h_frontierNextSize_ = d_frontierScanIdx_[MAX_TREE_SIZE - 1];
+    // findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_frontierNext_ptr_, d_frontierScanIdx_ptr_, d_activeFrontierIdxs_ptr_);
+
+    // // --- Update Frontier ---
+    // thrust::fill(d_activeFrontierRepeatCount_.begin(), d_activeFrontierRepeatCount_.end(), 0);
+    // OKPAX_updateFrontier_kernel<<<iDivUp(h_frontierNextSize_ + h_treeSize_, h_blockSize_), h_blockSize_>>>(
+    //   d_frontier_ptr_, d_frontierNext_ptr_, d_activeFrontierIdxs_ptr_, h_frontierNextSize_, d_goalSample_ptr_, h_treeSize_,
+    //   d_unexploredSamples_ptr_, d_treeSamples_ptr_, d_unexploredSamplesParentIdxs_ptr_, d_treeSamplesParentIdxs_ptr_,
+    //   d_treeSampleCosts_ptr_, d_activeFrontierRepeatCount_ptr_, d_randomSeeds_ptr_, d_controlPathsToGoal_ptr_, d_goalSet_ptr_,
+    //   d_iterations_ptr_, h_itr_, graph_.d_minCostsR1_ptr_, d_treeXR1s_ptr_, d_frontierNextXR1s_ptr_, d_minCost_ptr_,
+    //   d_unexploredSampleCosts_ptr_, d_pruned_ptr_);
+
+    // // --- Check for goal criteria ---
+    // cudaMemcpy(&h_pathToGoal_, d_pathToGoal_ptr_, sizeof(int), cudaMemcpyDeviceToHost);
+
+    // // --- Update Tree Size ---
+    // h_treeSize_ += h_frontierNextSize_;
 }
 
 /***************************/
@@ -452,13 +530,17 @@ OKPAX_pruningFrontier_kernel(uint* activeFrontierNextIdxs, uint frontierNextSize
             int xR1     = frontierNextXR1s[treeIdx];
             if(cost > minCostsR1[xR1])
                 {
-                    frontierNext[treeIdx] = false;
+                    frontierNext[treeIdx]                = false;
+                    unexploredSamplesParentIdxs[treeIdx] = -1;
                     return;
                 }
 
             int x0Idx = unexploredSamplesParentIdxs[treeIdx];
+            int cntr  = 0;
             while(x0Idx != -1)
                 {
+                    cntr++;
+                    if(cntr > 1000) printf("Infinite Loop\n");
                     int x0R1 = treeXR1s[x0Idx];
                     if(treeSampleCosts[x0Idx] > minCostsR1[x0R1])
                         {
@@ -467,6 +549,51 @@ OKPAX_pruningFrontier_kernel(uint* activeFrontierNextIdxs, uint frontierNextSize
                     else if(!pruned[treeIdx])
                         {
                             frontierNext[treeIdx] = true;
+                            return;
+                        }
+                    x0Idx = treeSamplesParentIdxs[x0Idx];
+                }
+            unexploredSamplesParentIdxs[treeIdx] = -1;  // TODO: why is this helping to lower cost.
+        }
+}
+
+__global__ void OKPAX_pruning_kernel(uint* activeFrontierNextIdxs, uint frontierNextSize, int treeSize, int* unexploredSamplesParentIdxs,
+                                     int* treeSamplesParentIdxs, float* treeSampleCosts, bool* goalSet, float* minCostsR1, int* treeXR1s,
+                                     int* frontierNextXR1s, bool* frontierNext, float* unexploredSampleCosts, bool* pruned)
+{
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    // --- Checking New Samples: ---
+    if(tid < frontierNextSize)
+        {
+            int treeIdx = activeFrontierNextIdxs[tid];
+            int x0Idx   = unexploredSamplesParentIdxs[treeIdx];
+
+            while(x0Idx != -1)
+                {
+                    int x0R1 = treeXR1s[x0Idx];
+                    if(minCostsR1[x0R1] / treeSampleCosts[x0Idx] < 0.99)
+                        {
+                            frontierNext[treeIdx] = false;
+                            pruned[treeIdx]       = true;
+                            return;
+                        }
+                    x0Idx = treeSamplesParentIdxs[x0Idx];
+                }
+        }
+
+    // --- Checking Existing Samples: ---
+    else if(tid < frontierNextSize + treeSize && !goalSet[tid])
+        {
+            int treeIdx = tid - frontierNextSize;
+            int x0Idx   = treeSamplesParentIdxs[treeIdx];
+
+            while(x0Idx != -1)
+                {
+                    int x0R1 = treeXR1s[x0Idx];
+                    if(minCostsR1[x0R1] / treeSampleCosts[x0Idx] < 0.99)
+                        {
+                            pruned[treeIdx] = true;
                             return;
                         }
                     x0Idx = treeSamplesParentIdxs[x0Idx];
@@ -511,7 +638,7 @@ OKPAX_updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFron
             treeXR1s[x1TreeIdx] = xR1;
             if(cost <= minCostsR1[xR1])
                 {
-                    activeFrontierRepeatCount[x1TreeIdx] = 1;
+                    activeFrontierRepeatCount[x1TreeIdx] = 5;
                     frontier[x1TreeIdx]                  = true;
                 }
 
@@ -534,7 +661,7 @@ OKPAX_updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFron
             float cost  = treeSampleCosts[treeIdx];
             if(!goalSet[treeIdx] && cost <= minCostsR1[xR1] && !pruned[treeIdx])
                 {
-                    activeFrontierRepeatCount[treeIdx] = 1;
+                    activeFrontierRepeatCount[treeIdx] = 5;
                     frontier[treeIdx]                  = true;
                 }
         }
@@ -566,6 +693,11 @@ OKPAX_getControlPathsToGoal_kernel(float* controlPathsToGoal, float* treeSamples
 
     int x0Idx  = goalIdx;
     float cost = treeSampleCosts[goalIdx];
+    // TODO: Remove this: only for creating cost/iteration plot.
+    int pathCostsIdx            = 3 * tid;
+    pathCosts[pathCostsIdx]     = goalIdx;
+    pathCosts[pathCostsIdx + 1] = cost;
+    pathCosts[pathCostsIdx + 2] = iterations[goalIdx];
     if(cost != *minCost) return;
     int i = 0;  // --- Iteration counter ---
     while(x0Idx != -1)
@@ -577,12 +709,20 @@ OKPAX_getControlPathsToGoal_kernel(float* controlPathsToGoal, float* treeSamples
             i++;
             x0Idx = treeSamplesParentIdxs[x0Idx];
         }
-    printf("made it here\n");
+}
 
-    // TODO: Remove this: only for creating cost/iteration plot.
-    int pathCostsIdx            = 2 * tid;
-    pathCosts[pathCostsIdx]     = iterations[goalIdx];
-    pathCosts[pathCostsIdx + 1] = treeSampleCosts[goalIdx];
+void OKPAX::writeIterationTimeToCSV(const std::vector<float>& iterationTimes, int itr)
+{
+    std::filesystem::path dirPath = "Data/IterationTime";
+    std::filesystem::create_directories(dirPath);
+    std::filesystem::path filePath = dirPath / ("IterationTime" + std::to_string(itr) + ".csv");
+    std::ofstream file(filePath, std::ios_base::out);
+    for(const auto& time : iterationTimes)
+        {
+            file << time << std::endl;
+        }
+
+    file.close();
 }
 
 void OKPAX::writeSolutionsToCSV(int itr)
@@ -597,10 +737,10 @@ void OKPAX::writeSolutionsToCSV(int itr)
 void OKPAX::writeSolutionCostsToCSV(int itr)
 {
     std::ostringstream filename;
-    std::filesystem::create_directories("Data/pathCosts/pathCosts" + std::to_string(itr));
+    std::filesystem::create_directories("Data/PathCosts");
     filename.str("");
-    filename << "Data/pathCosts/pathCosts" << itr << "/pathCosts.csv";
-    copyAndWriteVectorToCSV(d_pathCosts_, filename.str(), 2, 1, false);
+    filename << "Data/PathCosts/pathCosts" << itr << ".csv";
+    copyAndWriteVectorToCSV(d_pathCosts_, filename.str(), 3 * MAX_SOL_SET_SIZE, 3, false);
 }
 
 void OKPAX::writeDeviceVectorsToCSV(int itr)
