@@ -8,7 +8,7 @@ alpha = 0.3;
 xGoal = [.75, .95, 0.9];
 STEP_SIZE = 0.1;
 % File paths
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/zigZagHard/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/zigZag/obstacles.csv';
 controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathsToGoal/ControlPathsToGoal0/controlPathsToGoal.csv';
 
 stateSize = 6;

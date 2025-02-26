@@ -3,10 +3,10 @@ clc;
 clear;
 
 % Load time data
-timeData = load('/home/nicolas/dev/research/KGMT/build/Data/IterationTime/IterationTime1/IterationTime.csv');
+timeData = load('/home/nicolas/dev/research/KGMT/build/Data/IterationTime/IterationTime0.csv');
 
 % Load path cost data
-pathCostData = readmatrix('/home/nicolas/dev/research/KGMT/build/Data/pathCosts/pathCosts1/pathCosts.csv');
+pathCostData = readmatrix('/home/nicolas/dev/research/KGMT/build/Data/PathCosts/pathCosts0.csv');
 pathCostData = pathCostData(1:size(timeData),:);
 
 % Extract indexing information and costs

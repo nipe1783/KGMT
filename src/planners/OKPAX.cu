@@ -190,8 +190,8 @@ float OKPAX::planBenchmark(float* h_initial, float* h_goal, float* d_obstacles_p
         {
             h_itr_++;
             // printf("Iteration: %d, Tree Size: %d, Frontier Size: %d\n", h_itr_, h_treeSize_, h_frontierSize_);  // TODO: Remove this.
-            propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
             if(h_propIterations_ == 0) break;
+            propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
             updateFrontier();
 
             cudaEventRecord(stop);
@@ -211,9 +211,9 @@ float OKPAX::planBenchmark(float* h_initial, float* h_goal, float* d_obstacles_p
     cudaEventDestroy(stop);
 
     // TODO: Remove this.
-    // writeSolutionsToCSV(benchItr);
+    writeSolutionsToCSV(benchItr);
     writeSolutionCostsToCSV(benchItr);
-    // writeIterationTimeToCSV(iterationTimes, benchItr);
+    writeIterationTimeToCSV(iterationTimes, benchItr);
     // Until here.
     return h_minCost_;
 }
@@ -454,6 +454,13 @@ void OKPAX::updateFrontier()
     h_frontierNextSize_ = d_frontierScanIdx_[MAX_TREE_SIZE - 1];
     findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_frontierNext_ptr_, d_frontierScanIdx_ptr_, d_activeFrontierIdxs_ptr_);
 
+    // --- Update Tree Size ---
+    if(h_treeSize_ + h_frontierNextSize_ >= MAX_TREE_SIZE)
+        {
+            h_propIterations_ = 0;
+            return;
+        }
+
     // --- Update Frontier ---
     OKPAX_updateFrontier_kernel<<<iDivUp(h_frontierNextSize_ + h_treeSize_, h_blockSize_), h_blockSize_>>>(
       d_frontier_ptr_, d_frontierNext_ptr_, d_activeFrontierIdxs_ptr_, h_frontierNextSize_, d_goalSample_ptr_, h_treeSize_,
@@ -464,8 +471,6 @@ void OKPAX::updateFrontier()
     // --- Check for goal criteria ---
     cudaMemcpy(&h_pathToGoal_, d_pathToGoal_ptr_, sizeof(int), cudaMemcpyDeviceToHost);
 
-    // --- Update Tree Size ---
-    h_addedNodes_ = h_frontierNextSize_;
     h_treeSize_ += h_frontierNextSize_;
 
     // // --- Find indices and size of the next frontier ---
@@ -483,6 +488,13 @@ void OKPAX::updateFrontier()
     // thrust::exclusive_scan(d_frontierNext_.begin(), d_frontierNext_.end(), d_frontierScanIdx_.begin(), 0, thrust::plus<uint>());
     // h_frontierNextSize_ = d_frontierScanIdx_[MAX_TREE_SIZE - 1];
     // findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_frontierNext_ptr_, d_frontierScanIdx_ptr_, d_activeFrontierIdxs_ptr_);
+
+    // if(h_treeSize_ + h_frontierNextSize_ >= MAX_TREE_SIZE)
+    //     {
+    //         h_propIterations_ = 0;
+    //         printf("Tree Full\n");
+    //         return;
+    //     }
 
     // // --- Update Frontier ---
     // OKPAX_updateFrontier_kernel<<<iDivUp(h_frontierNextSize_ + h_treeSize_, h_blockSize_), h_blockSize_>>>(
@@ -564,12 +576,12 @@ OKPAX_pruningFrontier_kernel(uint* activeFrontierNextIdxs, uint frontierNextSize
                     return;
                 }
 
-            int x0Idx = unexploredSamplesParentIdxs[treeIdx];
-            if(pruned[x0Idx])
-                {
-                    frontierNext[treeIdx] = false;
-                    return;
-                }
+            // int x0Idx = unexploredSamplesParentIdxs[treeIdx];
+            // if(pruned[x0Idx])
+            //     {
+            //         frontierNext[treeIdx] = false;
+            //         return;
+            //     }
         }
 }
 
