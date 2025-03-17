@@ -16,14 +16,7 @@ public:
     void propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount);
     void updateFrontier();
     void getControlPathsToGoal();
-    void writeExecutionTimeToCSV(double time);
     void resetPlanner(float* h_initial, float* h_goal);
-
-    // Methods for exctracting data to CSV:
-    void writeDeviceVectorsToCSV(int itr = 0);
-    void writeSolutionsToCSV(int itr = 0);
-    void writeSolutionCostsToCSV(int itr = 0);
-    void writeIterationTimeToCSV(const std::vector<float>& iterationTimes, int itr);
 
     /****************************    FIELDS    ****************************/
     // --- host fields ---

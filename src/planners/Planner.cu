@@ -42,6 +42,107 @@ Planner::Planner()
         }
 }
 
+void Planner::writeDeviceVectorsToCSV(int itr)
+{
+    std::ostringstream filename;
+    bool append = h_itr_ != 0;
+
+    // Create necessary directories
+    std::filesystem::create_directories("Data");
+    std::filesystem::create_directories("Data/Samples/Samples" + std::to_string(itr));
+    std::filesystem::create_directories("Data/Parents/Parents" + std::to_string(itr));
+    std::filesystem::create_directories("Data/TotalCountPerVertex/TotalCountPerVertex" + std::to_string(itr));
+    std::filesystem::create_directories("Data/ValidCountPerVertex/ValidCountPerVertex" + std::to_string(itr));
+    std::filesystem::create_directories("Data/Frontier/Frontier" + std::to_string(itr));
+    std::filesystem::create_directories("Data/FrontierRepeatCount/FrontierRepeatCount" + std::to_string(itr));
+    std::filesystem::create_directories("Data/VertexScores/VertexScores" + std::to_string(itr));
+    std::filesystem::create_directories("Data/FrontierSize/FrontierSize" + std::to_string(itr));
+    std::filesystem::create_directories("Data/TreeSize/TreeSize" + std::to_string(itr));
+    std::filesystem::create_directories("Data/ExpandedNodes/ExpandedNodes" + std::to_string(itr));
+    std::filesystem::create_directories("Data/ControlPathsToGoal/ControlPathsToGoal" + std::to_string(itr));
+    std::filesystem::create_directories("Data/goalSet/goalSet" + std::to_string(itr));
+    std::filesystem::create_directories("Data/treeSampleCosts/treeSampleCosts" + std::to_string(itr));
+    std::filesystem::create_directories("Data/minCosts/minCosts" + std::to_string(itr));
+    std::filesystem::create_directories("Data/pathCosts/pathCosts" + std::to_string(itr));
+
+    // Write Samples
+    filename.str("");
+    filename << "Data/Samples/Samples" << itr << "/samples" << h_itr_ << ".csv";
+    copyAndWriteVectorToCSV(d_treeSamples_, filename.str(), MAX_TREE_SIZE, SAMPLE_DIM, append);
+
+    // Write Goal Set
+    filename.str("");
+    filename << "Data/goalSet/goalSet" << itr << "/goalSet" << h_itr_ << ".csv";
+    copyAndWriteVectorToCSV(d_goalSet_, filename.str(), MAX_TREE_SIZE, 1, false);
+
+    // Write Parents
+    filename.str("");
+    filename << "Data/Parents/Parents" << itr << "/parents" << h_itr_ << ".csv";
+    copyAndWriteVectorToCSV(d_treeSamplesParentIdxs_, filename.str(), MAX_TREE_SIZE, 1, append);
+
+    // Write Tree Size
+    filename.str("");
+    filename << "Data/TreeSize/TreeSize" << itr << "/treeSize.csv";
+    writeValueToCSV(h_treeSize_, filename.str());
+
+    // Write Control Path to Goal
+    filename.str("");
+    filename << "Data/ControlPathsToGoal/ControlPathsToGoal" << itr << "/controlPathsToGoal.csv";
+    copyAndWriteVectorToCSV(d_controlPathsToGoal_, filename.str(), MAX_ITER, SAMPLE_DIM, false);
+
+    // Write Tree Sample Costs
+    filename.str("");
+    filename << "Data/treeSampleCosts/treeSampleCosts" << itr << "/treeSampleCosts.csv";
+    copyAndWriteVectorToCSV(d_treeSampleCosts_, filename.str(), MAX_TREE_SIZE, 1, false);
+
+    // Write Path Costs
+    filename.str("");
+    filename << "Data/pathCosts/pathCosts" << itr << "/pathCosts.csv";
+    copyAndWriteVectorToCSV(d_pathCosts_, filename.str(), 2, 1, false);
+}
+
+void Planner::writeSolutionsToCSV(int itr)
+{
+    std::ostringstream filename;
+    std::filesystem::create_directories("Data/ControlPathsToGoal/ControlPathsToGoal" + std::to_string(itr));
+    filename.str("");
+    filename << "Data/ControlPathsToGoal/ControlPathsToGoal" << itr << "/controlPathsToGoal.csv";
+    copyAndWriteVectorToCSV(d_controlPathsToGoal_, filename.str(), MAX_ITER, SAMPLE_DIM, false);
+}
+
+void Planner::writeSolutionCostsToCSV(int itr)
+{
+    std::ostringstream filename;
+    std::filesystem::create_directories("Data/PathCosts");
+    filename.str("");
+    filename << "Data/PathCosts/pathCosts" << itr << ".csv";
+    copyAndWriteVectorToCSV(d_pathCosts_, filename.str(), MAX_SOL_SET_SIZE, 3, false);
+}
+
+void Planner::writeIterationTimeToCSV(const std::vector<float>& iterationTimes, int itr)
+{
+    std::filesystem::path dirPath = "Data/IterationTime";
+    std::filesystem::create_directories(dirPath);
+    std::filesystem::path filePath = dirPath / ("IterationTime" + std::to_string(itr) + ".csv");
+    std::ofstream file(filePath, std::ios_base::out);
+    for(const auto& time : iterationTimes)
+        {
+            file << time << std::endl;
+        }
+
+    file.close();
+}
+
+void Planner::writeExecutionTimeToCSV(double time)
+{
+    std::ostringstream filename;
+    std::filesystem::create_directories("Data");
+    std::filesystem::create_directories("Data/ExecutionTime");
+    filename.str("");
+    filename << "Data/ExecutionTime/executionTime.csv";
+    writeValueToCSV(time, filename.str());
+}
+
 __global__ void initializeRandomSeeds_kernel(curandState* randomSeeds, int numSeeds, int seed)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;

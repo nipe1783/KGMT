@@ -26,6 +26,13 @@ public:
     virtual void plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount) = 0;
     void initializeRandomSeeds(int seed);
 
+    // Methods for exctracting data to CSV:
+    void writeDeviceVectorsToCSV(int itr = 0);
+    void writeSolutionsToCSV(int itr = 0);
+    void writeSolutionCostsToCSV(int itr = 0);
+    void writeIterationTimeToCSV(const std::vector<float>& iterationTimes, int itr);
+    void writeExecutionTimeToCSV(double time);
+
     /****************************    FIELDS    ****************************/
     // --- host fields ---
     uint h_treeSize_ = 0, h_itr_ = 0, h_blockSize_ = 128, h_gridSize_, h_solSetSize_ = 0;

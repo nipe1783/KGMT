@@ -42,6 +42,8 @@
 #include "ompl/base/objectives/MechanicalWorkOptimizationObjective.h"
 #include "ompl/tools/config/SelfConfig.h"
 #include <limits>
+#include <chrono> 
+#include <fstream>
 
 ompl::control::ModSST::ModSST(const SpaceInformationPtr &si) : base::Planner(si, "ModSST")
 {
@@ -199,6 +201,9 @@ ompl::control::ModSST::Witness *ompl::control::ModSST::findClosestWitness(ompl::
 
 ompl::base::PlannerStatus ompl::control::ModSST::solve(const base::PlannerTerminationCondition &ptc)
 {
+    auto startTime = std::chrono::high_resolution_clock::now();
+    std::ofstream solutionLog("solution_times_and_costs.csv");
+
     checkValidity();
     base::Goal *goal = pdef_->getGoal().get();
     auto *goal_s     = dynamic_cast<base::GoalSampleableRegion *>(goal);
@@ -301,7 +306,9 @@ ompl::base::PlannerStatus ompl::control::ModSST::solve(const base::PlannerTermin
                                         }
                                     prevSolution_.push_back(si_->cloneState(solTrav->state_));
                                     prevSolutionCost_ = solution->accCost_;
-
+                                    auto currentTime = std::chrono::high_resolution_clock::now();
+                                    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
+                                    solutionLog << elapsedTime << "," << solution->accCost_.value() << std::endl;
                                     OMPL_INFORM("Found solution with cost %.2f", solution->accCost_.value());
                                     if(intermediateSolutionCallback)
                                         {
@@ -384,7 +391,7 @@ ompl::base::PlannerStatus ompl::control::ModSST::solve(const base::PlannerTermin
     delete rmotion;
 
     OMPL_INFORM("%s: Created %u states in %u iterations", getName().c_str(), nn_->size(), iterations);
-
+    solutionLog.close();
     return {solved, approximate};
 }
 

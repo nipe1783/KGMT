@@ -211,6 +211,51 @@ void KPAX::planDataCollect(float* h_initial, float* h_goal, float* d_obstacles_p
     writeDeviceVectorsToCSV(benchItr);
 }
 
+float KPAX::planBenchmark(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr)
+{
+    std::vector<float> iterationTimes;
+    cudaEvent_t start, stop;
+    float milliseconds = 0;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
+
+    // --- INITIALIZE OKPAX ---
+    resetPlanner(h_initial, h_goal);
+
+    // --- PLANNING ---
+    while(h_itr_ < MAX_ITER)
+        {
+            h_itr_++;
+            // printf("Iteration: %d, Tree Size: %d, Frontier Size: %d\n", h_itr_, h_treeSize_, h_frontierSize_);  // TODO: Remove this.
+            if(h_propIterations_ == 0) break;
+            propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
+            updateFrontier();
+
+            cudaEventRecord(stop);
+            cudaEventSynchronize(stop);
+            cudaEventElapsedTime(&milliseconds, start, stop);
+            iterationTimes.push_back(milliseconds);
+        }
+    getControlPathsToGoal();
+
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    writeExecutionTimeToCSV(milliseconds / 1000.0);
+    std::cout << "KPAX execution time: " << milliseconds / 1000.0 << " seconds. Iterations: " << h_itr_ << ". Tree Size: " << h_treeSize_
+              << std::endl;
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+
+    // TODO: Remove this.
+    writeSolutionsToCSV(benchItr);
+    writeSolutionCostsToCSV(benchItr);
+    writeIterationTimeToCSV(iterationTimes, benchItr);
+    // Until here.
+    return h_minCost_;
+}
+
 void KPAX::propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount)
 {
     // --- Find indices and size of frontier. ---
@@ -467,7 +512,7 @@ void KPAX::getControlPathsToGoal()
 
     KPAX_getControlPathsToGoal_kernel<<<iDivUp(h_solSetSize_, h_blockSize_), h_blockSize_>>>(
       d_controlPathsToGoal_ptr_, d_treeSamples_ptr_, d_treeSamplesParentIdxs_ptr_, d_goalSetIdxs_ptr_, h_solSetSize_, d_pathCosts_ptr_,
-      d_treeSampleCosts_ptr_, d_iterations_ptr_);
+      d_treeSampleCosts_ptr_, d_iterations_ptr_, d_minCost_ptr_);
 
     cudaMemcpy(&h_minCost_, d_minCost_ptr_, sizeof(float), cudaMemcpyDeviceToHost);
     printf("Cost to Goal: %f\n", h_minCost_);
@@ -475,161 +520,29 @@ void KPAX::getControlPathsToGoal()
 
 __global__ void
 KPAX_getControlPathsToGoal_kernel(float* controlPathsToGoal, float* treeSamples, int* treeSamplesParentIdxs, uint* goalSetIdxs,
-                                  int goalSetSize, float* pathCosts, float* treeSampleCosts, int* iterations)
+                                  int goalSetSize, float* pathCosts, float* treeSampleCosts, int* iterations, float* minCost)
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid >= MAX_TREE_SIZE || tid >= goalSetSize) return;
 
     int goalIdx = goalSetIdxs[tid];
 
-    int x0Idx = goalIdx;
-    int i     = 0;  // --- Iteration counter ---
+    int x0Idx  = goalIdx;
+    float cost = treeSampleCosts[goalIdx];
+    // TODO: Remove this: only for creating cost/iteration plot.
+    int pathCostsIdx            = 3 * tid;
+    pathCosts[pathCostsIdx]     = goalIdx;
+    pathCosts[pathCostsIdx + 1] = cost;
+    pathCosts[pathCostsIdx + 2] = iterations[goalIdx];
+    if(cost != *minCost) return;
+    int i = 0;  // --- Iteration counter ---
     while(x0Idx != -1)
         {
             for(int j = 0; j < SAMPLE_DIM; j++)
                 {
-                    controlPathsToGoal[tid * SAMPLE_DIM * MAX_ITER + SAMPLE_DIM * i + j] = treeSamples[x0Idx * SAMPLE_DIM + j];
+                    controlPathsToGoal[SAMPLE_DIM * i + j] = treeSamples[x0Idx * SAMPLE_DIM + j];
                 }
             i++;
             x0Idx = treeSamplesParentIdxs[x0Idx];
         }
-
-    // TODO: Remove this: only for creating cost/iteration plot.
-    int pathCostsIDx            = 2 * tid;
-    pathCosts[pathCostsIDx]     = iterations[goalIdx];
-    pathCosts[pathCostsIDx + 1] = treeSampleCosts[goalIdx];
-}
-
-void KPAX::writeSolutionsToCSV(int itr)
-{
-    std::ostringstream filename;
-    std::filesystem::create_directories("Data/ControlPathsToGoal/ControlPathsToGoal" + std::to_string(itr));
-    filename.str("");
-    filename << "Data/ControlPathsToGoal/ControlPathsToGoal" << itr << "/controlPathsToGoal.csv";
-    copyAndWriteVectorToCSV(d_controlPathsToGoal_, filename.str(), MAX_SOL_SET_SIZE * MAX_ITER, SAMPLE_DIM, false);
-}
-
-void KPAX::writeSolutionCostsToCSV(int itr)
-{
-    std::ostringstream filename;
-    std::filesystem::create_directories("Data/pathCosts/pathCosts" + std::to_string(itr));
-    filename.str("");
-    filename << "Data/pathCosts/pathCosts" << itr << "/pathCosts.csv";
-    copyAndWriteVectorToCSV(d_pathCosts_, filename.str(), 2 * MAX_SOL_SET_SIZE, 1, false);
-}
-
-void KPAX::writeDeviceVectorsToCSV(int itr)
-{
-    std::ostringstream filename;
-    bool append = h_itr_ != 0;
-
-    // Create necessary directories
-    std::filesystem::create_directories("Data");
-    std::filesystem::create_directories("Data/Samples/Samples" + std::to_string(itr));
-    std::filesystem::create_directories("Data/Parents/Parents" + std::to_string(itr));
-    std::filesystem::create_directories("Data/TotalCountPerVertex/TotalCountPerVertex" + std::to_string(itr));
-    std::filesystem::create_directories("Data/ValidCountPerVertex/ValidCountPerVertex" + std::to_string(itr));
-    std::filesystem::create_directories("Data/Frontier/Frontier" + std::to_string(itr));
-    std::filesystem::create_directories("Data/FrontierRepeatCount/FrontierRepeatCount" + std::to_string(itr));
-    std::filesystem::create_directories("Data/VertexScores/VertexScores" + std::to_string(itr));
-    std::filesystem::create_directories("Data/FrontierSize/FrontierSize" + std::to_string(itr));
-    std::filesystem::create_directories("Data/TreeSize/TreeSize" + std::to_string(itr));
-    std::filesystem::create_directories("Data/ExpandedNodes/ExpandedNodes" + std::to_string(itr));
-    std::filesystem::create_directories("Data/ControlPathsToGoal/ControlPathsToGoal" + std::to_string(itr));
-    std::filesystem::create_directories("Data/goalSet/goalSet" + std::to_string(itr));
-    std::filesystem::create_directories("Data/treeSampleCosts/treeSampleCosts" + std::to_string(itr));
-    std::filesystem::create_directories("Data/minCosts/minCosts" + std::to_string(itr));
-    std::filesystem::create_directories("Data/pathCosts/pathCosts" + std::to_string(itr));
-
-    // Write Samples
-    filename.str("");
-    filename << "Data/Samples/Samples" << itr << "/samples" << h_itr_ << ".csv";
-    copyAndWriteVectorToCSV(d_treeSamples_, filename.str(), MAX_TREE_SIZE, SAMPLE_DIM, append);
-
-    // Write Goal Set
-    filename.str("");
-    filename << "Data/goalSet/goalSet" << itr << "/goalSet" << h_itr_ << ".csv";
-    copyAndWriteVectorToCSV(d_goalSet_, filename.str(), MAX_TREE_SIZE, 1, false);
-
-    // Write Parents
-    filename.str("");
-    filename << "Data/Parents/Parents" << itr << "/parents" << h_itr_ << ".csv";
-    copyAndWriteVectorToCSV(d_treeSamplesParentIdxs_, filename.str(), MAX_TREE_SIZE, 1, append);
-
-    // Write Total Count Per Vertex
-    filename.str("");
-    filename << "Data/TotalCountPerVertex/TotalCountPerVertex" << itr << "/totalCountPerVertex.csv";
-    copyAndWriteVectorToCSV(graph_.d_counterArray_, filename.str(), 1, NUM_R1_REGIONS, append);
-
-    // Write Valid Count Per Vertex
-    filename.str("");
-    filename << "Data/ValidCountPerVertex/ValidCountPerVertex" << itr << "/validCountPerVertex.csv";
-    copyAndWriteVectorToCSV(graph_.d_validCounterArray_, filename.str(), 1, NUM_R1_REGIONS, append);
-
-    // Write Frontier
-    filename.str("");
-    filename << "Data/Frontier/Frontier" << itr << "/frontier.csv";
-    copyAndWriteVectorToCSV(d_frontier_, filename.str(), 1, MAX_TREE_SIZE, append);
-
-    // Write Frontier Repeat
-    filename.str("");
-    filename << "Data/FrontierRepeatCount/FrontierRepeatCount" << itr << "/frontierRepeatCount.csv";
-    copyAndWriteVectorToCSV(d_activeFrontierRepeatCount_, filename.str(), 1, MAX_TREE_SIZE, append);
-
-    // Write Vertex Scores
-    filename.str("");
-    filename << "Data/VertexScores/VertexScores" << itr << "/vertexScores.csv";
-    copyAndWriteVectorToCSV(graph_.d_vertexScoreArray_, filename.str(), 1, NUM_R1_REGIONS, append);
-
-    // Write Frontier Size
-    filename.str("");
-    filename << "Data/FrontierSize/FrontierSize" << itr << "/frontierSize.csv";
-    writeValueToCSV(h_frontierSize_, filename.str());
-
-    // Write Tree Size
-    filename.str("");
-    filename << "Data/TreeSize/TreeSize" << itr << "/treeSize.csv";
-    writeValueToCSV(h_treeSize_, filename.str());
-
-    // Expanded Nodes
-    filename.str("");
-    filename << "Data/ExpandedNodes/ExpandedNodes" << itr << "/expandedNodes.csv";
-    if(h_frontierRepeatSize_ * h_activeBlockSize_ > (MAX_TREE_SIZE - h_treeSize_))
-        {
-            writeValueToCSV(h_propIterations_ * h_frontierRepeatSize_, filename.str());
-        }
-    else
-        {
-            writeValueToCSV(h_frontierRepeatSize_ * h_activeBlockSize_, filename.str());
-        }
-
-    // Write Control Path to Goal
-    filename.str("");
-    filename << "Data/ControlPathsToGoal/ControlPathsToGoal" << itr << "/controlPathsToGoal.csv";
-    copyAndWriteVectorToCSV(d_controlPathsToGoal_, filename.str(), MAX_SOL_SET_SIZE * MAX_ITER, SAMPLE_DIM, false);
-
-    // Write Tree Sample Costs
-    filename.str("");
-    filename << "Data/treeSampleCosts/treeSampleCosts" << itr << "/treeSampleCosts.csv";
-    copyAndWriteVectorToCSV(d_treeSampleCosts_, filename.str(), MAX_TREE_SIZE, 1, false);
-
-    // Write Min Costs
-    filename.str("");
-    filename << "Data/minCosts/minCosts" << itr << "/minCosts.csv";
-    copyAndWriteVectorToCSV(graph_.d_minCostsR1_, filename.str(), NUM_R1_REGIONS, 1, false);
-
-    // Write Path Costs
-    filename.str("");
-    filename << "Data/pathCosts/pathCosts" << itr << "/pathCosts.csv";
-    copyAndWriteVectorToCSV(d_pathCosts_, filename.str(), 2 * MAX_SOL_SET_SIZE, 1, false);
-}
-
-void KPAX::writeExecutionTimeToCSV(double time)
-{
-    std::ostringstream filename;
-    std::filesystem::create_directories("Data");
-    std::filesystem::create_directories("Data/ExecutionTime");
-    filename.str("");
-    filename << "Data/ExecutionTime/executionTime.csv";
-    writeValueToCSV(time, filename.str());
 }

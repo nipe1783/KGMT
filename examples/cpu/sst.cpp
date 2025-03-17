@@ -1,5 +1,6 @@
 #include "cpu/planners/OMPL_Planner.h"
 #include <iostream>
+#include <filesystem>
 
 std::vector<float> readObstaclesFromCSV_CPU(const std::string& filename, int& numObstacles, int workspaceDim)
 {
@@ -34,15 +35,20 @@ int main(void)
     // --- Remove Previous Bench Data ---
     system("rm -rf Data/*");
 
-    float h_initial[SAMPLE_DIM] = {.750, .080, .05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-          h_goal[SAMPLE_DIM]    = {.750, .950, .900, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    float h_initial[SAMPLE_DIM] = {.1, .080, .05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+          h_goal[SAMPLE_DIM]    = {.8, .950, .900, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     int numObstacles = 1;
     float* d_obstacles;
     std::vector<float> obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/zigZag/obstacles.csv", numObstacles, W_DIM);
 
-    OMPL_Planner rrt;
-    rrt.planSST(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
+    OMPL_Planner planner;
+    for(int i = 0; i < 1; i++)
+        {
+            planner.planSST(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
+            std::filesystem::rename("solution_times_and_costs.csv", "Data/solution_times_and_costs" + std::to_string(i) + ".csv");
+        }
+
     // rrt.computePathCost(h_initial, h_goal, obstacles.data(), numObstacles, 0.0, "/home/nicolas/dev/research/KGMT/controlPathToGoal.csv");
 
     return 0;

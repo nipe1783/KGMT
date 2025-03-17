@@ -3,17 +3,21 @@ clc;
 clear all;
 
 % Parameterss
-radius = 0.05;
+% radius = 0.05;
+radius = .05;
 alpha = 0.3;
-xGoal = [.75, .95, 0.9];
+xGoal = [.80, .95, 0.9];
+% xGoal = [80, 95, 90];
 STEP_SIZE = 0.1;
 % File paths
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/zigZag/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/quadZigZag/obstacles.csv';
 controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathsToGoal/ControlPathsToGoal0/controlPathsToGoal.csv';
-
-stateSize = 6;
-sampleSize = 10;
-model = 1; % Choose model (1: Double Integrator, 2: Dubins Airplane, 3: Quadcopter)
+% 
+% stateSize = 6;
+% sampleSize = 10;
+stateSize = 12;
+sampleSize = 17;
+model = 3; % Choose model (1: Double Integrator, 2: Dubins Airplane, 3: Quadcopter)
 
 % Read and flip control data
 controls = flipud(readmatrix(controlPath));
@@ -22,7 +26,7 @@ controls = flipud(readmatrix(controlPath));
 obstacles = readmatrix(obstacleFilePath);
 
 % Color palette
-colors = [0 0 1];  % Orange
+colors = [0 .8 0];  % Orange
 
 fig = figure('Position', [100, 100, 1000, 1000]);
 hold on;
@@ -92,8 +96,8 @@ for i = 1:length(startIndices)
 
         % Plot the propagated segment
         plot3(segmentX, segmentY, segmentZ, 'LineWidth', 1.5, 'Color', color);
-        % plot3(g/ather(controls(j, 1)), gather(controls(j, 2)), gather(controls(j, 3)), 'o', 'Color', 'k', 'MarkerFaceColor', 'k', 'MarkerSize', 2);
-        % scatter3(segmentX, segmentY, segmentZ, 20, color, 'filled');
+        plot3(gather(controls(j, 1)), gather(controls(j, 2)), gather(controls(j, 3)), 'o', 'Color', 'k', 'MarkerFaceColor', 'k', 'MarkerSize', 2);
+        scatter3(segmentX, segmentY, segmentZ, 15, 'b', 'filled');
 
         % Update the initial state for the next segment
         x0 = sample;

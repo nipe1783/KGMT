@@ -751,8 +751,8 @@ void OMPL_Planner::planSST(const float* initial, const float* goal, float* obsta
     auto planner = std::make_shared<oc::ModSST>(ss->getSpaceInformation());
     ss->setPlanner(planner);
     ss->getSpaceInformation()->setStateValidityCheckingResolution(0.005);
-    planner->setSelectionRadius(0.2);
-    planner->setPruningRadius(0.1);
+    planner->setSelectionRadius(0.02);
+    planner->setPruningRadius(0.01);
     planner->setGoalBias(.05);
 
     // 3. Create the optimization objective (position-only)
