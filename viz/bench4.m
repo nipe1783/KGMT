@@ -1,11 +1,11 @@
 close all; clc; clear;
 
 % Load data from two runs
-load('OKPAX_20mill_50_3_3_3_DubinsAirplane_trees.mat', 'bestCostMatrix', 'timeGrid');
+load('OKPAX_50mill_25_3_3_3_Quad_zigZag.mat', 'bestCostMatrix', 'timeGrid');
 bestCostMatrix1 = bestCostMatrix;
 timeGrid1 = timeGrid;
 
-load('KPAX_20mill_50_3_3_3_DubinsAirplane_trees.mat', 'bestCostMatrix', 'timeGrid');
+load('KPAX_50mill_25_3_3_3_Quad_zigZag.mat', 'bestCostMatrix', 'timeGrid');
 bestCostMatrix2 = bestCostMatrix;
 timeGrid2 = timeGrid;
 
@@ -42,5 +42,5 @@ set(gcf, 'PaperSize', [8.5 11]);  % Fixed size in inches (e.g., Letter size)
 set(gcf, 'PaperPosition', [0 0 8.5 11]);  % Position on the paper
 
 % Save the figure
-fileName = 'DubinsAirplane_trees.pdf';  % Define your filename here
+fileName = 'OKPAX_KPAX_Quad_zigZag.pdf';  % Define your filename here
 print(gcf, fileName, '-dpdf');  % Save as PDF

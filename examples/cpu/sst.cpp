@@ -34,6 +34,7 @@ int main(void)
 {
     // --- Remove Previous Bench Data ---
     system("rm -rf Data/*");
+    OMPL_Planner planner;
 
     float h_initial[SAMPLE_DIM] = {.1, .080, .05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
           h_goal[SAMPLE_DIM]    = {.8, .950, .900, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -42,14 +43,38 @@ int main(void)
     float* d_obstacles;
     std::vector<float> obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/zigZag/obstacles.csv", numObstacles, W_DIM);
 
-    OMPL_Planner planner;
-    for(int i = 0; i < 1; i++)
+    for(int i = 0; i < 100; i++)
         {
             planner.planSST(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
-            std::filesystem::rename("solution_times_and_costs.csv", "Data/solution_times_and_costs" + std::to_string(i) + ".csv");
+            std::filesystem::rename("solution_times_and_costs.csv", "Data/zigZag_solution_times_and_costs" + std::to_string(i) + ".csv");
         }
 
-    // rrt.computePathCost(h_initial, h_goal, obstacles.data(), numObstacles, 0.0, "/home/nicolas/dev/research/KGMT/controlPathToGoal.csv");
+    obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/house/obstacles.csv", numObstacles, W_DIM);
+    
+    for(int i = 0; i < 100; i++)
+        {
+            planner.planSST(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
+            std::filesystem::rename("solution_times_and_costs.csv", "Data/house/house_solution_times_and_costs" + std::to_string(i) + ".csv");
+        }
+        
+
+    obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/trees/obstacles.csv", numObstacles, W_DIM);
+
+    for(int i = 0; i < 100; i++)
+        {
+            planner.planSST(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
+            std::filesystem::rename("solution_times_and_costs.csv", "Data/trees/trees_solution_times_and_costs" + std::to_string(i) + ".csv");
+        }
+
+    obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/narrowPassage/obstacles.csv", numObstacles, W_DIM);
+
+    for(int i = 0; i < 10; i++)
+        {
+            planner.planSST(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
+            std::filesystem::rename("solution_times_and_costs.csv", "Data/narrowPassage/narrowPassage_solution_times_and_costs" + std::to_string(i) + ".csv");
+        }
+
+
 
     return 0;
 }

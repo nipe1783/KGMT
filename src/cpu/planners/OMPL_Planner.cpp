@@ -763,7 +763,7 @@ void OMPL_Planner::planSST(const float* initial, const float* goal, float* obsta
     ob::OptimizationObjectivePtr obj(new PositionOnlyPathLengthObjective(si, positionSubSpace));
     ss->setOptimizationObjective(obj);
     ss->setup();
-    ob::PlannerStatus solved = ss->solve(360.0);
+    ob::PlannerStatus solved = ss->solve(300.0);
 
     if(solved)
         {

@@ -17,7 +17,7 @@ int main(void)
     float* d_obstacles;
 
     // --- Load Workspace Obstacles ---
-    std::vector<float> obstacles = readObstaclesFromCSV("../include/config/obstacles/quadTrees/obstacles.csv", numObstacles, W_DIM);
+    std::vector<float> obstacles = readObstaclesFromCSV("../include/config/obstacles/quadNarrowPassage/obstacles.csv", numObstacles, W_DIM);
 
     // --- Transfer Obstacles to device ---
     cudaMalloc(&d_obstacles, numObstacles * 2 * W_DIM * sizeof(float));
@@ -26,7 +26,7 @@ int main(void)
     // --- Execute planner ---
     int N = 100;
     std::vector<float> pathCosts(N);
-    KPAX kpax;
+    OKPAX kpax;
     for(int i = 0; i < N; i++)
         {
             pathCosts[i] = kpax.planBenchmark(h_initial, h_goal, d_obstacles, numObstacles, i);

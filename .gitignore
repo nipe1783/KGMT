@@ -11,6 +11,8 @@ build/*
 # figures
 viz/figs/*
 !viz/figs/.gitkeep
+viz/*.mat
+viz/*.pdf
 
 # NSIGHT
 NSight/*

@@ -3,8 +3,8 @@ close all; clc; clear;
 % --------------------------
 % Define time grid
 % --------------------------
-k = 100;   % step (ms)
-T = 3000;  % final time (make sure this matches your real max time)
+k = 500;   % step (ms)
+T = 20000;  % final time (make sure this matches your real max time)
 timeGrid = 0:k:T;
 
 numTimes = length(timeGrid);
@@ -21,11 +21,11 @@ V = NaN;
 % --------------------------
 for simIdx = 0:numSims-1
     % Read the iteration time data
-    iterationTimeFile = sprintf('/home/nicolas/dev/research/KGMT/NSight/KPAX_20mill_50_3_3_3_DubinsAirplane_trees/IterationTime/IterationTime%d.csv', simIdx);
+    iterationTimeFile = sprintf('/home/nicolas/dev/research/KGMT/NSight/KPAX_50mill_25_3_3_3_Quad_zigZag/IterationTime/IterationTime%d.csv', simIdx);
     iterationTimeData = load(iterationTimeFile);  % or use readmatrix if .csv includes non-numeric data
     
     % Read the path cost data
-    pathCostFile = sprintf('/home/nicolas/dev/research/KGMT/NSight/KPAX_20mill_50_3_3_3_DubinsAirplane_trees/PathCosts/pathCosts%d.csv', simIdx);
+    pathCostFile = sprintf('/home/nicolas/dev/research/KGMT/NSight/KPAX_50mill_25_3_3_3_Quad_zigZag/PathCosts/pathCosts%d.csv', simIdx);
     pathCostData = readmatrix(pathCostFile);
     
     costs = pathCostData(:,2);
@@ -58,4 +58,4 @@ bestCostMatrix = bestCostMatrix(validRows, :);
 timeGrid = timeGrid(validRows);
 
 % Save the data for later use
-save('KPAX_20mill_50_3_3_3_DubinsAirplane_trees.mat', 'bestCostMatrix', 'timeGrid');
+save('KPAX_50mill_25_3_3_3_Quad_zigZag.mat', 'bestCostMatrix', 'timeGrid');
