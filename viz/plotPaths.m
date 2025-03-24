@@ -12,15 +12,16 @@ STEP_SIZE = 0.1;
 % File paths
 obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/zigZag/obstacles.csv';
 controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathsToGoal/ControlPathsToGoal0/controlPathsToGoal.csv';
-% 
+controlPathsToGoal = flipud(readmatrix(controlPath));
+
+
+
 stateSize = 6;
 sampleSize = 10;
 % stateSize = 12;
 % sampleSize = 17;
-model = 2; % Choose model (1: Double Integrator, 2: Dubins Airplane, 3: Quadcopter)
+model = 1; % Choose model (1: Double Integrator, 2: Dubins Airplane, 3: Quadcopter)
 
-% Read and flip control data
-controls = flipud(readmatrix(controlPath));
 
 % Load obstacles
 obstacles = readmatrix(obstacleFilePath);
@@ -28,105 +29,125 @@ obstacles = readmatrix(obstacleFilePath);
 % Color palette
 colors = [0 .8 0];  % Orange
 
-fig = figure('Position', [100, 100, 1000, 1000]);
-hold on;
-axis equal;
-axis off;
-title('Trajectory Visualization');
 
-% Plot obstacles
-for j = 1:size(obstacles, 1)
-    x_min = obstacles(j, 1);
-    y_min = obstacles(j, 2);
-    z_min = obstacles(j, 3);
-    x_max = obstacles(j, 4);
-    y_max = obstacles(j, 5);
-    z_max = obstacles(j, 6);
-    vertices = [
-        x_min, y_min, z_min;
-        x_max, y_min, z_min;
-        x_max, y_max, z_min;
-        x_min, y_max, z_min;
-        x_min, y_min, z_max;
-        x_max, y_min, z_max;
-        x_max, y_max, z_max;
-        x_min, y_max, z_max];
-    faces = [
-        1, 2, 6, 5;
-        2, 3, 7, 6;
-        3, 4, 8, 7;
-        4, 1, 5, 8;
-        1, 2, 3, 4;
-        5, 6, 7, 8];
-    patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', alpha);
-end
+% title('Trajectory Visualization');
 
-% Plot goal
-[X, Y, Z] = sphere(20);
-surf(radius * X + xGoal(1), radius * Y + xGoal(2), radius * Z + xGoal(3), ...
-     'FaceColor', 'g', 'FaceAlpha', 0.5, 'EdgeColor', 'none');
 
-% Separate trajectories based on rows of zeros
-zeroRows = all(controls == 0, 2);
-trajectoryIndices = find(zeroRows);
-startIndices = [1; trajectoryIndices + 1];
-endIndices = [trajectoryIndices - 1; size(controls, 1)];
+controls = []; % Initialize the controls array
+collecting = false;
+count = 0;
+for z = size(controlPathsToGoal, 1):-1:1
+    if any(controlPathsToGoal(z, :) ~= 0) % Checks if any element in row 'i' is not zero
+        controls = [controls; controlPathsToGoal(z, :)]; % Append the row to controls
+        collecting = true;
+    elseif collecting
+        fig = figure('Position', [100, 100, 1000, 1000]);
+        hold on;
+        axis equal;
+        axis off;
+        hold on;
+        count = count + 1;
+        controls = flipud(controls);
+        collecting = false;
 
-% Plot each trajectory using propagation functions
-for i = 1:length(startIndices)
-    if startIndices(i) > endIndices(i)
-        continue;
-    end
-
-    trajectory = controls(startIndices(i):endIndices(i), :);
-    x0 = trajectory(1, :); % Initial state
-    color = colors(mod(i - 1, size(colors, 1)) + 1, :); % Assign color
-
-    for j = 2:size(trajectory, 1)
-        sample = trajectory(j, :);
-
-        % Propagate segment based on the model
-        if model == 1
-            [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
-        elseif model == 2
-            [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
-        elseif model == 3
-            [segmentX, segmentY, segmentZ] = propQuad(x0, sample, STEP_SIZE, stateSize, sampleSize);
+        % Plot obstacles
+        for j = 1:size(obstacles, 1)
+            x_min = obstacles(j, 1);
+            y_min = obstacles(j, 2);
+            z_min = obstacles(j, 3);
+            x_max = obstacles(j, 4);
+            y_max = obstacles(j, 5);
+            z_max = obstacles(j, 6);
+            vertices = [
+                x_min, y_min, z_min;
+                x_max, y_min, z_min;
+                x_max, y_max, z_min;
+                x_min, y_max, z_min;
+                x_min, y_min, z_max;
+                x_max, y_min, z_max;
+                x_max, y_max, z_max;
+                x_min, y_max, z_max];
+            faces = [
+                1, 2, 6, 5;
+                2, 3, 7, 6;
+                3, 4, 8, 7;
+                4, 1, 5, 8;
+                1, 2, 3, 4;
+                5, 6, 7, 8];
+            patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', alpha);
         end
+        
+        % Plot goal
+        [X, Y, Z] = sphere(20);
+        surf(radius * X + xGoal(1), radius * Y + xGoal(2), radius * Z + xGoal(3), ...
+             'FaceColor', 'g', 'FaceAlpha', 0.5, 'EdgeColor', 'none');
+        
+        % Separate trajectories based on rows of zeros
+        zeroRows = all(controls == 0, 2);
+        trajectoryIndices = find(zeroRows);
+        startIndices = [1; trajectoryIndices + 1];
+        endIndices = [trajectoryIndices - 1; size(controls, 1)];
+        
+        % Plot each trajectory using propagation functions
+        for i = 1:length(startIndices)
+            if startIndices(i) > endIndices(i)
+                continue;
+            end
+        
+            trajectory = controls(startIndices(i):endIndices(i), :);
+            x0 = trajectory(1, :); % Initial state
+            color = colors(mod(i - 1, size(colors, 1)) + 1, :); % Assign color
+        
+            for j = 2:size(trajectory, 1)
+                sample = trajectory(j, :);
+        
+                % Propagate segment based on the model
+                if model == 1
+                    [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize);
+                elseif model == 2
+                    [segmentX, segmentY, segmentZ] = propDubinsAirplane(x0, sample, STEP_SIZE, stateSize, sampleSize);
+                elseif model == 3
+                    [segmentX, segmentY, segmentZ] = propQuad(x0, sample, STEP_SIZE, stateSize, sampleSize);
+                end
+        
+                % Plot the propagated segment
+                plot3(segmentX, segmentY, segmentZ, 'LineWidth', 1.5, 'Color', color);
+                %plot3(gather(controls(j, 1)), gather(controls(j, 2)), gather(controls(j, 3)), 'o', 'Color', 'k', 'MarkerFaceColor', 'k', 'MarkerSize', 2);
+                % scatter3(segmentX, segmentY, segmentZ, 15, 'b', 'filled');
+        
+                % Update the initial state for the next segment
+                x0 = sample;
+            end
+        end
+        
+        % Lighting and initial view
+        camlight('headlight');
+        camlight('right');
+        lighting phong;
+        
+        % Define views
+        views = {...
+            [0, 90], 'top'; ...     % Top view
+            [90, 0], 'side'; ...    % Side view
+            [45, 30], 'isometric'; ... % Isometric view
+            [180, 0], 'reverse'; ...   % Reverse side view
+        };
 
-        % Plot the propagated segment
-        plot3(segmentX, segmentY, segmentZ, 'LineWidth', 1.5, 'Color', color);
-        plot3(gather(controls(j, 1)), gather(controls(j, 2)), gather(controls(j, 3)), 'o', 'Color', 'k', 'MarkerFaceColor', 'k', 'MarkerSize', 2);
-        scatter3(segmentX, segmentY, segmentZ, 15, 'b', 'filled');
-
-        % Update the initial state for the next segment
-        x0 = sample;
+        % Save different views
+        for v = 1:size(views, 1)
+            view(views{v, 1});
+            drawnow;
+            saveas(fig, sprintf('figs/trajectory_visualization_%s_%d.jpg', views{v, 2}, count));
+            print(sprintf('figs/trajectory_visualization_%s_%d.jpg', views{v, 2}, count), '-djpeg', '-r300');
+        end
+        
+        close(fig);
+        controls = [];
+        
     end
 end
 
-% Lighting and initial view
-camlight('headlight');
-camlight('right');
-lighting phong;
 
-% Define views
-% views = {...
-%     [0, 90], 'top'; ...     % Top view
-%     % [90, 0], 'side'; ...    % Side view
-%     % [45, 30], 'isometric'; ... % Isometric view
-%     % [180, 0], 'reverse'; ...   % Reverse side view
-% };
-% 
-% % Save different views
-% for v = 1:size(views, 1)
-%     view(views{v, 1});
-%     drawnow;
-%     saveas(fig, sprintf('figs/trajectory_visualization_%s.jpg', views{v, 2}));
-%     print(sprintf('figs/trajectory_visualization_%s.jpg', views{v, 2}), '-djpeg', '-r300');
-% end
-
-% Close figure
-% close(fig);
 
 
 function [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize)

@@ -3,8 +3,8 @@ close all; clc; clear;
 % --------------------------
 % 1) Define time grid
 % --------------------------
-k = 100;   % step (ms)
-T = 3000;  % final time (make sure this matches your real max time)
+k = 0.25;   % step (ms)
+T = 11;  % final time (make sure this matches your real max time)
 timeGrid = 0:k:T;
 
 numTimes = length(timeGrid);

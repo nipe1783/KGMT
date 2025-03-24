@@ -11,11 +11,13 @@ public:
     /****************************    METHODS    ****************************/
     void plan(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount) override;
     float planOptimize(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount);
-    float planBenchmark(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr);
+    void planBenchmark(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr);
+    void planPathsCollect(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr);
     void planDataCollect(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr);
     void propagateFrontier(float* d_obstacles_ptr, uint h_obstaclesCount);
     void updateFrontier();
-    void getControlPathsToGoal();
+    void getControlPathToGoal();
+    void getControlPathToGoalPathsCollect();
     void resetPlanner(float* h_initial, float* h_goal);
 
     /****************************    FIELDS    ****************************/
@@ -79,5 +81,9 @@ __global__ void OKPAX_pruning_kernel(uint* activeFrontierNextIdxs, uint frontier
                                      int* frontierNextXR1s, bool* frontierNext, float* unexploredSampleCosts, bool* pruned);
 
 __global__ void
-OKPAX_getControlPathsToGoal_kernel(float* controlPathsToGoal, float* treeSamples, int* treeSamplesParentIdxs, uint* goalSetIdxs,
-                                   int goalSetSize, float* pathCosts, float* treeSampleCosts, int* iterations, float* minCost);
+OKPAX_getControlPathToGoal_kernel(float* controlPathsToGoal, float* treeSamples, int* treeSamplesParentIdxs, uint* goalSetIdxs,
+                                  int goalSetSize, float* pathCosts, float* treeSampleCosts, int* iterations, float* minCost);
+
+__global__ void OKPAX_getControlPathToGoalPathsCollect_kernel(float* controlPathsToGoal, float* treeSamples, int* treeSamplesParentIdxs,
+                                                              uint* goalSetIdxs, int goalSetSize, float* pathCosts, float* treeSampleCosts,
+                                                              int* iterations, float* minCost, int itr, int numSols);

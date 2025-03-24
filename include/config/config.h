@@ -6,9 +6,9 @@
 
 #define MODEL 1
 
-#define MAX_TREE_SIZE 100000000
+#define MAX_TREE_SIZE 300000
 #define MAX_FLOAT 1000000.0f
-#define MAX_SOL_SET_SIZE 10000
+#define MAX_SOL_SET_SIZE 100
 #define MAX_ITER 1000
 #define STEP_SIZE 0.1f
 #define MAX_PROPAGATION_DURATION 10
@@ -37,13 +37,13 @@
 #define A_MIN -0.2f
 #define A_MAX 0.2f
 
-#define W_R1_LENGTH 70
+#define W_R1_LENGTH 8
 #define C_R1_LENGTH 1
-#define V_R1_LENGTH 3
+#define V_R1_LENGTH 4
 
-#define W_R2_LENGTH 1
+#define W_R2_LENGTH 2
 #define C_R2_LENGTH 1
-#define V_R2_LENGTH 1
+#define V_R2_LENGTH 2
 
 #define W_R1_SIZE ((W_MAX - W_MIN) / W_R1_LENGTH)
 #define C_R1_SIZE ((C_MAX - C_MIN) / C_R1_LENGTH)
@@ -110,9 +110,9 @@
 
 // #define MODEL 2
 
-// #define MAX_TREE_SIZE 100000000
+// #define MAX_TREE_SIZE 300000
 // #define MAX_FLOAT 1000000.0f
-// #define MAX_SOL_SET_SIZE 10000
+// #define MAX_SOL_SET_SIZE 1
 // #define MAX_ITER 1000
 // #define STEP_SIZE 0.1f
 // #define MAX_PROPAGATION_DURATION 10
@@ -141,12 +141,12 @@
 // #define A_MIN -0.3f
 // #define A_MAX 0.3f
 
-// #define W_R1_LENGTH 80
-// #define C_R1_LENGTH 3
-// #define V_R1_LENGTH 3
+// #define W_R1_LENGTH 8
+// #define C_R1_LENGTH 8
+// #define V_R1_LENGTH 1
 
-// #define W_R2_LENGTH 1
-// #define C_R2_LENGTH 1
+// #define W_R2_LENGTH 2
+// #define C_R2_LENGTH 3
 // #define V_R2_LENGTH 1
 
 // #define W_R1_SIZE ((W_MAX - W_MIN) / W_R1_LENGTH)
@@ -214,9 +214,9 @@
 
 // #define MODEL 3
 
-// #define MAX_TREE_SIZE 20000000
+// #define MAX_TREE_SIZE 1000000
 // #define MAX_FLOAT 1000000.0f
-// #define MAX_SOL_SET_SIZE 10000
+// #define MAX_SOL_SET_SIZE 1
 // #define MAX_ITER 1000
 // #define STEP_SIZE 0.1f
 // #define MAX_PROPAGATION_DURATION 10
@@ -245,7 +245,7 @@
 // #define A_MIN -30.0f
 // #define A_MAX 30.0f
 
-// #define W_R1_LENGTH 20
+// #define W_R1_LENGTH 10
 // #define C_R1_LENGTH 3
 // #define V_R1_LENGTH 3
 

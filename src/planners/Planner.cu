@@ -8,7 +8,7 @@ Planner::Planner()
     d_treeSampleCosts_       = thrust::device_vector<float>(MAX_TREE_SIZE);
     d_unexploredSampleCosts_ = thrust::device_vector<float>(MAX_TREE_SIZE);
     d_goalSet_               = thrust::device_vector<int>(MAX_TREE_SIZE);
-    d_controlPathsToGoal_    = thrust::device_vector<float>(MAX_ITER * SAMPLE_DIM);
+    d_controlPathsToGoal_    = thrust::device_vector<float>(MAX_ITER * SAMPLE_DIM * MAX_SOL_SET_SIZE);
     d_pathCosts_             = thrust::device_vector<float>(3 * MAX_SOL_SET_SIZE);
     d_iterations_            = thrust::device_vector<int>(MAX_TREE_SIZE);
 
@@ -107,7 +107,7 @@ void Planner::writeSolutionsToCSV(int itr)
     std::filesystem::create_directories("Data/ControlPathsToGoal/ControlPathsToGoal" + std::to_string(itr));
     filename.str("");
     filename << "Data/ControlPathsToGoal/ControlPathsToGoal" << itr << "/controlPathsToGoal.csv";
-    copyAndWriteVectorToCSV(d_controlPathsToGoal_, filename.str(), MAX_ITER, SAMPLE_DIM, false);
+    copyAndWriteVectorToCSV(d_controlPathsToGoal_, filename.str(), MAX_ITER * MAX_SOL_SET_SIZE, SAMPLE_DIM, false);
 }
 
 void Planner::writeSolutionCostsToCSV(int itr)

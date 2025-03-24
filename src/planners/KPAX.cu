@@ -483,7 +483,7 @@ KPAX_updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFront
                     goalSet[x1TreeIdx]    = true;
                     frontier[x1TreeIdx]   = false;
                     iterations[x1TreeIdx] = iteration;  // TODO: Remove this. Only for creating cost/iteration plot.
-                    printf("minCost: %f\n", *minCost);
+                    // printf("minCost: %f\n", *minCost);
                 }
         }
 

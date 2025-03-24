@@ -266,6 +266,7 @@ ompl::base::PlannerStatus ompl::control::ModSST::solve(const base::PlannerTermin
                     base::Cost incCost        = opt_->combineCosts(incCostMotion, incCostControl);
                     base::Cost cost           = opt_->combineCosts(nmotion->accCost_, incCost);
                     Witness *closestWitness   = findClosestWitness(rmotion);
+                    // OMPL_INFORM("%d : ", witnesses_->size());
 
                     if(closestWitness->rep_ == rmotion || opt_->isCostBetterThan(cost, closestWitness->rep_->accCost_))
                         {
@@ -310,6 +311,8 @@ ompl::base::PlannerStatus ompl::control::ModSST::solve(const base::PlannerTermin
                                     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
                                     solutionLog << elapsedTime << "," << solution->accCost_.value() << std::endl;
                                     OMPL_INFORM("Found solution with cost %.2f", solution->accCost_.value());
+                                    OMPL_INFORM("%d : ", witnesses_->size());
+
                                     if(intermediateSolutionCallback)
                                         {
                                             // the callback requires a vector with const elements -> create a copy
@@ -391,6 +394,7 @@ ompl::base::PlannerStatus ompl::control::ModSST::solve(const base::PlannerTermin
     delete rmotion;
 
     OMPL_INFORM("%s: Created %u states in %u iterations", getName().c_str(), nn_->size(), iterations);
+    OMPL_INFORM("%d : ", witnesses_->size());
     solutionLog.close();
     return {solved, approximate};
 }

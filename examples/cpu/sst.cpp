@@ -54,7 +54,7 @@ int main(void)
     for(int i = 0; i < 100; i++)
         {
             planner.planSST(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
-            std::filesystem::rename("solution_times_and_costs.csv", "Data/house/house_solution_times_and_costs" + std::to_string(i) + ".csv");
+            std::filesystem::rename("solution_times_and_costs.csv", "Data/house_solution_times_and_costs" + std::to_string(i) + ".csv");
         }
         
 
@@ -63,15 +63,15 @@ int main(void)
     for(int i = 0; i < 100; i++)
         {
             planner.planSST(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
-            std::filesystem::rename("solution_times_and_costs.csv", "Data/trees/trees_solution_times_and_costs" + std::to_string(i) + ".csv");
+            std::filesystem::rename("solution_times_and_costs.csv", "Data/trees_solution_times_and_costs" + std::to_string(i) + ".csv");
         }
 
     obstacles = readObstaclesFromCSV_CPU("../include/config/obstacles/narrowPassage/obstacles.csv", numObstacles, W_DIM);
 
-    for(int i = 0; i < 10; i++)
+    for(int i = 0; i < 100; i++)
         {
             planner.planSST(h_initial, h_goal, obstacles.data(), numObstacles, 0.0);
-            std::filesystem::rename("solution_times_and_costs.csv", "Data/narrowPassage/narrowPassage_solution_times_and_costs" + std::to_string(i) + ".csv");
+            std::filesystem::rename("solution_times_and_costs.csv", "Data/narrowPassage_solution_times_and_costs" + std::to_string(i) + ".csv");
         }
 
 

@@ -144,7 +144,6 @@ float OKPAX::planOptimize(float* h_initial, float* h_goal, float* d_obstacles_pt
     while(h_itr_ < MAX_ITER)
         {
             h_itr_++;
-            // printf("Iteration: %d, Tree Size: %d, Frontier Size: %d\n", h_itr_, h_treeSize_, h_frontierSize_);  // TODO: Remove this.
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
             if(h_propIterations_ == 0) break;
             updateFrontier();
@@ -155,7 +154,7 @@ float OKPAX::planOptimize(float* h_initial, float* h_goal, float* d_obstacles_pt
                     break;
                 }
         }
-    getControlPathsToGoal();
+    getControlPathToGoal();
 
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
@@ -165,15 +164,10 @@ float OKPAX::planOptimize(float* h_initial, float* h_goal, float* d_obstacles_pt
               << std::endl;
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
-
-    // TODO: Remove this.
-    // writeSolutionsToCSV();
-    // writeSolutionCostsToCSV();
-    // Until here.
     return h_minCost_;
 }
 
-float OKPAX::planBenchmark(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr)
+void OKPAX::planBenchmark(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr)
 {
     std::vector<float> iterationTimes;
     cudaEvent_t start, stop;
@@ -189,7 +183,6 @@ float OKPAX::planBenchmark(float* h_initial, float* h_goal, float* d_obstacles_p
     while(h_itr_ < MAX_ITER)
         {
             h_itr_++;
-            // printf("Iteration: %d, Tree Size: %d, Frontier Size: %d\n", h_itr_, h_treeSize_, h_frontierSize_);  // TODO: Remove this.
             if(h_propIterations_ == 0) break;
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
             updateFrontier();
@@ -199,7 +192,7 @@ float OKPAX::planBenchmark(float* h_initial, float* h_goal, float* d_obstacles_p
             cudaEventElapsedTime(&milliseconds, start, stop);
             iterationTimes.push_back(milliseconds);
         }
-    getControlPathsToGoal();
+    getControlPathToGoal();
 
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
@@ -210,12 +203,55 @@ float OKPAX::planBenchmark(float* h_initial, float* h_goal, float* d_obstacles_p
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
 
-    // TODO: Remove this.
+    // Cuda timing has stopped by here but remove if you do not want the data.
     writeSolutionsToCSV(benchItr);
     writeSolutionCostsToCSV(benchItr);
     writeIterationTimeToCSV(iterationTimes, benchItr);
     // Until here.
-    return h_minCost_;
+}
+
+void OKPAX::planPathsCollect(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr)
+{
+    std::vector<float> iterationTimes;
+    cudaEvent_t start, stop;
+    float milliseconds = 0;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
+
+    // --- INITIALIZE OKPAX ---
+    resetPlanner(h_initial, h_goal);
+
+    // --- PLANNING ---
+    while(h_itr_ < MAX_ITER)
+        {
+            h_itr_++;
+            printf("Iteration: %d, Tree Size: %d, Frontier Size: %d\n", h_itr_, h_treeSize_, h_frontierSize_);
+            if(h_propIterations_ == 0) break;
+            propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
+            updateFrontier();
+            getControlPathToGoalPathsCollect();
+
+            cudaEventRecord(stop);
+            cudaEventSynchronize(stop);
+            cudaEventElapsedTime(&milliseconds, start, stop);
+            iterationTimes.push_back(milliseconds);
+        }
+
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    writeExecutionTimeToCSV(milliseconds / 1000.0);
+    std::cout << "OKPAX execution time: " << milliseconds / 1000.0 << " seconds. Iterations: " << h_itr_ << ". Tree Size: " << h_treeSize_
+              << std::endl;
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+
+    // Cuda timing has stopped by here but remove if you do not want the data.
+    writeSolutionsToCSV(benchItr);
+    writeSolutionCostsToCSV(benchItr);
+    writeIterationTimeToCSV(iterationTimes, benchItr);
+    // Until here.
 }
 
 void OKPAX::planDataCollect(float* h_initial, float* h_goal, float* d_obstacles_ptr, uint h_obstaclesCount, int benchItr)
@@ -239,7 +275,7 @@ void OKPAX::planDataCollect(float* h_initial, float* h_goal, float* d_obstacles_
                     break;
                 }
         }
-    getControlPathsToGoal();
+    getControlPathToGoal();
     writeSolutionsToCSV();
     writeSolutionCostsToCSV();
     printf("h_solSetSize_: %d\n", h_solSetSize_);
@@ -676,7 +712,7 @@ OKPAX_updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFron
                     goalSet[x1TreeIdx]    = true;
                     frontier[x1TreeIdx]   = false;
                     iterations[x1TreeIdx] = iteration;  // TODO: Remove this. Only for creating cost/iteration plot.
-                    printf("minCost: %f\n", *minCost);
+                    // printf("minCost: %f\n", *minCost);
                 }
         }
 
@@ -691,14 +727,14 @@ OKPAX_updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFron
         }
 }
 
-void OKPAX::getControlPathsToGoal()
+void OKPAX::getControlPathToGoal()
 {
     thrust::exclusive_scan(d_goalSet_.begin(), d_goalSet_.end(), d_goalSetScanIdx_.begin(), 0, thrust::plus<uint>());
     h_solSetSize_ = d_goalSetScanIdx_[MAX_TREE_SIZE - 1];
     (d_goalSet_[MAX_TREE_SIZE - 1]) ? ++h_solSetSize_ : 0;
     findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_goalSet_ptr_, d_goalSetScanIdx_ptr_, d_goalSetIdxs_ptr_);
 
-    OKPAX_getControlPathsToGoal_kernel<<<iDivUp(h_solSetSize_, h_blockSize_), h_blockSize_>>>(
+    OKPAX_getControlPathToGoal_kernel<<<iDivUp(h_solSetSize_, h_blockSize_), h_blockSize_>>>(
       d_controlPathsToGoal_ptr_, d_treeSamples_ptr_, d_treeSamplesParentIdxs_ptr_, d_goalSetIdxs_ptr_, h_solSetSize_, d_pathCosts_ptr_,
       d_treeSampleCosts_ptr_, d_iterations_ptr_, d_minCost_ptr_);
 
@@ -707,8 +743,56 @@ void OKPAX::getControlPathsToGoal()
 }
 
 __global__ void
-OKPAX_getControlPathsToGoal_kernel(float* controlPathsToGoal, float* treeSamples, int* treeSamplesParentIdxs, uint* goalSetIdxs,
-                                   int goalSetSize, float* pathCosts, float* treeSampleCosts, int* iterations, float* minCost)
+OKPAX_getControlPathToGoal_kernel(float* controlPathsToGoal, float* treeSamples, int* treeSamplesParentIdxs, uint* goalSetIdxs,
+                                  int goalSetSize, float* pathCosts, float* treeSampleCosts, int* iterations, float* minCost)
+{
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if(tid >= MAX_TREE_SIZE || tid >= goalSetSize) return;
+
+    int goalIdx = goalSetIdxs[tid];
+
+    int x0Idx  = goalIdx;
+    float cost = treeSampleCosts[goalIdx];
+
+    // TODO: Remove this: only for creating cost/iteration plot. Keep if you would like information on when paths are found.
+    int pathCostsIdx            = 3 * tid;
+    pathCosts[pathCostsIdx]     = goalIdx;
+    pathCosts[pathCostsIdx + 1] = cost;
+    pathCosts[pathCostsIdx + 2] = iterations[goalIdx];
+    // Until here.
+
+    if(cost != *minCost) return;
+    int i = 0;  // --- Iteration counter ---
+    while(x0Idx != -1)
+        {
+            for(int j = 0; j < SAMPLE_DIM; j++)
+                {
+                    controlPathsToGoal[SAMPLE_DIM * i + j] = treeSamples[x0Idx * SAMPLE_DIM + j];
+                }
+            i++;
+            x0Idx = treeSamplesParentIdxs[x0Idx];
+        }
+}
+
+void OKPAX::getControlPathToGoalPathsCollect()
+{
+    thrust::exclusive_scan(d_goalSet_.begin(), d_goalSet_.end(), d_goalSetScanIdx_.begin(), 0, thrust::plus<uint>());
+    h_solSetSize_ = d_goalSetScanIdx_[MAX_TREE_SIZE - 1];
+    (d_goalSet_[MAX_TREE_SIZE - 1]) ? ++h_solSetSize_ : 0;
+    findInd<<<h_gridSize_, h_blockSize_>>>(MAX_TREE_SIZE, d_goalSet_ptr_, d_goalSetScanIdx_ptr_, d_goalSetIdxs_ptr_);
+
+    if(h_solSetSize_ == 0) return;
+    OKPAX_getControlPathToGoalPathsCollect_kernel<<<iDivUp(h_solSetSize_, h_blockSize_), h_blockSize_>>>(
+      d_controlPathsToGoal_ptr_, d_treeSamples_ptr_, d_treeSamplesParentIdxs_ptr_, d_goalSetIdxs_ptr_, h_solSetSize_, d_pathCosts_ptr_,
+      d_treeSampleCosts_ptr_, d_iterations_ptr_, d_minCost_ptr_, h_itr_, h_solSetSize_);
+
+    cudaMemcpy(&h_minCost_, d_minCost_ptr_, sizeof(float), cudaMemcpyDeviceToHost);
+    printf("Cost to Goal: %f\n", h_minCost_);
+}
+
+__global__ void OKPAX_getControlPathToGoalPathsCollect_kernel(float* controlPathsToGoal, float* treeSamples, int* treeSamplesParentIdxs,
+                                                              uint* goalSetIdxs, int goalSetSize, float* pathCosts, float* treeSampleCosts,
+                                                              int* iterations, float* minCost, int itr, int numSols)
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if(tid >= MAX_TREE_SIZE || tid >= goalSetSize) return;
@@ -728,7 +812,7 @@ OKPAX_getControlPathsToGoal_kernel(float* controlPathsToGoal, float* treeSamples
         {
             for(int j = 0; j < SAMPLE_DIM; j++)
                 {
-                    controlPathsToGoal[SAMPLE_DIM * i + j] = treeSamples[x0Idx * SAMPLE_DIM + j];
+                    controlPathsToGoal[numSols * itr * SAMPLE_DIM + (SAMPLE_DIM * i + j)] = treeSamples[x0Idx * SAMPLE_DIM + j];
                 }
             i++;
             x0Idx = treeSamplesParentIdxs[x0Idx];

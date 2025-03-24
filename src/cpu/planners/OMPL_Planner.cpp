@@ -692,41 +692,29 @@ void OMPL_Planner::planRRT(const float* initial, const float* goal, float* obsta
 class PositionOnlyPathLengthObjective : public ob::OptimizationObjective
 {
 public:
-    // The constructor needs the full SpaceInformation,
-    // plus the position subspace we want to measure distance in.
+
     PositionOnlyPathLengthObjective(const ob::SpaceInformationPtr& si, const ob::StateSpacePtr& positionSpace)
         : ob::OptimizationObjective(si), positionSpace_(positionSpace)
     {
         description_ = "Position-Only Path Length Objective";
     }
 
-    // For this objective, cost on a single state is 0
-    // because we only measure cost between states (path length).
     ob::Cost stateCost(const ob::State*) const override
     {
         return ob::Cost(0.0);
     }
 
-    // The main part: we override how "motion cost" is computed.
-    // We extract the position substate and measure distance only in that substate.
     ob::Cost motionCost(const ob::State* s1, const ob::State* s2) const override
     {
-        // Cast the states to compound states
         const auto* cstate1 = s1->as<ob::CompoundState>();
         const auto* cstate2 = s2->as<ob::CompoundState>();
-
-        // Position substate is assumed to be index 0 in the compound state
         const ob::State* pos1 = cstate1->components[0];
         const ob::State* pos2 = cstate2->components[0];
-
-        // Compute distance in the position subspace only
         double distance = positionSpace_->distance(pos1, pos2);
 
-        // Return that distance as the cost
         return ob::Cost(distance);
     }
 
-    // Useful to declare that this objective is symmetric in motionCost
     bool isSymmetric() const override
     {
         return true;
@@ -751,8 +739,8 @@ void OMPL_Planner::planSST(const float* initial, const float* goal, float* obsta
     auto planner = std::make_shared<oc::ModSST>(ss->getSpaceInformation());
     ss->setPlanner(planner);
     ss->getSpaceInformation()->setStateValidityCheckingResolution(0.005);
-    planner->setSelectionRadius(0.02);
-    planner->setPruningRadius(0.01);
+    planner->setSelectionRadius(0.05);
+    planner->setPruningRadius(0.06);
     planner->setGoalBias(.05);
 
     // 3. Create the optimization objective (position-only)
