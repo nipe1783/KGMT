@@ -39,6 +39,8 @@
 
 #include "ompl/control/planners/PlannerIncludes.h"
 #include "ompl/datastructures/NearestNeighbors.h"
+#include <cmath> 
+#include <ompl/base/spaces/RealVectorStateSpace.h>
 
 namespace ompl
 {
@@ -162,9 +164,26 @@ namespace ompl
 
             void freeMemory();
 
-            double distanceFunction(const Motion *a, const Motion *b) const
+            double distanceFunction(const Motion* a, const Motion* b) const
             {
-                return si_->distance(a->state_, b->state_);
+                const auto *ca = a->state_->as<ompl::base::CompoundState>();
+                const auto *cb = b->state_->as<ompl::base::CompoundState>();
+                if (!ca || !cb)
+                    return std::numeric_limits<double>::infinity();
+
+                // First component is presumably RealVectorStateSpace
+                const auto *posA = ca->components[0]->as<ompl::base::RealVectorStateSpace::StateType>();
+                const auto *posB = cb->components[0]->as<ompl::base::RealVectorStateSpace::StateType>();
+                if (!posA || !posB)
+                    return std::numeric_limits<double>::infinity();
+
+                double distSq = 0.0;
+                for (int i = 0; i < 3; ++i)
+                {
+                    double diff = posA->values[i] - posB->values[i];
+                    distSq += diff * diff;
+                }
+                return std::sqrt(distSq);
             }
 
             base::StateSamplerPtr sampler_;

@@ -1,49 +1,139 @@
 close all; clc; clear;
 
 % --------------------------
-% Define time grid
+% 1) Define Time Grid
 % --------------------------
-k = 10000.0;   % step (ms)
-T = 300000;  % final time (make sure this matches your real max time)
+k = 10000.0;   % step size in ms
+T = 300000;    % final cutoff time in ms
 timeGrid = 0:k:T;
 
 numTimes = length(timeGrid);
-numSims  = 100;
+numSims  = 100;  % number of simulation runs
 
-% Matrix to store the best-cost-over-time for each simulation
-bestCostMatrix = NaN(numTimes, numSims);
-
-% Default cost if no solution is found before interval t
+% Default cost if no solution is found by time t
 V = NaN;
 
 % --------------------------
-% Loop over each simulation
+% 2) Prepare Data Structures
 % --------------------------
-for simIdx = 0:numSims-1
-    % Read the iteration time data
-    iterationTimeFile = sprintf('/home/nicolas/dev/research/KGMT/NSight/KPAX_0.1mill_10_3_3_3_6DDI_trees/IterationTime/IterationTime%d.csv', simIdx);
-    iterationTimeData = load(iterationTimeFile);  % or use readmatrix if .csv includes non-numeric data
+% We'll store the best cost over time for each simulation:
+bestCostMatrix = NaN(numTimes, numSims);
+
+% Also store solution stats to compute medians, success, etc.
+initialSolutionTimes = [];
+initialSolutionCosts = [];
+finalSolutionTimes   = [];
+finalSolutionCosts   = [];
+
+% Track how many runs produced at least one solution
+foundSolutionsCount = 0;
+
+% --------------------------
+% 3) Main Loop Over Simulations
+% --------------------------
+for simIdx = 0 : numSims-1
+
+    % ---------------------------------------------------------------------
+    % (A) Load the iteration time data: "IterationTimeX.csv"
+    % ---------------------------------------------------------------------
+    iterationTimeFile = sprintf( ...
+        '/home/nicolas/dev/research/KGMT/NSight/KPAX_3mill_Quad_trees_fast/IterationTime/IterationTime%d.csv', ...
+        simIdx);
+    iterationTimeData = [];
+    if isfile(iterationTimeFile)
+        fileInfo = dir(iterationTimeFile);
+        if fileInfo.bytes > 0
+            % If purely numeric, you can use load. If it's CSV with headers, use readmatrix
+            iterationTimeData = load(iterationTimeFile); 
+        end
+    end
     
-    % Read the path cost data
-    pathCostFile = sprintf('/home/nicolas/dev/research/KGMT/NSight/KPAX_0.1mill_10_3_3_3_6DDI_trees/PathCosts/pathCosts%d.csv', simIdx);
-    pathCostData = readmatrix(pathCostFile);
+    % ---------------------------------------------------------------------
+    % (B) Load the path cost data: "pathCostsX.csv"
+    % ---------------------------------------------------------------------
+    pathCostFile = sprintf( ...
+        '/home/nicolas/dev/research/KGMT/NSight/KPAX_3mill_Quad_trees_fast/PathCosts/pathCosts%d.csv', ...
+        simIdx);
+    pathCostData = [];
+    if isfile(pathCostFile)
+        fileInfo = dir(pathCostFile);
+        if fileInfo.bytes > 0
+            pathCostData = readmatrix(pathCostFile);
+        end
+    end
     
-    costs = pathCostData(:,2);
-    iterations = pathCostData(:,3);
+    % If we have no valid iterationTimeData or pathCostData, skip
+    if isempty(iterationTimeData) || isempty(pathCostData)
+        bestCostMatrix(:, simIdx+1) = NaN(numTimes, 1);
+        continue
+    end
     
-    validMask = iterations > 0 & iterations <= length(iterationTimeData);
-    costs = costs(validMask);
+    % ---------------------------------------------------------------------
+    % (C) Parse path cost / iteration arrays
+    % ---------------------------------------------------------------------
+    % pathCostData columns: [??, cost, iteration]
+    costs      = pathCostData(:,2);  % cost
+    iterations = pathCostData(:,3);  % iteration index
+    
+    % Filter out invalid iterations
+    validMask = (iterations > 0) & (iterations <= length(iterationTimeData));
+    costs      = costs(validMask);
     iterations = iterations(validMask);
     
+    if isempty(costs)
+        % No valid solutions for this run
+        bestCostMatrix(:, simIdx+1) = NaN(numTimes, 1);
+        continue
+    end
+    
+    % For each (cost, iteration) pair, find the solution time from iterationTimeData
     solutionTimes = iterationTimeData(iterations);
     
+    % Sort solutions by ascending time
+    [sortedTimes, sortIdx] = sort(solutionTimes);
+    sortedCosts            = costs(sortIdx);
+    
+    % ---------------------------------------------------------------------
+    % (D) Exclude solutions that exceed 300000 ms
+    % ---------------------------------------------------------------------
+    timeThreshold = 300000;
+    validMask     = (sortedTimes <= timeThreshold);
+    sortedTimes   = sortedTimes(validMask);
+    sortedCosts   = sortedCosts(validMask);
+    
+    if isempty(sortedTimes)
+        % All solutions were after 300k ms => treat as no solution
+        bestCostMatrix(:, simIdx+1) = NaN(numTimes, 1);
+        continue
+    end
+    
+    % ---------------------------------------------------------------------
+    % (E) Mark that we found solutions for this run
+    % ---------------------------------------------------------------------
+    foundSolutionsCount = foundSolutionsCount + 1;
+    
+    % ---------------------------------------------------------------------
+    % (F) Record initial/final solutions
+    % ---------------------------------------------------------------------
+    % The earliest solution
+    initialSolutionTimes(end+1) = sortedTimes(1);
+    initialSolutionCosts(end+1) = sortedCosts(1);
+    
+    % The latest solution
+    finalSolutionTimes(end+1)   = sortedTimes(end);
+    finalSolutionCosts(end+1)   = sortedCosts(end);
+    
+    % ---------------------------------------------------------------------
+    % (G) Fill bestCostMatrix over the time grid
+    % ---------------------------------------------------------------------
     for tIdx = 1:numTimes
         tVal = timeGrid(tIdx);
-        bestSolutionCost = V;
+        bestSolutionCost = NaN;  % Default if no solution by tVal
         
-        for i = 1:length(solutionTimes)
-            if solutionTimes(i) <= tVal
-                bestSolutionCost = costs(i);
+        % A simple linear approach: for each solution in ascending time
+        for iSol = 1:length(sortedTimes)
+            if sortedTimes(iSol) <= tVal
+                bestSolutionCost = sortedCosts(iSol);
             else
                 break;
             end
@@ -51,11 +141,52 @@ for simIdx = 0:numSims-1
         
         bestCostMatrix(tIdx, simIdx+1) = bestSolutionCost;
     end
-end
+    
+end  % end for simIdx
 
+% --------------------------
+% 4) Remove time rows that are all NaN
+% (just to shrink data; optional)
+% --------------------------
 validRows = any(~isnan(bestCostMatrix), 2);
 bestCostMatrix = bestCostMatrix(validRows, :);
 timeGrid = timeGrid(validRows);
 
-% Save the data for later use
-save('KPAX_0.1mill_10_3_3_3_6DDI_trees.mat', 'bestCostMatrix', 'timeGrid');
+% --------------------------
+% 5) Compute Success Statistics
+% --------------------------
+successRate = (foundSolutionsCount / numSims) * 100;
+
+if foundSolutionsCount > 0
+    medianInitialTime = median(initialSolutionTimes);
+    medianInitialCost = median(initialSolutionCosts);
+    medianFinalTime   = median(finalSolutionTimes);
+    medianFinalCost   = median(finalSolutionCosts);
+else
+    % If zero solutions in all runs
+    medianInitialTime = NaN;
+    medianInitialCost = NaN;
+    medianFinalTime   = NaN;
+    medianFinalCost   = NaN;
+end
+
+% --------------------------
+% 6) Print Results
+% --------------------------
+fprintf('Number of simulations: %d\n', numSims);
+fprintf('Success rate: %.2f %%\n', successRate);
+fprintf('Median initial solution time (ms): %.1f\n', medianInitialTime);
+fprintf('Median initial solution cost: %.4f\n', medianInitialCost);
+fprintf('Median final solution time (ms): %.1f\n', medianFinalTime);
+fprintf('Median final solution cost: %.4f\n', medianFinalCost);
+
+% --------------------------
+% 7) Save Results to .mat
+% --------------------------
+save('KPAX_3mill_Quad_trees_fast.mat', ...
+     'bestCostMatrix', 'timeGrid', ...
+     'initialSolutionTimes', 'initialSolutionCosts', ...
+     'finalSolutionTimes',   'finalSolutionCosts', ...
+     'successRate', ...
+     'medianInitialTime', 'medianInitialCost', ...
+     'medianFinalTime',   'medianFinalCost');

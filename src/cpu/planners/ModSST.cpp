@@ -40,10 +40,20 @@
 #include "ompl/base/objectives/MaximizeMinClearanceObjective.h"
 #include "ompl/base/objectives/PathLengthOptimizationObjective.h"
 #include "ompl/base/objectives/MechanicalWorkOptimizationObjective.h"
+#include "ompl/base/spaces/RealVectorStateSpace.h"
 #include "ompl/tools/config/SelfConfig.h"
 #include <limits>
 #include <chrono> 
 #include <fstream>
+#include <mutex> 
+#include <cmath> 
+#include <thread> 
+
+std::mutex mtx;
+static double bestSolutionCost = std::numeric_limits<double>::infinity();
+
+namespace ob = ompl::base;
+namespace oc = ompl::control;
 
 ompl::control::ModSST::ModSST(const SpaceInformationPtr &si) : base::Planner(si, "ModSST")
 {
@@ -201,12 +211,19 @@ ompl::control::ModSST::Witness *ompl::control::ModSST::findClosestWitness(ompl::
 
 ompl::base::PlannerStatus ompl::control::ModSST::solve(const base::PlannerTerminationCondition &ptc)
 {
-    auto startTime = std::chrono::high_resolution_clock::now();
-    std::ofstream solutionLog("solution_times_and_costs.csv");
+    // Get thread ID string
+    std::stringstream ss;
+    ss << std::this_thread::get_id();
+    std::string tidStr = ss.str();
+
+    // Open a unique CSV per thread (append mode so we don’t overwrite if re-used)
+    std::ofstream solutionLog("solution_times_and_costs_" + tidStr + ".csv", std::ios_base::app);
 
     checkValidity();
     base::Goal *goal = pdef_->getGoal().get();
     auto *goal_s     = dynamic_cast<base::GoalSampleableRegion *>(goal);
+
+    auto startTime = std::chrono::high_resolution_clock::now();
 
     while(const base::State *st = pis_.nextStart())
         {

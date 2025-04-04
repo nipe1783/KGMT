@@ -5,7 +5,7 @@ clear all;
 % Parameterss
 % radius = 0.05;
 radius = .05;
-alpha = 0.3;
+alpha = 0.9;
 xGoal = [.80, .95, 0.9];
 % xGoal = [80, 95, 90];
 STEP_SIZE = 0.1;
@@ -17,7 +17,7 @@ stateSize = 6;
 sampleSize = 10;
 % stateSize = 12;
 % sampleSize = 17;
-model = 2; % Choose model (1: Double Integrator, 2: Dubins Airplane, 3: Quadcopter)
+model = 1; % Choose model (1: Double Integrator, 2: Dubins Airplane, 3: Quadcopter)
 
 % Read and flip control data
 controls = flipud(readmatrix(controlPath));
@@ -32,7 +32,7 @@ fig = figure('Position', [100, 100, 1000, 1000]);
 hold on;
 axis equal;
 axis off;
-title('Trajectory Visualization');
+% title('Trajectory Visualization');
 
 % Plot obstacles
 for j = 1:size(obstacles, 1)
@@ -60,6 +60,12 @@ for j = 1:size(obstacles, 1)
         5, 6, 7, 8];
     patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', alpha);
 end
+
+cubeSize = 1;
+cubeOrigin = [0.5, 0.5, 0.5];
+vertices = cubeSize * [-0.5, -0.5, -0.5; 0.5, -0.5, -0.5; 0.5, 0.5, -0.5; -0.5, 0.5, -0.5; -0.5, -0.5, 0.5; 0.5, -0.5, 0.5; 0.5, 0.5, 0.5; -0.5, 0.5, 0.5] + cubeOrigin;
+faces = [1, 2, 6, 5; 2, 3, 7, 6; 3, 4, 8, 7; 4, 1, 5, 8; 1, 2, 3, 4; 5, 6, 7, 8];
+patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'none', 'EdgeColor', 'k', 'LineWidth', 0.5);
 
 % Plot goal
 [X, Y, Z] = sphere(20);
@@ -97,7 +103,7 @@ for i = 1:length(startIndices)
         % Plot the propagated segment
         plot3(segmentX, segmentY, segmentZ, 'LineWidth', 1.5, 'Color', color);
         plot3(gather(controls(j, 1)), gather(controls(j, 2)), gather(controls(j, 3)), 'o', 'Color', 'k', 'MarkerFaceColor', 'k', 'MarkerSize', 2);
-        scatter3(segmentX, segmentY, segmentZ, 15, 'b', 'filled');
+        %scatter3(segmentX, segmentY, segmentZ, 15, 'b', 'filled');
 
         % Update the initial state for the next segment
         x0 = sample;
@@ -110,23 +116,21 @@ camlight('right');
 lighting phong;
 
 % Define views
-% views = {...
-%     [0, 90], 'top'; ...     % Top view
-%     % [90, 0], 'side'; ...    % Side view
-%     % [45, 30], 'isometric'; ... % Isometric view
-%     % [180, 0], 'reverse'; ...   % Reverse side view
-% };
-% 
-% % Save different views
-% for v = 1:size(views, 1)
-%     view(views{v, 1});
-%     drawnow;
-%     saveas(fig, sprintf('figs/trajectory_visualization_%s.jpg', views{v, 2}));
-%     print(sprintf('figs/trajectory_visualization_%s.jpg', views{v, 2}), '-djpeg', '-r300');
-% end
+views = {...
+    % [0, 90], 'top'; ...     % Top view
+    % [90, 0], 'side'; ...    % Side view
+    [70, 40], 'isometric'; ... % Isometric view
+    % [180, 0], 'reverse'; ...   % Reverse side view
+};
 
-% Close figure
-% close(fig);
+% Save different views
+for v = 1:size(views, 1)
+    view(views{v, 1});
+    drawnow;
+    saveas(fig, sprintf('figs/trajectory_visualization_%s.jpg', views{v, 2}));
+    print(sprintf('figs/trajectory_visualization_%s.jpg', views{v, 2}), '-djpeg', '-r300');
+end
+close(fig);
 
 
 function [segmentX, segmentY, segmentZ] = propDoubleIntegrator(x0, sample, STEP_SIZE, stateSize, sampleSize)

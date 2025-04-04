@@ -1,11 +1,11 @@
 close all; clc; clear;
 
 % Load data from two runs
-load('OKPAX_0.1mill_10_3_3_3_6DDI_house.mat', 'bestCostMatrix', 'timeGrid');
+load('OKPAX_0.1mill_10_3_3_3_DubinsAirplane_narrowPassage.mat', 'bestCostMatrix', 'timeGrid');
 bestCostMatrix1 = bestCostMatrix;
 timeGrid1 = timeGrid;
 
-load('SST_6DDI_house_results.mat', 'bestCostMatrix', 'timeGrid');
+load('KPAX_0.1mill_10_3_3_3_DubinsAirplane_narrowPassage.mat', 'bestCostMatrix', 'timeGrid');
 bestCostMatrix2 = bestCostMatrix;
 timeGrid2 = timeGrid;
 
@@ -38,11 +38,11 @@ grid on;
 set(gca, 'XTick', timeGrid);
 set(gca, 'XTickLabel', arrayfun(@num2str, timeGrid, 'UniformOutput', false));
 
-ylim([1.4 10.8]);  % Set y-limits from 2.0 to 3.0
+ylim([1.4 2]);  % Set y-limits from 2.0 to 3.0
 
 % Set figure size and save the figure as before.
 set(gcf, 'PaperUnits', 'inches');
 set(gcf, 'PaperSize', [8.5 11]);
 set(gcf, 'PaperPosition', [0 0 8.5 11]);
-fileName = 'SST_OKPAX_6DDI_house_fast.pdf';
+fileName = 'KPAX_OKPAX_DubinsAirplane_narrowPassage_fast.pdf';
 print(gcf, fileName, '-dpdf');

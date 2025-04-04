@@ -1,15 +1,15 @@
 close all; clc; clear;
 
 % Load data from three runs
-load('KPAX_0.1mill_10_3_3_3_6DDI_house.mat', 'bestCostMatrix', 'timeGrid');
+load('KPAX_0.1mill_10_3_3_3_DubinsAirplane_trees.mat', 'bestCostMatrix', 'timeGrid');
 bestCostMatrix1 = bestCostMatrix;
 timeGrid1 = timeGrid;
 
-load('SST_6DDI_house_results.mat', 'bestCostMatrix', 'timeGrid');
+load('SST_DubinsAirplane_trees_results.mat', 'bestCostMatrix', 'timeGrid');
 bestCostMatrix2 = bestCostMatrix;
 timeGrid2 = timeGrid;
 
-load('OKPAX_0.1mill_10_3_3_3_6DDI_house.mat', 'bestCostMatrix', 'timeGrid');
+load('OKPAX_0.1mill_10_3_3_3_DubinsAirplane_trees.mat', 'bestCostMatrix', 'timeGrid');
 bestCostMatrix3 = bestCostMatrix;
 timeGrid3 = timeGrid;
 
@@ -41,18 +41,18 @@ ylabel('Solution Cost');
 legend([boxplot1(5), boxplot2(5), boxplot3(5)], {'KPAX', 'SST', 'KPAX*'}, 'Location', 'best');
 grid on;
 
-% Convert timeGrid values from milliseconds to seconds for x-ticks
-allTimeGrids = [timeGrid1; timeGrid2; timeGrid3]/1000;  % Convert all to seconds
+% Concatenate timeGrid values from all runs horizontally
+allTimeGrids = horzcat(timeGrid1, timeGrid2, timeGrid3)/1000;  % Convert all to seconds
 uniqueTimeGrids = unique(allTimeGrids);  % Find unique positions for ticks
 
 set(gca, 'XTick', uniqueTimeGrids);
 set(gca, 'XTickLabel', arrayfun(@(x) num2str(x, '%g'), uniqueTimeGrids, 'UniformOutput', false));
 
-ylim([2.0 6]);  % Set y-limits from 2.0 to 6.0
+ylim([1.3 3.0]);  % Set y-limits
 
 % Set figure size and save the figure as before.
 set(gcf, 'PaperUnits', 'inches');
 set(gcf, 'PaperSize', [8.5 11]);
 set(gcf, 'PaperPosition', [0 0 8.5 11]);
-fileName = 'KPAX_SST_OKPAX_6DDI_house.pdf';
+fileName = 'KPAX_SST_OKPAX_DubinsAirplane_trees_fast.pdf';
 print(gcf, fileName, '-dpdf');

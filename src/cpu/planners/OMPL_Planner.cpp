@@ -711,7 +711,6 @@ public:
         const ob::State* pos1 = cstate1->components[0];
         const ob::State* pos2 = cstate2->components[0];
         double distance = positionSpace_->distance(pos1, pos2);
-
         return ob::Cost(distance);
     }
 
@@ -726,55 +725,83 @@ private:
 
 void OMPL_Planner::planSST(const float* initial, const float* goal, float* obstacles, int numObstacles, float safetyMargin)
 {
-    // ompl::msg::setLogLevel(ompl::msg::LOG_ERROR);
-
-    safetyMargin_   = safetyMargin;
-    obstacles_      = obstacles;
-    obstaclesCount_ = numObstacles;
-    OMPL_INFORM("numObstacles: %d", obstaclesCount_);
-
-    oc::SimpleSetupPtr ss = kinodynamicSimpleSetUp(initial, goal);
-
-    // 2. Create planner
-    auto planner = std::make_shared<oc::ModSST>(ss->getSpaceInformation());
-    ss->setPlanner(planner);
-    ss->getSpaceInformation()->setStateValidityCheckingResolution(0.005);
-    planner->setSelectionRadius(0.05);
-    planner->setPruningRadius(0.06);
-    planner->setGoalBias(.05);
-
-    // 3. Create the optimization objective (position-only)
-    auto si               = ss->getSpaceInformation();
-    auto compoundSpace    = si->getStateSpace()->as<ob::CompoundStateSpace>();
-    auto positionSubSpace = compoundSpace->getSubspace(0);
-
-    ob::OptimizationObjectivePtr obj(new PositionOnlyPathLengthObjective(si, positionSubSpace));
-    ss->setOptimizationObjective(obj);
-    ss->setup();
-    ob::PlannerStatus solved = ss->solve(300.0);
-
-    if(solved)
+    try
         {
-            std::cout << "Found solution:" << std::endl;
+            // ompl::msg::setLogLevel(ompl::msg::LOG_ERROR);
+
+            // --- Setting thread number to maximum available ---
+            unsigned int numThreads = std::thread::hardware_concurrency();
+            if(numThreads == 0) numThreads = 1;
+
+            // Set the number of threads to use
+            setNumberOfThreads(numThreads);
+            numThreads = 20;
+
+            safetyMargin_   = safetyMargin;
+            obstacles_      = obstacles;
+            obstaclesCount_ = numObstacles;
+            OMPL_INFORM("numObstacles: %d", obstaclesCount_);
+
+            // create simple setup object
+            oc::SimpleSetupPtr ss = kinodynamicSimpleSetUp(initial, goal);
             oc::PathControl pathOmpl(ss->getSpaceInformation());
-            pathOmpl = ss->getSolutionPath();
-            write2sys(ss);
-            ompl::base::PlannerData data(ss->getSpaceInformation());
-            planner->getPlannerData(data);
-            writeNumVerticesToCSV(data.numVertices());
+            ompl::tools::ParallelPlan pp(ss->getProblemDefinition());
 
-            ob::Cost currentCost(0.0);
-            for(std::size_t i = 1; i < pathOmpl.getStateCount(); ++i)
+            // --- Creating numThread planners ---
+            std::vector<std::shared_ptr<oc::ModSST>> planners;
+            for(unsigned int i = 0; i < numThreads; ++i)
                 {
-                    const ob::State* s1 = pathOmpl.getState(i - 1);
-                    const ob::State* s2 = pathOmpl.getState(i);
-                    currentCost         = obj->combineCosts(currentCost, obj->motionCost(s1, s2));
+                    auto planner = std::make_shared<oc::ModSST>(ss->getSpaceInformation());
+                    planner->setSelectionRadius(1);
+                    planner->setPruningRadius(0.5);
+                    planner->setGoalBias(.05);
+                    pp.addPlanner(planner);
+                    planners.push_back(planner);
                 }
-            std::cout << "[Partial Solve] Found a new/better solution " << "with cost = " << currentCost.value() << "\n";
+            ss->getSpaceInformation()->setStateValidityCheckingResolution(0.005);
+            auto si               = ss->getSpaceInformation();
+            auto compoundSpace    = si->getStateSpace()->as<ob::CompoundStateSpace>();
+            auto positionSubSpace = compoundSpace->getSubspace(0);
+            ob::OptimizationObjectivePtr obj(new PositionOnlyPathLengthObjective(si, positionSubSpace));
+            ss->setOptimizationObjective(obj);
+            ss->setup();
+
+            // --- Solving Problem ---
+            auto start = std::chrono::high_resolution_clock::now();
+
+            ompl::base::PlannerStatus solved = pp.solve(300.0, false);
+
+            auto end                              = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> elapsed = end - start;
+            double elapsedTime                    = elapsed.count();
+
+            if(solved)
+                {
+                    std::cout << "Found solution in " << elapsedTime << " seconds." << std::endl;
+                    writeExecutionTimeToCSV(elapsedTime);
+
+                    int totalIterations = 0;
+                    int numVertices     = 0;
+                    for(size_t i = 0; i < planners.size(); ++i)
+                        {
+                            ompl::base::PlannerData data(ss->getSpaceInformation());
+                            planners[i]->getPlannerData(data);
+                            // totalIterations += planners[i]->iterations_;
+                            numVertices += data.numVertices();
+                            planners[i]->clear();
+                        }
+                    writeIterationsToCSV(totalIterations);
+                    writeNumVerticesToCSV(numVertices);
+                    write2sys(ss);
+                }
+            else
+                {
+                    std::cout << "No solution found" << std::endl;
+                }
         }
-    else
+    catch(const std::exception& e)
         {
-            std::cout << "No solution found" << std::endl;
+            std::cerr << "Exception caught: " << e.what() << std::endl;
         }
 }
 

@@ -230,8 +230,8 @@ float KPAX::planBenchmark(float* h_initial, float* h_goal, float* d_obstacles_pt
             // printf("Iteration: %d, Tree Size: %d, Frontier Size: %d\n", h_itr_, h_treeSize_, h_frontierSize_);  // TODO: Remove this.
             if(h_propIterations_ == 0) break;
             propagateFrontier(d_obstacles_ptr, h_obstaclesCount);
+            graph_.updateVertices();
             updateFrontier();
-
             cudaEventRecord(stop);
             cudaEventSynchronize(stop);
             cudaEventElapsedTime(&milliseconds, start, stop);
@@ -483,7 +483,7 @@ KPAX_updateFrontier_kernel(bool* frontier, bool* frontierNext, uint* activeFront
                     goalSet[x1TreeIdx]    = true;
                     frontier[x1TreeIdx]   = false;
                     iterations[x1TreeIdx] = iteration;  // TODO: Remove this. Only for creating cost/iteration plot.
-                    // printf("minCost: %f\n", *minCost);
+                    printf("minCost: %f\n", *minCost);
                 }
         }
 
