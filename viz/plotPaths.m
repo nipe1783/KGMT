@@ -5,7 +5,7 @@ clear all;
 % Parameterss
 % radius = 0.05;
 radius = .05;
-alpha = 0.3;
+alpha = 0.1;
 xGoal = [.80, .95, 0.9];
 % xGoal = [80, 95, 90];
 STEP_SIZE = 0.1;
@@ -74,13 +74,20 @@ for z = size(controlPathsToGoal, 1):-1:1
                 4, 1, 5, 8;
                 1, 2, 3, 4;
                 5, 6, 7, 8];
-            patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', alpha);
+            patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'k', 'EdgeColor', 'k', 'FaceAlpha', alpha);
         end
         
         % Plot goal
         [X, Y, Z] = sphere(20);
         surf(radius * X + xGoal(1), radius * Y + xGoal(2), radius * Z + xGoal(3), ...
              'FaceColor', 'g', 'FaceAlpha', 0.5, 'EdgeColor', 'none');
+
+        cubeSize = 1;
+        cubeOrigin = [0.5, 0.5, 0.5];
+        vertices = cubeSize * [-0.5, -0.5, -0.5; 0.5, -0.5, -0.5; 0.5, 0.5, -0.5; -0.5, 0.5, -0.5; -0.5, -0.5, 0.5; 0.5, -0.5, 0.5; 0.5, 0.5, 0.5; -0.5, 0.5, 0.5] + cubeOrigin;
+        faces = [1, 2, 6, 5; 2, 3, 7, 6; 3, 4, 8, 7; 4, 1, 5, 8; 1, 2, 3, 4; 5, 6, 7, 8];
+        patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'none', 'EdgeColor', 'k', 'LineWidth', 0.2);
+
         
         % Separate trajectories based on rows of zeros
         zeroRows = all(controls == 0, 2);
@@ -112,6 +119,11 @@ for z = size(controlPathsToGoal, 1):-1:1
         
                 % Plot the propagated segment
                 plot3(segmentX, segmentY, segmentZ, 'LineWidth', 1.5, 'Color', color);
+                radius2 = 0.005;
+                for k = 1:length(segmentX)
+                    surf(radius2 * X + segmentX(k), radius2 * Y + segmentY(k), radius2 * Z + segmentZ(k), ...
+                         'FaceColor', 'b', 'EdgeColor', 'none');
+                end
                 %plot3(gather(controls(j, 1)), gather(controls(j, 2)), gather(controls(j, 3)), 'o', 'Color', 'k', 'MarkerFaceColor', 'k', 'MarkerSize', 2);
                 % scatter3(segmentX, segmentY, segmentZ, 15, 'b', 'filled');
         
@@ -125,22 +137,29 @@ for z = size(controlPathsToGoal, 1):-1:1
         camlight('right');
         lighting phong;
         
-        % Define views
-        views = {...
-            [0, 90], 'top'; ...     % Top view
-            [90, 0], 'side'; ...    % Side view
-            [45, 30], 'isometric'; ... % Isometric view
-            [180, 0], 'reverse'; ...   % Reverse side view
-        };
+        set(fig, 'Position', [1800, 1800, 1800, 1800]);  % Example dimensions: [left, bottom, width, height]
 
+        % Views definition remains the same
+        views = {...
+            [0, 90], 'top'; ...      % Top view
+            % [90, 0], 'side'; ...     % Side view
+            [45, 30], 'isometric'; ...  % Isometric view
+            % [180, 0], 'reverse'; ...    % Reverse side view
+        };
+        
         % Save different views
         for v = 1:size(views, 1)
             view(views{v, 1});
+            axis equal;  % Ensures that data units are the same in every direction
+            axis tight;  % Fits the axes to the data tightly
+            set(gca, 'XLim', [0, 1], 'YLim', [0, 1], 'ZLim', [0, 1]);  % Adjust these limits based on your data
             drawnow;
-            saveas(fig, sprintf('figs/trajectory_visualization_%s_%d.jpg', views{v, 2}, count));
-            print(sprintf('figs/trajectory_visualization_%s_%d.jpg', views{v, 2}, count), '-djpeg', '-r300');
+            save_filename = sprintf('figs/6DDI_zigZag/trajectory_visualization_%s_%d.jpg', views{v, 2}, count);
+            
+            % Using print function ensures the resolution and size are maintained
+            print(save_filename, '-djpeg', '-r300');  % Specify resolution as needed
         end
-        
+
         close(fig);
         controls = [];
         

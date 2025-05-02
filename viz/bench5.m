@@ -1,58 +1,72 @@
 close all; clc; clear;
 
 % Load data from three runs
-load('KPAX_0.1mill_10_3_3_3_DubinsAirplane_trees.mat', 'bestCostMatrix', 'timeGrid');
+load('OKPAX_100mill_Quad_zigZag_long.mat', 'bestCostMatrix', 'timeGrid');
 bestCostMatrix1 = bestCostMatrix;
-timeGrid1 = timeGrid;
+timeGrid1 = timeGrid / 1000;  % Convert to seconds
+bestCostMatrix1 = bestCostMatrix1 ./ 100;
 
-load('SST_DubinsAirplane_trees_results.mat', 'bestCostMatrix', 'timeGrid');
+load('OKPAX_3mill_Quad_zigZag_fast.mat', 'bestCostMatrix', 'timeGrid');
 bestCostMatrix2 = bestCostMatrix;
-timeGrid2 = timeGrid;
+timeGrid2 = timeGrid / 1000;
+bestCostMatrix2 = bestCostMatrix2 ./ 100;
 
-load('OKPAX_0.1mill_10_3_3_3_DubinsAirplane_trees.mat', 'bestCostMatrix', 'timeGrid');
+load('KPAX_3mill_Quad_zigZag_fast.mat', 'bestCostMatrix', 'timeGrid');
 bestCostMatrix3 = bestCostMatrix;
-timeGrid3 = timeGrid;
+timeGrid3 = timeGrid / 1000;
+bestCostMatrix3 = bestCostMatrix3 ./ 100;
+
+% Custom colors
+color1 = [1, 0, 1];   % Blue for KPAX
+color2 = [1, 0, 0];   % Red for KPAX*-Large-delta
+color3 = [0, 0, 1]; % Green for SST (slightly darker for better visibility)
 
 figure;
 hold on;
-boxplot1 = boxplot(bestCostMatrix1', 'positions', timeGrid1/1000, 'colors', [0, 0, 1], 'symbol', '.', 'OutlierSize', 4);
-boxplot2 = boxplot(bestCostMatrix2', 'positions', timeGrid2/1000, 'colors', [1, 0, 0], 'symbol', '.', 'OutlierSize', 4);
-boxplot3 = boxplot(bestCostMatrix3', 'positions', timeGrid3/1000, 'colors', [0, 1, 0], 'symbol', '.', 'OutlierSize', 4); % Green for third run
 
-% Fill boxes with specific colors
-h1 = findobj(gca, 'tag', 'Box', 'Color', [0, 0, 1]);
-h2 = findobj(gca, 'tag', 'Box', 'Color', [1, 0, 0]);
-h3 = findobj(gca, 'tag', 'Box', 'Color', [0, 1, 0]); % Find the boxes for the third run
+% Draw boxplots
+boxplot(bestCostMatrix1', 'positions', timeGrid1, 'colors', color1, 'symbol', '.', 'OutlierSize', 4);
+boxplot(bestCostMatrix2', 'positions', timeGrid2, 'colors', color2, 'symbol', '.', 'OutlierSize', 4);
+boxplot(bestCostMatrix3', 'positions', timeGrid3, 'colors', color3, 'symbol', '.', 'OutlierSize', 4);
+
+% Fill boxes with the corresponding color
+h1 = findobj(gca, 'tag', 'Box', 'Color', color1);
+h2 = findobj(gca, 'tag', 'Box', 'Color', color2);
+h3 = findobj(gca, 'tag', 'Box', 'Color', color3);
 
 for j = 1:length(h1)
-    patch(get(h1(j), 'XData'), get(h1(j), 'YData'), 'b', 'FaceAlpha', .5); % Blue for first run
+    patch(get(h1(j), 'XData'), get(h1(j), 'YData'), color1, 'FaceAlpha', .5);
 end
 for j = 1:length(h2)
-    patch(get(h2(j), 'XData'), get(h2(j), 'YData'), 'r', 'FaceAlpha', .5); % Red for second run
+    patch(get(h2(j), 'XData'), get(h2(j), 'YData'), color2, 'FaceAlpha', .5);
 end
 for j = 1:length(h3)
-    patch(get(h3(j), 'XData'), get(h3(j), 'YData'), 'g', 'FaceAlpha', .5); % Green for third run
+    patch(get(h3(j), 'XData'), get(h3(j), 'YData'), color3, 'FaceAlpha', .5);
 end
 
-hold off;
+% Dummy handles for legend
+hLegend1 = plot(nan, nan, 's', 'MarkerFaceColor', color1, 'MarkerEdgeColor', color1);
+hLegend2 = plot(nan, nan, 's', 'MarkerFaceColor', color2, 'MarkerEdgeColor', color2);
+hLegend3 = plot(nan, nan, 's', 'MarkerFaceColor', color3, 'MarkerEdgeColor', color3);
+
+legend([hLegend1, hLegend2, hLegend3], ...
+    {'\textbf{KPAX*}-Small-$\delta$', '\textbf{KPAX*}-Large-$\delta$', '\textbf{KPAX}'}, ...
+    'Interpreter', 'latex', 'Location', 'northeast');
 
 xlabel('Time (s)');
 ylabel('Solution Cost');
-legend([boxplot1(5), boxplot2(5), boxplot3(5)], {'KPAX', 'SST', 'KPAX*'}, 'Location', 'best');
 grid on;
 
-% Concatenate timeGrid values from all runs horizontally
-allTimeGrids = horzcat(timeGrid1, timeGrid2, timeGrid3)/1000;  % Convert all to seconds
-uniqueTimeGrids = unique(allTimeGrids);  % Find unique positions for ticks
+% Set X-ticks using all unique time points
+allTimeGrids = unique([timeGrid1, timeGrid2, timeGrid3]);
+set(gca, 'XTick', allTimeGrids);
+set(gca, 'XTickLabel', arrayfun(@(x) num2str(x, '%g'), allTimeGrids, 'UniformOutput', false));
 
-set(gca, 'XTick', uniqueTimeGrids);
-set(gca, 'XTickLabel', arrayfun(@(x) num2str(x, '%g'), uniqueTimeGrids, 'UniformOutput', false));
+ylim([4.5 7]);  % Set y-limits
 
-ylim([1.3 3.0]);  % Set y-limits
-
-% Set figure size and save the figure as before.
+% Set figure size and export
 set(gcf, 'PaperUnits', 'inches');
-set(gcf, 'PaperSize', [8.5 11]);
-set(gcf, 'PaperPosition', [0 0 8.5 11]);
-fileName = 'KPAX_SST_OKPAX_DubinsAirplane_trees_fast.pdf';
+set(gcf, 'PaperSize', [8.5 8.5]);
+set(gcf, 'PaperPosition', [0 0 8.5 8.5]);
+fileName = 'KPAX_KPAX*_KPAX*_Quad_zigZag.pdf';
 print(gcf, fileName, '-dpdf');

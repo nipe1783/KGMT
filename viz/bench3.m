@@ -3,8 +3,8 @@ close all; clc; clear;
 % --------------------------
 % 1) Define Time Grid
 % --------------------------
-k = 10000.0;   % step size in ms
-T = 300000;    % final cutoff time in ms
+k = 200;   % step size in ms
+T = 5000;    % final cutoff time in ms
 timeGrid = 0:k:T;
 
 numTimes = length(timeGrid);
@@ -27,6 +27,7 @@ finalSolutionCosts   = [];
 
 % Track how many runs produced at least one solution
 foundSolutionsCount = 0;
+fileName = "OKPAX_3mill_Quad_zigZag_fast";
 
 % --------------------------
 % 3) Main Loop Over Simulations
@@ -37,7 +38,7 @@ for simIdx = 0 : numSims-1
     % (A) Load the iteration time data: "IterationTimeX.csv"
     % ---------------------------------------------------------------------
     iterationTimeFile = sprintf( ...
-        '/home/nicolas/dev/research/KGMT/NSight/KPAX_3mill_Quad_trees_fast/IterationTime/IterationTime%d.csv', ...
+        '/home/nicolas/dev/research/KGMT/NSight/' + fileName + '/IterationTime/IterationTime%d.csv', ...
         simIdx);
     iterationTimeData = [];
     if isfile(iterationTimeFile)
@@ -52,7 +53,7 @@ for simIdx = 0 : numSims-1
     % (B) Load the path cost data: "pathCostsX.csv"
     % ---------------------------------------------------------------------
     pathCostFile = sprintf( ...
-        '/home/nicolas/dev/research/KGMT/NSight/KPAX_3mill_Quad_trees_fast/PathCosts/pathCosts%d.csv', ...
+        '/home/nicolas/dev/research/KGMT/NSight/' + fileName + '/PathCosts/pathCosts%d.csv', ...
         simIdx);
     pathCostData = [];
     if isfile(pathCostFile)
@@ -183,7 +184,7 @@ fprintf('Median final solution cost: %.4f\n', medianFinalCost);
 % --------------------------
 % 7) Save Results to .mat
 % --------------------------
-save('KPAX_3mill_Quad_trees_fast.mat', ...
+save(fileName + '.mat', ...
      'bestCostMatrix', 'timeGrid', ...
      'initialSolutionTimes', 'initialSolutionCosts', ...
      'finalSolutionTimes',   'finalSolutionCosts', ...

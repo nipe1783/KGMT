@@ -4,13 +4,13 @@ clear all;
 
 % Parameterss
 % radius = 0.05;
-radius = .05;
+radius = .1;
 alpha = 0.9;
-xGoal = [.80, .95, 0.9];
+xGoal = [.10, .10, 0.1];
 % xGoal = [80, 95, 90];
 STEP_SIZE = 0.1;
 % File paths
-obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/zigZag/obstacles.csv';
+obstacleFilePath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/empty/obstacles.csv';
 controlPath = '/home/nicolas/dev/research/KGMT/build/Data/ControlPathsToGoal/ControlPathsToGoal0/controlPathsToGoal.csv';
 % 
 stateSize = 6;
@@ -26,7 +26,7 @@ controls = flipud(readmatrix(controlPath));
 obstacles = readmatrix(obstacleFilePath);
 
 % Color palette
-colors = [0 .8 0];  % Orange
+colors = [0 .1 0.8];  % Orange
 
 fig = figure('Position', [100, 100, 1000, 1000]);
 hold on;
@@ -102,8 +102,13 @@ for i = 1:length(startIndices)
 
         % Plot the propagated segment
         plot3(segmentX, segmentY, segmentZ, 'LineWidth', 1.5, 'Color', color);
-        plot3(gather(controls(j, 1)), gather(controls(j, 2)), gather(controls(j, 3)), 'o', 'Color', 'k', 'MarkerFaceColor', 'k', 'MarkerSize', 2);
-        %scatter3(segmentX, segmentY, segmentZ, 15, 'b', 'filled');
+        % plot3(gather(controls(j, 1)), gather(controls(j, 2)), gather(controls(j, 3)), 'o', 'Color', 'k', 'MarkerFaceColor', 'k', 'MarkerSize', 6);
+        % radius = 0.01;
+        % for k = 1:length(segmentX)
+        %     surf(radius * X + segmentX(k), radius * Y + segmentY(k), radius * Z + segmentZ(k), ...
+        %          'FaceColor', 'b', 'EdgeColor', 'none');
+        % end
+
 
         % Update the initial state for the next segment
         x0 = sample;
@@ -119,7 +124,7 @@ lighting phong;
 views = {...
     % [0, 90], 'top'; ...     % Top view
     % [90, 0], 'side'; ...    % Side view
-    [70, 40], 'isometric'; ... % Isometric view
+    [20, 30], 'isometric'; ... % Isometric view
     % [180, 0], 'reverse'; ...   % Reverse side view
 };
 

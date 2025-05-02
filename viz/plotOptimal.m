@@ -24,7 +24,7 @@ subFolders = files(dirFlags);
 subFolders = subFolders(~ismember({subFolders.name}, {'.', '..'}));
 numIterations = numel(subFolders);
 numIterations = 50;
-obstaclesPath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/zigZag/obstacles.csv';
+obstaclesPath = '/home/nicolas/dev/research/KGMT/include/config/obstacles/clutter/obstacles.csv';
 obstacles = readmatrix(obstaclesPath);
 
 % Plot settings

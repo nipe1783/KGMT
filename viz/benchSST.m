@@ -3,7 +3,7 @@ close all; clc; clear;
 % --------------------------
 % Define time grid
 % --------------------------
-k = 100.0;   % step (ms)
+k = 10000.0;   % step (ms)
 T = 300000;    % final time (make sure this matches your real max time)
 timeGrid = 0:k:T;
 
@@ -31,7 +31,7 @@ V = NaN;
 for simIdx = 0:numSims-1
 
     % 1) Read the solution times and costs
-    solutionFile = sprintf('/home/nicolas/dev/research/KGMT/NSight/SST_Quad_zigZag/zigZag_solution_times_and_costs%d.csv', simIdx);
+    solutionFile = sprintf('/home/nicolas/dev/research/KGMT/NSight/SST_6DDI_house/house_solution_times_and_costs%d.csv', simIdx);
 
     fileInfo = dir(solutionFile);
     if ~isempty(fileInfo) && fileInfo.bytes > 0
@@ -125,7 +125,7 @@ fprintf('Median cost of final solution: %.4f\n', medianFinalCost);
 % --------------------------
 % Save the data for later use
 % --------------------------
-save('SST_Quad_zigZag_results.mat', ...
+save('SST_6DDI_house_results.mat', ...
      'bestCostMatrix', 'timeGrid', ...
      'initialSolutionTimes', 'initialSolutionCosts', ...
      'finalSolutionTimes', 'finalSolutionCosts', ...
