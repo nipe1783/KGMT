@@ -6,7 +6,7 @@ clear all;
 % radius = 0.05;
 radius = .1;
 alpha = 0.9;
-xGoal = [.10, .10, 0.1];
+xGoal = [.6, .9, 0.9];
 % xGoal = [80, 95, 90];
 STEP_SIZE = 0.1;
 % File paths
@@ -60,6 +60,24 @@ for j = 1:size(obstacles, 1)
         5, 6, 7, 8];
     patch('Vertices', vertices, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k', 'FaceAlpha', alpha);
 end
+
+% obstacles = [0.5,0.5,0.5;
+%     0.5,0.5,0.4;
+%     0.2,0.5,0.2;
+%     0.4,0.3,0.3];
+obstacles = [0.5,0.5,0.5];
+
+obstacle_radius = 0.1;
+[X, Y, Z] = sphere(20);
+
+for i = 1:size(obstacles, 1)
+    center = obstacles(i, :);
+    surf(obstacle_radius * X + center(1), ...
+         obstacle_radius * Y + center(2), ...
+         obstacle_radius * Z + center(3), ...
+         'FaceColor', [0.5 0.5 0.5], 'FaceAlpha', 0.5, 'EdgeColor', 'none');
+end
+
 
 cubeSize = 1;
 cubeOrigin = [0.5, 0.5, 0.5];
@@ -124,7 +142,7 @@ lighting phong;
 views = {...
     % [0, 90], 'top'; ...     % Top view
     % [90, 0], 'side'; ...    % Side view
-    [20, 30], 'isometric'; ... % Isometric view
+    [30, 40], 'isometric'; ... % Isometric view
     % [180, 0], 'reverse'; ...   % Reverse side view
 };
 
